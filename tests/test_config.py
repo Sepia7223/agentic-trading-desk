@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from trading_desk.config import (
+    IG_DEMO_BASE_URL,
     AppSettings,
     BrokerEnvironment,
     BrokerSettings,
@@ -36,12 +37,41 @@ def test_live_trading_and_automatic_execution_are_rejected() -> None:
         SafetySettings(automatic_execution_enabled=True)
 
 
-def test_production_ig_urls_are_rejected() -> None:
-    with pytest.raises(ValidationError, match="production IG URLs"):
-        BrokerSettings(base_url="https://api.ig.com/gateway/deal")
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        IG_DEMO_BASE_URL,
+        "https://demo-api.ig.com:443/gateway/deal",
+    ],
+)
+def test_exact_ig_demo_url_is_accepted_and_normalized(base_url: str) -> None:
+    assert BrokerSettings(base_url=base_url).base_url == IG_DEMO_BASE_URL
 
-    with pytest.raises(ValidationError, match="demo environment"):
-        BrokerSettings(base_url="https://example.com/gateway/deal")
+
+@pytest.mark.parametrize(
+    "base_url",
+    [
+        "http://demo-api.ig.com/gateway/deal",
+        "https://api.ig.com/gateway/deal",
+        "https://demo-api.ig.com.evil.example/gateway/deal",
+        "https://evil-demo.example/gateway/deal",
+        "https://demo-api.ig.com/wrong/path",
+        "https://demo-api.ig.com/gateway/deal?test=true",
+        "https://demo-api.ig.com/gateway/deal#fragment",
+        "https://user:password@demo-api.ig.com/gateway/deal",
+        "https://demo-api.ig.com:444/gateway/deal",
+        "https://demo-api.ig.com/gateway/%2e%2e/deal",
+        "https://demo-api.ig.com/gateway%2Fdeal",
+        "https://demo-api.ig.com//gateway/deal",
+        "https://demo-api.ig.com/gateway/deal/",
+        "https://demo-api.ig.com/gateway/deal/../deal",
+        "https://demo-api.ig.com/gateway/deal%2Fextra",
+        "https://demo-api.ig.com:invalid/gateway/deal",
+    ],
+)
+def test_incorrect_or_malicious_ig_urls_are_rejected(base_url: str) -> None:
+    with pytest.raises(ValidationError, match="exact IG demo endpoint"):
+        BrokerSettings(base_url=base_url)
 
 
 def test_ai_settings_do_not_contain_broker_credentials() -> None:

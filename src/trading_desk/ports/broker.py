@@ -18,20 +18,8 @@ class PortfolioState(TypedDict):
     is_known: bool
 
 
-class OrderPreview(TypedDict):
-    symbol: str
-    side: str
-    quantity: Decimal
-    notional: Decimal
-    accepted_by_risk: bool
-    reason: str
-
-
 class Broker(Protocol):
     """Read-only broker boundary for Milestone 1."""
 
     async def get_portfolio_state(self) -> PortfolioState:
         """Return known account state or an explicit unknown state."""
-
-    async def preview_order(self, symbol: str, side: str, quantity: Decimal) -> OrderPreview:
-        """Preview only. Implementations must not place orders."""

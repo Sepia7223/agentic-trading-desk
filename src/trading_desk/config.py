@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from enum import StrEnum
 from typing import Self
-from urllib.parse import urlparse
+from urllib.parse import urlsplit
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
+
+IG_DEMO_BASE_URL = "https://demo-api.ig.com/gateway/deal"
 
 
 class BrokerEnvironment(StrEnum):
@@ -31,21 +33,33 @@ class BrokerSettings(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     broker_environment: BrokerEnvironment = BrokerEnvironment.DEMO
-    base_url: str = "https://demo-api.ig.com/gateway/deal"
+    base_url: str = IG_DEMO_BASE_URL
     api_key: SecretStr | None = None
     identifier: SecretStr | None = None
     password: SecretStr | None = None
 
-    @model_validator(mode="after")
-    def reject_production_ig_url(self) -> Self:
-        parsed = urlparse(self.base_url)
-        host = parsed.netloc.lower()
-        normalized = self.base_url.lower()
-        if host == "api.ig.com" or "live-api.ig.com" in host or "/prod" in normalized:
-            raise ValueError("production IG URLs are not allowed")
-        if "demo" not in host:
-            raise ValueError("IG base_url must point to a demo environment")
-        return self
+    @field_validator("base_url")
+    @classmethod
+    def allow_only_exact_demo_url(cls, value: str) -> str:
+        parsed = urlsplit(value)
+        try:
+            port = parsed.port
+        except ValueError as error:
+            raise ValueError("IG base_url must be the exact IG demo endpoint") from error
+
+        is_exact_demo_endpoint = (
+            parsed.scheme == "https"
+            and parsed.hostname == "demo-api.ig.com"
+            and port in (None, 443)
+            and parsed.path == "/gateway/deal"
+            and parsed.username is None
+            and parsed.password is None
+            and not parsed.query
+            and not parsed.fragment
+        )
+        if not is_exact_demo_endpoint:
+            raise ValueError("IG base_url must be the exact IG demo endpoint")
+        return IG_DEMO_BASE_URL
 
 
 class SafetySettings(BaseModel):

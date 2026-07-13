@@ -15,7 +15,7 @@ boundaries for later work.
 - **OpenAI API** is the eventual runtime AI analysis provider. It will receive
   sanitized strategy outputs and context, not broker credentials.
 - **IG demo** is the eventual broker environment. The default environment is
-  always demo, and production IG URLs are rejected by configuration validation.
+  always demo, and configuration accepts only the exact IG demo REST base URL.
 - **Deterministic strategy calculations** remain local Python code. Indicators,
   score pillars, macro scoring, and decision flags are calculated by code, not
   by a language model.
@@ -31,6 +31,9 @@ boundaries for later work.
 
 Unknown broker, position, market, or risk state must result in no trade. Order
 execution is intentionally absent in this milestone.
+
+The broker protocol is read-only and contains no order preview, validation, or
+execution methods. Those concerns will use separate interfaces in later work.
 
 ## Project Layout
 
