@@ -1,7 +1,4 @@
-"""Broker protocol.
-
-Concrete IG clients are intentionally out of scope for Milestone 1.
-"""
+"""Provider-neutral read-only broker protocol."""
 
 from __future__ import annotations
 
@@ -19,7 +16,7 @@ class PortfolioState(TypedDict):
 
 
 class Broker(Protocol):
-    """Read-only broker boundary for Milestone 1."""
+    """Minimal read-only broker boundary without order authority."""
 
     async def get_portfolio_state(self) -> PortfolioState:
         """Return known account state or an explicit unknown state."""

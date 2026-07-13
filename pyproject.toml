@@ -26,6 +26,7 @@ dev = [
 trading-desk-indicators = "trading_desk.strategy.indicators:main"
 trading-desk-score = "trading_desk.strategy.score:main"
 trading-desk-macro-pillar = "trading_desk.strategy.macro_pillar:main"
+ig-trader = "trading_desk.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/trading_desk"]

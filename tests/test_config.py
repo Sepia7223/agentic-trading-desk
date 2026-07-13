@@ -96,3 +96,34 @@ def test_secret_values_are_redacted_from_repr_json_and_validation_errors() -> No
         BrokerSettings(base_url="https://api.ig.com/gateway/deal", api_key=sentinel)
 
     assert sentinel not in str(error.value)
+
+
+def test_ig_environment_configuration_is_typed_and_secret() -> None:
+    settings = AppSettings.from_environment(
+        {
+            "IG_BASE_URL": IG_DEMO_BASE_URL,
+            "IG_IDENTIFIER": "test-identifier",
+            "IG_PASSWORD": "test-password",
+            "IG_API_KEY": "test-api-key",
+            "IG_REQUEST_TIMEOUT_SECONDS": "12.5",
+            "IG_MAX_HISTORICAL_PRICE_POINTS": "250",
+        },
+        env_file=None,
+    )
+
+    assert settings.broker.identifier is not None
+    assert settings.broker.password is not None
+    assert settings.broker.api_key is not None
+    assert settings.broker.identifier.get_secret_value() == "test-identifier"
+    assert settings.broker.password.get_secret_value() == "test-password"
+    assert settings.broker.api_key.get_secret_value() == "test-api-key"
+    assert settings.broker.request_timeout_seconds == 12.5
+    assert settings.broker.max_historical_price_points == 250
+
+
+def test_ig_credentials_remain_optional_until_an_integration_is_used() -> None:
+    settings = AppSettings.from_environment({}, env_file=None)
+
+    assert settings.broker.identifier is None
+    assert settings.broker.password is None
+    assert settings.broker.api_key is None

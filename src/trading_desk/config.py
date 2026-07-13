@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
+from collections.abc import Mapping
 from enum import StrEnum
+from pathlib import Path
 from typing import Self
 from urllib.parse import urlsplit
 
@@ -37,6 +40,8 @@ class BrokerSettings(BaseModel):
     api_key: SecretStr | None = None
     identifier: SecretStr | None = None
     password: SecretStr | None = None
+    request_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
+    max_historical_price_points: int = Field(default=1000, ge=1, le=10000)
 
     @field_validator("base_url")
     @classmethod
@@ -102,3 +107,65 @@ class AppSettings(BaseModel):
     safety: SafetySettings = Field(default_factory=SafetySettings)
     ai: AISettings = Field(default_factory=AISettings)
     database_url: str = "sqlite:///trading_desk.sqlite3"
+
+    @classmethod
+    def from_environment(
+        cls,
+        environment: Mapping[str, str] | None = None,
+        env_file: str | Path | None = ".env",
+    ) -> AppSettings:
+        """Load settings explicitly without reading credentials during import."""
+
+        values: dict[str, str] = {}
+        if env_file is not None:
+            values.update(_read_env_file(Path(env_file)))
+        values.update(os.environ if environment is None else environment)
+
+        broker_values = {
+            "broker_environment": values.get("BROKER_ENVIRONMENT", BrokerEnvironment.DEMO),
+            "base_url": values.get("IG_BASE_URL", IG_DEMO_BASE_URL),
+            "identifier": values.get("IG_IDENTIFIER") or None,
+            "password": values.get("IG_PASSWORD") or None,
+            "api_key": values.get("IG_API_KEY") or None,
+            "request_timeout_seconds": values.get("IG_REQUEST_TIMEOUT_SECONDS", "10"),
+            "max_historical_price_points": values.get("IG_MAX_HISTORICAL_PRICE_POINTS", "1000"),
+        }
+        safety_values = {
+            "operating_mode": values.get("OPERATING_MODE", OperatingMode.READ_ONLY),
+            "live_trading_allowed": values.get("LIVE_TRADING_ALLOWED", "false"),
+            "automatic_execution_enabled": values.get("AUTOMATIC_EXECUTION_ENABLED", "false"),
+        }
+        ai_values = {
+            "api_key": values.get("OPENAI_API_KEY") or None,
+            "model": values.get("OPENAI_MODEL") or None,
+        }
+        return cls(
+            broker=BrokerSettings.model_validate(broker_values),
+            safety=SafetySettings.model_validate(safety_values),
+            ai=AISettings.model_validate(ai_values),
+            database_url=values.get("DATABASE_URL", "sqlite:///trading_desk.sqlite3"),
+        )
+
+
+def _read_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+
+    values: dict[str, str] = {}
+    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        if "=" not in line:
+            raise ValueError(f"invalid environment entry on line {line_number}")
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            raise ValueError(f"invalid environment key on line {line_number}")
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        values[key] = value
+    return values

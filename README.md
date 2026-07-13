@@ -3,10 +3,9 @@
 Safety-first automated trading application foundation, adapted from the original
 MIT-licensed Claude + Robinhood MCP Agentic Trading Desk.
 
-This milestone does not connect to IG, does not call the OpenAI API, and does
-not implement order execution. It establishes the Python package structure,
-deterministic strategy layer, safety configuration, and abstract integration
-boundaries for later work.
+The current adapter supports authenticated, strictly read-only access to the IG
+REST demo API. It does not call the OpenAI API and contains no order preview,
+validation, placement, amendment, closure, deletion, or account-switching code.
 
 ## Roles
 
@@ -32,14 +31,17 @@ boundaries for later work.
 Unknown broker, position, market, or risk state must result in no trade. Order
 execution is intentionally absent in this milestone.
 
-The broker protocol is read-only and contains no order preview, validation, or
-execution methods. Those concerns will use separate interfaces in later work.
+The broker protocol and IG adapter are read-only and contain no order preview,
+validation, or execution methods. Those concerns require separate interfaces
+and are outside this milestone.
 
 ## Project Layout
 
 ```text
 src/trading_desk/
+  cli.py                    read-only command-line interface
   config.py                 immutable safety-first configuration models
+  ig/                       strict IG demo models, policy, errors, and adapter
   ports/                    abstract protocols for future integrations
   strategy/
     indicators.py           EMA, RSI, MACD, TRIX, Bollinger calculations
@@ -92,6 +94,64 @@ python -m pytest
 ```
 
 Python 3.12+ is required.
+
+## IG Demo Credentials
+
+Create or use an IG demo account, then generate an API key from the API-key or
+account settings area of the IG demo web application. Keep the demo identifier,
+password, and API key local. The adapter accepts only this canonical gateway:
+
+```text
+https://demo-api.ig.com/gateway/deal
+```
+
+Create a local, untracked configuration from the placeholder template:
+
+```bash
+cp .env.example .env
+```
+
+On PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Replace the placeholder values only in `.env`. Git ignores that file. Never
+paste credentials or session tokens into Codex, chat, GitHub, screenshots,
+issues, logs, test fixtures, or command output.
+
+## Read-Only Commands
+
+```bash
+ig-trader config-check
+ig-trader ig accounts
+ig-trader ig positions
+ig-trader ig search-market "EUR/USD"
+ig-trader ig market CS.D.EURUSD.CFD.IP
+ig-trader ig prices CS.D.EURUSD.CFD.IP --resolution DAY --max-points 20
+```
+
+`DAY`, `HOUR`, and `HOUR_4` are supported price resolutions. Price requests
+return one page only. Every command starts with:
+
+```text
+Environment: DEMO
+Mode: READ_ONLY
+```
+
+Output is a typed summary rather than a raw IG response. Historical bars with
+missing close bid or ask values remain visible but are excluded from the
+strategy-ready close series.
+
+Common safe errors include missing `IG_IDENTIFIER`, `IG_PASSWORD`, or
+`IG_API_KEY`; rejected non-demo URLs; invalid or expired sessions; insufficient
+authorization; exhausted API allowance; and response-validation failures. Error
+messages include only status, IG error code, request ID, and operation name.
+They never include credentials, session tokens, login bodies, or full headers.
+
+There are no commands or adapter methods for orders, working orders, position
+changes, position closure, or active-account switching.
 
 ## Attribution
 
