@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Self
+from typing import Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -69,11 +69,17 @@ class StrictModel(BaseModel):
 
 
 class AuthenticatedSessionSummary(StrictModel):
+    """Safe session identity with DEMO established by local transport invariants.
+
+    Session v2 does not necessarily return an environment field. ``environment``
+    derives from the exact configured demo gateway and validated runtime boundary.
+    """
+
     account_id: str
     client_id: str
     timezone_offset: int | None = None
     lightstreamer_endpoint: str | None = None
-    environment: str
+    environment: Literal["DEMO"] = "DEMO"
 
 
 class AccountBalance(StrictModel):

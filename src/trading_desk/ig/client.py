@@ -135,7 +135,7 @@ class IGDemoClient:
             )
             cst = response.headers.get("CST")
             security_token = response.headers.get("X-SECURITY-TOKEN")
-            if not cst or not security_token:
+            if not cst or not cst.strip() or not security_token or not security_token.strip():
                 raise IGAuthenticationError(
                     "IG login response omitted required session headers",
                     operation=Operation.LOGIN.value,
@@ -143,14 +143,15 @@ class IGDemoClient:
                     request_id=_request_id(response),
                 )
 
-            environment = data.get("environment") or data.get("reroutingEnvironment")
-            if not isinstance(environment, str) or environment.upper() != "DEMO":
+            try:
+                _validate_optional_environment_indicator(data)
+            except ValueError:
                 raise IGAuthenticationError(
-                    "IG login response did not confirm the DEMO environment",
+                    "IG login response declared an unsafe environment",
                     operation=Operation.LOGIN.value,
                     http_status=response.status_code,
                     request_id=_request_id(response),
-                )
+                ) from None
 
             summary = AuthenticatedSessionSummary(
                 account_id=_required_text(data, "currentAccountId", "accountId"),
@@ -159,8 +160,8 @@ class IGDemoClient:
                 lightstreamer_endpoint=_optional_text(data.get("lightstreamerEndpoint")),
                 environment="DEMO",
             )
-            self._cst = SecretStr(cst)
-            self._security_token = SecretStr(security_token)
+            self._cst = SecretStr(cst.strip())
+            self._security_token = SecretStr(security_token.strip())
             return summary
         except (IGAPIError, ValidationError, KeyError, TypeError, ValueError) as error:
             self._clear_session()
@@ -339,7 +340,7 @@ class IGDemoClient:
         except ValueError:
             pass
 
-        if response.status_code < 400 and error_code is None:
+        if response.is_success and error_code is None:
             return
 
         request_id = _request_id(response)
@@ -404,6 +405,16 @@ class IGDemoClient:
     @staticmethod
     def _raise_validation(operation: Operation, message: str) -> NoReturn:
         raise IGResponseValidationError(message, operation=operation.value) from None
+
+
+def _validate_optional_environment_indicator(data: Mapping[str, Any]) -> None:
+    """Reject an explicit non-demo environment; absence is valid for session v2."""
+
+    if "environment" not in data:
+        return
+    value = data["environment"]
+    if not isinstance(value, str) or value.strip().upper() != "DEMO":
+        raise ValueError("explicit IG environment indicator is not DEMO")
 
 
 def _parse_account(raw: Mapping[str, Any]) -> Account:

@@ -105,6 +105,19 @@ password, and API key local. The adapter accepts only this canonical gateway:
 https://demo-api.ig.com/gateway/deal
 ```
 
+Demo/live separation is enforced by exact URL-component validation of that
+gateway and by the immutable `DEMO` and `READ_ONLY` runtime boundary. The
+adapter never infers demo status from a loose hostname substring or a
+user-provided environment label.
+
+IG session v2 responses do not necessarily include an explicit environment
+field. Login success therefore requires a successful HTTP response, valid JSON,
+the required session identity fields, and non-empty `CST` and
+`X-SECURITY-TOKEN` headers. If the body explicitly includes `environment`, only
+`DEMO` is accepted case-insensitively; missing environment information is valid
+because the request destination is already technically restricted to the exact
+demo gateway. Unrelated routing fields are not treated as environment claims.
+
 Create a local, untracked configuration from the placeholder template:
 
 ```bash

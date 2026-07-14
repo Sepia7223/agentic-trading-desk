@@ -27,10 +27,10 @@ class OperatingMode(StrEnum):
 
 
 class BrokerSettings(BaseModel):
-    """Broker configuration.
+    """Configuration for the read-only IG demo adapter.
 
-    Milestone 1 intentionally supports only IG demo metadata. Real connection
-    clients are not implemented here.
+    Only the canonical demo gateway is accepted. Live trading and automatic
+    execution remain disabled by the separate immutable safety boundary.
     """
 
     model_config = ConfigDict(frozen=True)

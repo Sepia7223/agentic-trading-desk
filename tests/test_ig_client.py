@@ -17,7 +17,7 @@ import pytest
 
 from trading_desk.cli import main as cli_main
 from trading_desk.config import AppSettings, BrokerSettings, SafetySettings
-from trading_desk.ig.client import IGDemoClient
+from trading_desk.ig.client import IGDemoClient, _validate_optional_environment_indicator
 from trading_desk.ig.errors import (
     IGAuthenticationError,
     IGConfigurationError,
@@ -49,17 +49,30 @@ def _settings(**overrides: object) -> AppSettings:
     return AppSettings(broker=BrokerSettings.model_validate(broker_values))
 
 
-def _login_payload(environment: str = "DEMO") -> dict[str, object]:
-    return {
-        "currentAccountId": "ABC123",
-        "clientId": "CLIENT1",
+_MISSING = object()
+
+
+def _login_payload(environment: object = _MISSING) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "currentAccountId": "DEMO_ACCOUNT",
+        "clientId": "DEMO_CLIENT",
+        "accountInfo": {
+            "balance": 10000,
+            "deposit": 0,
+            "profitLoss": 0,
+            "available": 10000,
+        },
+        "currencyIsoCode": "USD",
+        "currencySymbol": "$",
         "timezoneOffset": 0,
-        "lightstreamerEndpoint": "https://example.invalid/stream",
-        "environment": environment,
+        "lightstreamerEndpoint": "https://example.invalid",
     }
+    if environment is not _MISSING:
+        payload["environment"] = environment
+    return payload
 
 
-def _login_response(environment: str = "DEMO") -> httpx.Response:
+def _login_response(environment: object = _MISSING) -> httpx.Response:
     return httpx.Response(
         200,
         json=_login_payload(environment),
@@ -142,6 +155,35 @@ def test_login_uses_demo_gateway_version_and_safe_headers() -> None:
     assert request.headers["Accept"] == "application/json; charset=UTF-8"
 
 
+def test_session_v2_without_environment_field_authenticates() -> None:
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(), transport=httpx.MockTransport(lambda _: _login_response())
+        )
+        summary = await client.login()
+
+        assert summary.account_id == "DEMO_ACCOUNT"
+        assert summary.client_id == "DEMO_CLIENT"
+        assert summary.environment == "DEMO"
+        assert "environment" not in _login_payload()
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_explicit_demo_environment_is_accepted_case_insensitively() -> None:
+    async def scenario() -> None:
+        for environment in ("DEMO", "demo", " Demo "):
+            client = IGDemoClient(
+                _settings(),
+                transport=httpx.MockTransport(lambda _, value=environment: _login_response(value)),
+            )
+            assert (await client.login()).environment == "DEMO"
+            await client.aclose()
+
+    _run(scenario())
+
+
 def test_login_captures_both_tokens_for_authenticated_requests() -> None:
     calls: list[httpx.Request] = []
 
@@ -162,9 +204,18 @@ def test_login_captures_both_tokens_for_authenticated_requests() -> None:
     assert len(calls) == 2
 
 
-def test_missing_authentication_headers_fail_closed() -> None:
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"CST": "test-cst"},
+        {"X-SECURITY-TOKEN": "test-security-token"},
+        {"CST": "   ", "X-SECURITY-TOKEN": "test-security-token"},
+        {"CST": "test-cst", "X-SECURITY-TOKEN": "   "},
+    ],
+)
+def test_missing_authentication_headers_fail_closed(headers: dict[str, str]) -> None:
     def handler(_: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=_login_payload(), headers={"CST": "test-cst"})
+        return httpx.Response(200, json=_login_payload(), headers=headers)
 
     async def scenario() -> None:
         client = IGDemoClient(_settings(), transport=httpx.MockTransport(handler))
@@ -177,19 +228,155 @@ def test_missing_authentication_headers_fail_closed() -> None:
     _run(scenario())
 
 
-@pytest.mark.parametrize("environment", ["LIVE", "PROD", "", "unknown"])
-def test_non_demo_login_responses_fail_closed(environment: str) -> None:
+@pytest.mark.parametrize("environment", ["LIVE", "PROD", "PRODUCTION", "", "unknown", True])
+def test_explicit_non_demo_login_responses_fail_closed(environment: object) -> None:
     async def scenario() -> None:
         client = IGDemoClient(
             _settings(), transport=httpx.MockTransport(lambda _: _login_response(environment))
         )
-        with pytest.raises(IGAuthenticationError, match="confirm the DEMO environment"):
+        with pytest.raises(IGAuthenticationError, match="unsafe environment"):
             await client.login()
         with pytest.raises(IGSessionMissingError):
             await client.get_accounts()
         await client.aclose()
 
     _run(scenario())
+
+
+def test_rerouting_environment_is_not_interpreted_as_an_environment_declaration() -> None:
+    payload = _login_payload()
+    payload["reroutingEnvironment"] = False
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json=payload,
+                    headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
+                )
+            ),
+        )
+        assert (await client.login()).environment == "DEMO"
+        await client.aclose()
+
+    _run(scenario())
+
+
+@pytest.mark.parametrize("environment", [_MISSING, "DEMO", "demo"])
+def test_optional_environment_helper_accepts_missing_or_demo(environment: object) -> None:
+    _validate_optional_environment_indicator(_login_payload(environment))
+
+
+@pytest.mark.parametrize("environment", ["LIVE", "PROD", "PRODUCTION", "unknown", 1])
+def test_optional_environment_helper_rejects_explicit_unsafe_values(environment: object) -> None:
+    with pytest.raises(ValueError, match="not DEMO"):
+        _validate_optional_environment_indicator(_login_payload(environment))
+
+
+@pytest.mark.parametrize("missing_field", ["currentAccountId", "clientId"])
+def test_missing_required_login_identity_fails_closed(missing_field: str) -> None:
+    payload = _login_payload()
+    del payload[missing_field]
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json=payload,
+                    headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
+                )
+            ),
+        )
+        with pytest.raises(IGResponseValidationError, match="login response was malformed"):
+            await client.login()
+        assert "authenticated=False" in repr(client)
+        with pytest.raises(IGSessionMissingError):
+            await client.get_accounts()
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_malformed_login_json_fails_closed() -> None:
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    text="not-json",
+                    headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
+                )
+            ),
+        )
+        with pytest.raises(IGResponseValidationError):
+            await client.login()
+        assert "authenticated=False" in repr(client)
+        with pytest.raises(IGSessionMissingError):
+            await client.get_accounts()
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_login_redirect_is_not_treated_as_success() -> None:
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    302,
+                    json=_login_payload(),
+                    headers={
+                        "Location": "https://example.invalid",
+                        "CST": "test-cst",
+                        "X-SECURITY-TOKEN": "test-security-token",
+                    },
+                )
+            ),
+        )
+        with pytest.raises(IGAuthenticationError, match="status=302"):
+            await client.login()
+        assert "authenticated=False" in repr(client)
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_failed_login_redacts_authentication_headers_everywhere(
+    caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+) -> None:
+    cst = "synthetic-cst-for-redaction"
+    security_token = "synthetic-security-token-for-redaction"
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json=_login_payload("LIVE"),
+                    headers={"CST": cst, "X-SECURITY-TOKEN": security_token},
+                )
+            ),
+        )
+        with pytest.raises(IGAuthenticationError) as captured_error:
+            await client.login()
+        safe_text = f"{captured_error.value!s} {client!r} {client.__dict__!r}"
+        assert cst not in safe_text
+        assert security_token not in safe_text
+        assert "authenticated=False" in repr(client)
+        await client.aclose()
+
+    _run(scenario())
+    captured = capsys.readouterr()
+    output = captured.out + captured.err + caplog.text
+    assert cst not in output
+    assert security_token not in output
 
 
 def test_tokens_are_absent_from_logs_exceptions_representations_and_output(
