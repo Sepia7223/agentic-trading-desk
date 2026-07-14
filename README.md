@@ -44,9 +44,15 @@ src/trading_desk/
   ig/                       strict IG demo models, policy, errors, and adapter
   ports/                    abstract protocols for future integrations
   strategy/
+    configuration.py        immutable deterministic model and gate settings
+    data_validation.py      typed fail-closed market-data validation
     indicators.py           EMA, RSI, MACD, TRIX, Bollinger calculations
+    kalman.py               explicit local-linear Kalman trend filter
     macro_pillar.py         cross-asset macro-sentiment pillar
+    pipeline.py             cutoff-safe strategy orchestration
+    regime.py               causal three-state Gaussian HMM
     score.py                three-pillar scoring and decision flags
+    signal_engine.py        mandatory long-only signal gates
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
@@ -64,6 +70,55 @@ The deterministic strategy layer preserves the original three-pillar framework:
 
 Bollinger Bands are computed as a supporting exhaustion signal and do not feed
 directly into the numeric momentum score.
+
+## Regime-Aware Analysis
+
+Milestone 3 adds a deterministic pipeline:
+
+```text
+normalized IG prices -> validation -> three-pillar baseline -> Kalman trend
+                     -> three-state HMM -> mandatory gates -> candidate or no trade
+```
+
+The Kalman model uses the local-linear state `x_t = [level_t, slope_t]` with
+`x_t = [[1, 1], [0, 1]] x_(t-1) + w_t` and price observation
+`y_t = [1, 0] x_t + v_t`. Process and observation covariance values come from
+immutable typed configuration. The implementation exposes every prediction,
+innovation, filtered state, and uncertainty.
+
+The diagonal Gaussian HMM has exactly three states. Its causal features are log
+return, rolling realized volatility, normalized Kalman slope, normalized
+distance from Kalman level, and rolling drawdown. Hidden indices map after
+fitting to `BULL_LOW_VOL`, `TRANSITIONAL`, and `BEAR_HIGH_VOL` using
+state-weighted return, volatility, and slope statistics. Ambiguous mappings,
+insufficient usable history, low state occupancy, fitting warnings, failed
+convergence, invalid model matrices, weak probability, or high entropy fail closed.
+The signal uses the endpoint smoothed posterior at each explicit cutoff.
+
+Every historical evaluation has an explicit cutoff. Prices, Kalman state,
+rolling features, scaler statistics, HMM fit, state mapping, and decision use
+only observations at or before that cutoff. Walk-forward analysis refits each
+cutoff independently, so appended future bars cannot alter an earlier result.
+
+A `LONG_CANDIDATE` requires all configured gates to pass: valid and fresh
+tradeable data, known flat holding state, spread at or below the configured
+basis-point limit, a confident bull
+low-volatility regime, positive sufficiently certain Kalman slope, acceptable
+price deviation, minimum baseline trend and momentum, a fresh rebound trigger,
+and no death-cross or relentless-bearish condition. Transitional, bear, or
+uncertain regimes produce `NO_TRADE`. An existing holding can produce `WATCH`;
+there are no exit instructions.
+
+Every result includes a SHA-256 fingerprint of canonical, sorted strategy
+configuration JSON and deterministic component and numerical package versions.
+Signals based on completed bar `t` record `NEXT_VALID_BAR` and cannot be treated
+as executable at bar `t`. Daily staleness supports a configurable weekend grace;
+unknown cadence fails closed. Macro context is optional and explicitly `UNKNOWN`
+when absent, unless macro confirmation is configured as mandatory. Supported
+ablation variants are `BASELINE_ONLY`, `BASELINE_KALMAN`, `BASELINE_HMM`, and the
+default `BASELINE_KALMAN_HMM`. Reproducibility is guaranteed only within a pinned
+software environment and deterministic configuration. See
+`docs/regime-aware-strategy.md` for equations, assumptions, and limitations.
 
 ## CLI Usage
 
@@ -151,6 +206,8 @@ ig-trader ig positions
 ig-trader ig search-market "EUR/USD"
 ig-trader ig market CS.D.EURUSD.CFD.IP
 ig-trader ig prices CS.D.EURUSD.CFD.IP --resolution DAY --max-points 20
+ig-trader strategy analyze CS.D.EURUSD.CFD.IP
+ig-trader strategy walk-forward CS.D.EURUSD.CFD.IP --start-index 220 --end-index 240
 ```
 
 `DAY`, `HOUR`, and `HOUR_4` are supported price resolutions. Price requests
@@ -159,6 +216,7 @@ return one page only. Every command starts with:
 ```text
 Environment: DEMO
 Mode: READ_ONLY
+Execution: UNAVAILABLE
 ```
 
 Output is a typed summary rather than a raw IG response. Historical bars with
@@ -179,6 +237,21 @@ They never include credentials, session tokens, login bodies, or full headers.
 
 There are no commands or adapter methods for orders, working orders, position
 changes, position closure, or active-account switching.
+
+Example strategy output is summarized and never includes raw broker data:
+
+```text
+Environment: DEMO
+Mode: READ_ONLY
+Execution: UNAVAILABLE
+Baseline: trend=2 momentum=1 macro=1 total=4
+Kalman: level=1.082 slope=0.0012 slope uncertainty=0.0004
+Regime: BULL_LOW_VOL | BULL_LOW_VOL=0.812, TRANSITIONAL=0.151, BEAR_HIGH_VOL=0.037
+Action: LONG_CANDIDATE
+```
+
+Candidate output is analysis only. It contains no quantity, position size,
+leverage, monetary risk, order type, stop, or limit, and cannot execute a trade.
 
 ## Attribution
 

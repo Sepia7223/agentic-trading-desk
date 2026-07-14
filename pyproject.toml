@@ -12,7 +12,11 @@ license = { file = "LICENSE" }
 authors = [{ name = "Oft3r" }]
 dependencies = [
   "httpx>=0.27",
+  "hmmlearn>=0.3.2",
+  "numpy>=1.26",
   "pydantic>=2.7",
+  "scikit-learn>=1.4",
+  "scipy>=1.11",
 ]
 
 [project.optional-dependencies]

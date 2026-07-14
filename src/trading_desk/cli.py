@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import sys
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from pydantic import ValidationError
@@ -20,6 +21,10 @@ from trading_desk.ig.models import (
     MarketSearchResult,
     OpenPosition,
 )
+from trading_desk.strategy.configuration import StrategyConfiguration
+from trading_desk.strategy.data_validation import market_data_from_ig_page
+from trading_desk.strategy.models import StrategyBarResolution, StrategyContext, TradeCandidate
+from trading_desk.strategy.pipeline import RegimeAwareStrategyPipeline
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -47,6 +52,20 @@ def build_parser() -> argparse.ArgumentParser:
     )
     prices.add_argument("--max-points", type=int, default=20)
     prices.add_argument("--page-number", type=int, default=1)
+
+    strategy_parser = subcommands.add_parser("strategy", help="Deterministic analysis only")
+    strategy_commands = strategy_parser.add_subparsers(dest="strategy_command", required=True)
+    analyze = strategy_commands.add_parser("analyze", help="Analyze the latest cutoff")
+    analyze.add_argument("epic")
+    analyze.add_argument("--macro-score", type=int, choices=range(-2, 3))
+
+    walk_forward = strategy_commands.add_parser(
+        "walk-forward", help="Refit and evaluate one historical cutoff at a time"
+    )
+    walk_forward.add_argument("epic")
+    walk_forward.add_argument("--start-index", type=int, required=True)
+    walk_forward.add_argument("--end-index", type=int, required=True)
+    walk_forward.add_argument("--macro-score", type=int, choices=range(-2, 3))
     return parser
 
 
@@ -65,7 +84,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _config_check(settings)
 
     try:
-        return asyncio.run(_run_ig_command(settings, args))
+        if args.command == "ig":
+            return asyncio.run(_run_ig_command(settings, args))
+        if args.command == "strategy":
+            return asyncio.run(_run_strategy_command(settings, args))
+        raise ValueError("unsupported read-only command")
     except (IGError, ValidationError, ValueError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 2
@@ -74,6 +97,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _print_safety_header() -> None:
     print("Environment: DEMO")
     print("Mode: READ_ONLY")
+    print("Execution: UNAVAILABLE")
 
 
 def _config_check(settings: AppSettings) -> int:
@@ -114,6 +138,81 @@ async def _run_ig_command(settings: AppSettings, args: argparse.Namespace) -> in
             _print_prices(page)
         else:
             raise ValueError("unsupported read-only command")
+    return 0
+
+
+async def _run_strategy_command(settings: AppSettings, args: argparse.Namespace) -> int:
+    strategy_config = StrategyConfiguration()
+    requested_points = min(
+        settings.broker.max_historical_price_points,
+        max(strategy_config.minimum_bars_required, 500),
+    )
+    async with IGDemoClient(settings) as client:
+        market = await client.get_market_details(args.epic)
+        positions = await client.get_open_positions()
+        page = await client.get_historical_prices(
+            market.epic,
+            resolution=PriceResolution.DAY,
+            max_points=requested_points,
+            page_number=1,
+        )
+    retrieved_at = datetime.now(UTC)
+    build = market_data_from_ig_page(
+        page,
+        epic=market.epic,
+        instrument_name=market.instrument_name,
+        market_status=market.market_status.value,
+        data_retrieval_time=retrieved_at,
+        bar_resolution=StrategyBarResolution.DAY,
+    )
+    if build.data is None:
+        print("Action: NO_TRADE")
+        for finding in build.findings:
+            print(f"- rejection: {finding.code.value}: {finding.message}")
+        return 0
+    spread = (
+        float(market.offer - market.bid)
+        if market.bid is not None and market.offer is not None
+        else build.data.spreads[-1]
+    )
+    if market.bid is not None and market.offer is not None:
+        midpoint = float((market.bid + market.offer) / 2)
+        spread_bps = 10_000.0 * spread / midpoint
+    else:
+        spread_bps = build.data.spread_bps[-1]
+    holding = any(position.market.epic == market.epic for position in positions)
+    context = StrategyContext(
+        holding=holding,
+        macro_score=args.macro_score,
+        current_spread=spread,
+        current_spread_bps=spread_bps,
+        market_status=market.market_status.value,
+        current_time=retrieved_at,
+        account_exposure_summary=f"open positions reviewed: {len(positions)}",
+    )
+    pipeline = RegimeAwareStrategyPipeline(strategy_config)
+    if args.strategy_command == "analyze":
+        candidate = pipeline.analyze_latest(
+            build.data,
+            context,
+            inherited_findings=build.findings,
+        )
+        _print_strategy_candidate(candidate)
+    elif args.strategy_command == "walk-forward":
+        candidates = pipeline.walk_forward(
+            build.data,
+            context,
+            start_index=args.start_index,
+            end_index=args.end_index,
+        )
+        print(f"Walk-forward evaluations: {len(candidates)}")
+        for candidate in candidates:
+            print(
+                f"- {candidate.evaluation_timestamp.isoformat()} | {candidate.action.value}"
+                f" | {candidate.current_regime.value}"
+            )
+    else:
+        raise ValueError("unsupported strategy command")
     return 0
 
 
@@ -176,6 +275,39 @@ def _print_prices(page: HistoricalPricePage) -> None:
         print(f"- {bar.timestamp.isoformat()} | midpoint close={close} | {status}")
 
 
+def _print_strategy_candidate(candidate: TradeCandidate) -> None:
+    print(f"EPIC: {candidate.epic}")
+    print(f"Variant: {candidate.strategy_variant.value}")
+    print(
+        f"Signal: {candidate.signal_timestamp.isoformat()}"
+        f" | execution policy={candidate.execution_timing_policy.value}"
+    )
+    print(
+        f"Baseline: trend={candidate.baseline_trend_score}"
+        f" momentum={candidate.baseline_momentum_score}"
+        f" macro={candidate.macro_score} total={candidate.total_baseline_score}"
+    )
+    print(
+        f"Kalman: level={_optional_float(candidate.kalman_level)}"
+        f" slope={_optional_float(candidate.kalman_slope)}"
+        f" slope uncertainty={_optional_float(candidate.kalman_slope_uncertainty)}"
+    )
+    print(f"Spread: absolute={candidate.current_spread:.6g} bps={candidate.current_spread_bps:.3f}")
+    probabilities = ", ".join(
+        f"{item.regime.value}={item.probability:.3f}" for item in candidate.regime_probabilities
+    )
+    print(
+        f"Regime: {candidate.current_regime.value} | {probabilities}"
+        f" | uncertainty={candidate.regime_uncertainty:.3f}"
+    )
+    for gate in candidate.mandatory_gates:
+        print(f"Gate {gate.name}: {'PASS' if gate.passed else 'FAIL'}")
+    print(f"Action: {candidate.action.value}")
+    for reason in candidate.rejection_reasons:
+        print(f"- rejection: {reason}")
+    print(f"Configuration: {candidate.configuration_fingerprint}")
+
+
 def _money(value: Decimal) -> str:
     return f"{value:.2f}"
 
@@ -186,6 +318,10 @@ def _optional_decimal(value: Decimal | None) -> str:
 
 def _redact_account_id(account_id: str) -> str:
     return "***" if len(account_id) <= 4 else f"***{account_id[-4:]}"
+
+
+def _optional_float(value: float | None) -> str:
+    return "unavailable" if value is None else f"{value:.6g}"
 
 
 if __name__ == "__main__":

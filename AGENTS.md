@@ -67,3 +67,43 @@ account, position, order, or working order.
 - Missing environment information is accepted because the exact demo gateway and
   local runtime boundary establish `DEMO`; an explicit non-demo value fails closed.
 - Missing credentials or session state must fail before an authenticated request.
+
+## Deterministic Strategy Boundary
+
+- Strategy output is limited to `LONG_CANDIDATE`, `WATCH`, and `NO_TRADE`.
+- Strategy code has no execution authority and must not import IG configuration,
+  credentials, session state, HTTP clients, or broker mutation interfaces.
+- Indicator, baseline score, Kalman, HMM, and signal-gate behavior is deterministic.
+  Runtime AI and user prompts cannot modify safety-critical model settings.
+- Missing, stale, invalid, non-finite, inconsistent, or uncertain state fails closed
+  to `NO_TRADE`.
+- Long-only mode is fixed. Transitional and bear/high-volatility regimes cannot
+  create long candidates under the default reviewed policy.
+
+## Leakage And Reproducibility
+
+- At evaluation time `t`, every price, rolling statistic, Kalman state, scaler,
+  HMM fit, state mapping, threshold, and decision must use data through `t` only.
+- Historical evaluation must use the explicit cutoff API. Walk-forward analysis
+  refits one cutoff at a time; never fit once on a full dataset and report
+  in-sample historical signals from that fit.
+- HMM raw state indices have no semantic meaning. Map all three states after each
+  fit using state-weighted return, volatility, and normalized slope statistics.
+- Keep the random seed fixed and include component versions and the configuration
+  fingerprint in every result.
+- Any model non-convergence, singular or non-finite covariance, insufficient state
+  support, malformed probability vector, low selected probability, or excessive
+  entropy must fail closed without weaker automatic retries.
+- Require at least 30 Kalman observations, 120 usable HMM feature rows after rolling
+  loss, and 10 effective observations per state unless a separately reviewed
+  configuration raises those floors.
+- Treat `predict_proba` at the cutoff as an endpoint smoothed posterior, never as a
+  filtered probability. Ambiguous semantic mappings fail closed.
+- Signals using completed bar `t` are eligible only from `NEXT_VALID_BAR`; future
+  backtests must never assume same-bar-close execution.
+- Generic spread gates use basis points, not absolute price units. Daily staleness is
+  resolution-aware with explicit weekend grace; unknown cadence fails closed.
+- Reproducibility claims apply within a pinned numerical environment. Record numerical
+  package versions and the selected ablation variant in every result.
+- Preserve regression tests proving that appending future bars cannot change an
+  earlier cutoff result and that original three-pillar outputs remain unchanged.
