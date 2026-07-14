@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import inspect
+import json
 import os
 import re
 import subprocess
@@ -15,12 +16,15 @@ from typing import Any
 import httpx
 import pytest
 
+from trading_desk.cli import _redact_account_id
 from trading_desk.cli import main as cli_main
 from trading_desk.config import AppSettings, BrokerSettings, SafetySettings
 from trading_desk.ig.client import IGDemoClient, _validate_optional_environment_indicator
 from trading_desk.ig.errors import (
     IGAuthenticationError,
     IGConfigurationError,
+    IGOAuthResponseValidationError,
+    IGOAuthTokenExpiredError,
     IGRateLimitError,
     IGResponseValidationError,
     IGSessionMissingError,
@@ -50,6 +54,20 @@ def _settings(**overrides: object) -> AppSettings:
 
 
 _MISSING = object()
+_ACCESS_TOKEN = "synthetic-oauth-access-token"
+_REFRESH_TOKEN = "synthetic-oauth-refresh-token"
+
+
+def _oauth_token(**overrides: object) -> dict[str, object]:
+    token: dict[str, object] = {
+        "access_token": _ACCESS_TOKEN,
+        "refresh_token": _REFRESH_TOKEN,
+        "token_type": "Bearer",
+        "expires_in": "60",
+        "scope": "profile",
+    }
+    token.update(overrides)
+    return token
 
 
 def _login_payload(environment: object = _MISSING) -> dict[str, object]:
@@ -66,6 +84,7 @@ def _login_payload(environment: object = _MISSING) -> dict[str, object]:
         "currencySymbol": "$",
         "timezoneOffset": 0,
         "lightstreamerEndpoint": "https://example.invalid",
+        "oauthToken": _oauth_token(),
     }
     if environment is not _MISSING:
         payload["environment"] = environment
@@ -73,11 +92,7 @@ def _login_payload(environment: object = _MISSING) -> dict[str, object]:
 
 
 def _login_response(environment: object = _MISSING) -> httpx.Response:
-    return httpx.Response(
-        200,
-        json=_login_payload(environment),
-        headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
-    )
+    return httpx.Response(200, json=_login_payload(environment))
 
 
 def _route_handler(
@@ -131,7 +146,7 @@ def test_integration_command_rejects_missing_credentials(
     assert "missing required configuration: IG_IDENTIFIER" in captured.err
 
 
-def test_login_uses_demo_gateway_version_and_safe_headers() -> None:
+def test_login_uses_demo_gateway_version_three_and_documented_body() -> None:
     calls: list[httpx.Request] = []
 
     async def scenario() -> None:
@@ -140,8 +155,13 @@ def test_login_uses_demo_gateway_version_and_safe_headers() -> None:
             transport=httpx.MockTransport(_route_handler(lambda _: httpx.Response(500), calls)),
         )
         summary = await client.login()
-        await client.aclose()
         assert summary.environment == "DEMO"
+        assert summary.oauth.token_type == "Bearer"
+        assert summary.oauth.expires_in == 60
+        assert summary.oauth.scope == "profile"
+        assert _ACCESS_TOKEN not in repr(summary)
+        assert _REFRESH_TOKEN not in summary.model_dump_json()
+        await client.aclose()
 
     _run(scenario())
 
@@ -149,13 +169,17 @@ def test_login_uses_demo_gateway_version_and_safe_headers() -> None:
     request = calls[0]
     assert request.method == "POST"
     assert str(request.url) == "https://demo-api.ig.com/gateway/deal/session"
-    assert request.headers["Version"] == "2"
+    assert request.headers["Version"] == "3"
     assert request.headers["X-IG-API-KEY"] == "test-api-key"
     assert request.headers["Content-Type"] == "application/json"
     assert request.headers["Accept"] == "application/json; charset=UTF-8"
+    assert json.loads(request.content) == {
+        "identifier": "test-identifier",
+        "password": "test-password",
+    }
 
 
-def test_session_v2_without_environment_field_authenticates() -> None:
+def test_oauth_login_without_environment_field_authenticates() -> None:
     async def scenario() -> None:
         client = IGDemoClient(
             _settings(), transport=httpx.MockTransport(lambda _: _login_response())
@@ -166,6 +190,26 @@ def test_session_v2_without_environment_field_authenticates() -> None:
         assert summary.client_id == "DEMO_CLIENT"
         assert summary.environment == "DEMO"
         assert "environment" not in _login_payload()
+        assert "authenticated=true" in repr(client)
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_oauth_token_type_is_case_insensitive_and_scope_is_optional() -> None:
+    payload = _login_payload()
+    token = _oauth_token(token_type="bearer")
+    del token["scope"]
+    payload["oauthToken"] = token
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
+        )
+        summary = await client.login()
+        assert summary.oauth.token_type == "Bearer"
+        assert summary.oauth.scope is None
         await client.aclose()
 
     _run(scenario())
@@ -184,12 +228,15 @@ def test_explicit_demo_environment_is_accepted_case_insensitively() -> None:
     _run(scenario())
 
 
-def test_login_captures_both_tokens_for_authenticated_requests() -> None:
+def test_authenticated_requests_use_only_oauth_headers() -> None:
     calls: list[httpx.Request] = []
 
     def operation(request: httpx.Request) -> httpx.Response:
-        assert request.headers["CST"] == "test-cst"
-        assert request.headers["X-SECURITY-TOKEN"] == "test-security-token"
+        assert request.headers["Authorization"] == f"Bearer {_ACCESS_TOKEN}"
+        assert request.headers["IG-ACCOUNT-ID"] == "DEMO_ACCOUNT"
+        assert request.headers["X-IG-API-KEY"] == "test-api-key"
+        assert "CST" not in request.headers
+        assert "X-SECURITY-TOKEN" not in request.headers
         return httpx.Response(200, json={"accounts": []})
 
     async def scenario() -> None:
@@ -205,22 +252,68 @@ def test_login_captures_both_tokens_for_authenticated_requests() -> None:
 
 
 @pytest.mark.parametrize(
-    "headers",
+    ("token_update", "missing_key"),
     [
-        {"CST": "test-cst"},
-        {"X-SECURITY-TOKEN": "test-security-token"},
-        {"CST": "   ", "X-SECURITY-TOKEN": "test-security-token"},
-        {"CST": "test-cst", "X-SECURITY-TOKEN": "   "},
+        ({}, "oauthToken"),
+        ({}, "access_token"),
+        ({}, "refresh_token"),
+        ({}, "token_type"),
+        ({}, "expires_in"),
     ],
 )
-def test_missing_authentication_headers_fail_closed(headers: dict[str, str]) -> None:
-    def handler(_: httpx.Request) -> httpx.Response:
-        return httpx.Response(200, json=_login_payload(), headers=headers)
+def test_missing_oauth_fields_fail_closed(
+    token_update: dict[str, object], missing_key: str
+) -> None:
+    payload = _login_payload()
+    if missing_key == "oauthToken":
+        del payload[missing_key]
+    else:
+        token = _oauth_token(**token_update)
+        del token[missing_key]
+        payload["oauthToken"] = token
 
+    _assert_oauth_login_fails_closed(payload)
+
+
+@pytest.mark.parametrize(
+    "token_update",
+    [
+        {"access_token": ""},
+        {"access_token": "   "},
+        {"refresh_token": ""},
+        {"refresh_token": "   "},
+        {"token_type": "Basic"},
+        {"token_type": ""},
+        {"expires_in": 0},
+        {"expires_in": -1},
+        {"expires_in": "nan"},
+        {"expires_in": "inf"},
+        {"expires_in": "invalid"},
+        {"expires_in": True},
+    ],
+)
+def test_invalid_oauth_token_values_fail_closed(token_update: dict[str, object]) -> None:
+    payload = _login_payload()
+    payload["oauthToken"] = _oauth_token(**token_update)
+    _assert_oauth_login_fails_closed(payload)
+
+
+@pytest.mark.parametrize("missing_field", ["currentAccountId", "clientId"])
+def test_missing_required_login_identity_fails_closed(missing_field: str) -> None:
+    payload = _login_payload()
+    del payload[missing_field]
+    _assert_oauth_login_fails_closed(payload)
+
+
+def _assert_oauth_login_fails_closed(payload: dict[str, object]) -> None:
     async def scenario() -> None:
-        client = IGDemoClient(_settings(), transport=httpx.MockTransport(handler))
-        with pytest.raises(IGAuthenticationError, match="omitted required session headers"):
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
+        )
+        with pytest.raises(IGOAuthResponseValidationError, match="OAuth login response"):
             await client.login()
+        assert "authenticated=false" in repr(client)
         with pytest.raises(IGSessionMissingError):
             await client.get_accounts()
         await client.aclose()
@@ -236,27 +329,20 @@ def test_explicit_non_demo_login_responses_fail_closed(environment: object) -> N
         )
         with pytest.raises(IGAuthenticationError, match="unsafe environment"):
             await client.login()
-        with pytest.raises(IGSessionMissingError):
-            await client.get_accounts()
+        assert "authenticated=false" in repr(client)
         await client.aclose()
 
     _run(scenario())
 
 
-def test_rerouting_environment_is_not_interpreted_as_an_environment_declaration() -> None:
+def test_rerouting_environment_is_not_interpreted_as_environment() -> None:
     payload = _login_payload()
     payload["reroutingEnvironment"] = False
 
     async def scenario() -> None:
         client = IGDemoClient(
             _settings(),
-            transport=httpx.MockTransport(
-                lambda _: httpx.Response(
-                    200,
-                    json=payload,
-                    headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
-                )
-            ),
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
         )
         assert (await client.login()).environment == "DEMO"
         await client.aclose()
@@ -275,49 +361,14 @@ def test_optional_environment_helper_rejects_explicit_unsafe_values(environment:
         _validate_optional_environment_indicator(_login_payload(environment))
 
 
-@pytest.mark.parametrize("missing_field", ["currentAccountId", "clientId"])
-def test_missing_required_login_identity_fails_closed(missing_field: str) -> None:
-    payload = _login_payload()
-    del payload[missing_field]
-
-    async def scenario() -> None:
-        client = IGDemoClient(
-            _settings(),
-            transport=httpx.MockTransport(
-                lambda _: httpx.Response(
-                    200,
-                    json=payload,
-                    headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
-                )
-            ),
-        )
-        with pytest.raises(IGResponseValidationError, match="login response was malformed"):
-            await client.login()
-        assert "authenticated=False" in repr(client)
-        with pytest.raises(IGSessionMissingError):
-            await client.get_accounts()
-        await client.aclose()
-
-    _run(scenario())
-
-
 def test_malformed_login_json_fails_closed() -> None:
     async def scenario() -> None:
         client = IGDemoClient(
-            _settings(),
-            transport=httpx.MockTransport(
-                lambda _: httpx.Response(
-                    200,
-                    text="not-json",
-                    headers={"CST": "test-cst", "X-SECURITY-TOKEN": "test-security-token"},
-                )
-            ),
+            _settings(), transport=httpx.MockTransport(lambda _: httpx.Response(200, text="bad"))
         )
         with pytest.raises(IGResponseValidationError):
             await client.login()
-        assert "authenticated=False" in repr(client)
-        with pytest.raises(IGSessionMissingError):
-            await client.get_accounts()
+        assert "authenticated=false" in repr(client)
         await client.aclose()
 
     _run(scenario())
@@ -331,75 +382,102 @@ def test_login_redirect_is_not_treated_as_success() -> None:
                 lambda _: httpx.Response(
                     302,
                     json=_login_payload(),
-                    headers={
-                        "Location": "https://example.invalid",
-                        "CST": "test-cst",
-                        "X-SECURITY-TOKEN": "test-security-token",
-                    },
+                    headers={"Location": "https://example.invalid"},
                 )
             ),
         )
         with pytest.raises(IGAuthenticationError, match="status=302"):
             await client.login()
-        assert "authenticated=False" in repr(client)
+        assert "authenticated=false" in repr(client)
         await client.aclose()
 
     _run(scenario())
 
 
-def test_failed_login_redacts_authentication_headers_everywhere(
-    caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
-) -> None:
-    cst = "synthetic-cst-for-redaction"
-    security_token = "synthetic-security-token-for-redaction"
-
-    async def scenario() -> None:
-        client = IGDemoClient(
-            _settings(),
-            transport=httpx.MockTransport(
-                lambda _: httpx.Response(
-                    200,
-                    json=_login_payload("LIVE"),
-                    headers={"CST": cst, "X-SECURITY-TOKEN": security_token},
-                )
-            ),
-        )
-        with pytest.raises(IGAuthenticationError) as captured_error:
-            await client.login()
-        safe_text = f"{captured_error.value!s} {client!r} {client.__dict__!r}"
-        assert cst not in safe_text
-        assert security_token not in safe_text
-        assert "authenticated=False" in repr(client)
-        await client.aclose()
-
-    _run(scenario())
-    captured = capsys.readouterr()
-    output = captured.out + captured.err + caplog.text
-    assert cst not in output
-    assert security_token not in output
-
-
-def test_tokens_are_absent_from_logs_exceptions_representations_and_output(
+def test_oauth_tokens_are_private_and_redacted_everywhere(
     caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
 ) -> None:
     async def scenario() -> None:
         client = IGDemoClient(
             _settings(), transport=httpx.MockTransport(lambda _: _login_response())
         )
-        await client.login()
-        combined_repr = f"{client!r} {client.__dict__!r}"
-        assert "test-cst" not in combined_repr
-        assert "test-security-token" not in combined_repr
+        summary = await client.login()
+        assert client._access_token is not None  # noqa: SLF001 - private-state safety check.
+        assert client._refresh_token is not None  # noqa: SLF001 - private-state safety check.
+        combined = f"{client!r} {client.__dict__!r} {summary!r} {summary.model_dump_json()}"
+        assert _ACCESS_TOKEN not in combined
+        assert _REFRESH_TOKEN not in combined
+        assert "DEMO_ACCOUNT" not in repr(client)
+        assert "authenticated=true" in repr(client)
         await client.aclose()
 
     _run(scenario())
     captured = capsys.readouterr()
     combined_output = captured.out + captured.err + caplog.text
-    assert "test-cst" not in combined_output
-    assert "test-security-token" not in combined_output
+    assert _ACCESS_TOKEN not in combined_output
+    assert _REFRESH_TOKEN not in combined_output
 
 
-def test_logout_always_clears_tokens_when_request_fails() -> None:
+@pytest.mark.parametrize(
+    ("account_id", "redacted"),
+    [("DEMO_ACCOUNT", "***OUNT"), ("12345", "***2345"), ("1234", "***")],
+)
+def test_cli_redacts_complete_account_ids(account_id: str, redacted: str) -> None:
+    result = _redact_account_id(account_id)
+
+    assert result == redacted
+    assert result != account_id
+
+
+def test_failed_login_redacts_oauth_values_and_clears_state(
+    caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+) -> None:
+    payload = _login_payload("LIVE")
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json=payload)),
+        )
+        with pytest.raises(IGAuthenticationError) as captured_error:
+            await client.login()
+        combined = f"{captured_error.value!s} {client!r} {client.__dict__!r}"
+        assert _ACCESS_TOKEN not in combined
+        assert _REFRESH_TOKEN not in combined
+        assert "authenticated=false" in repr(client)
+        await client.aclose()
+
+    _run(scenario())
+    captured = capsys.readouterr()
+    output = captured.out + captured.err + caplog.text
+    assert _ACCESS_TOKEN not in output
+    assert _REFRESH_TOKEN not in output
+
+
+def test_expired_oauth_token_blocks_transport_and_clears_session() -> None:
+    calls: list[httpx.Request] = []
+    now = [100.0]
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(oauth_expiry_safety_margin_seconds=5),
+            transport=httpx.MockTransport(
+                _route_handler(lambda _: httpx.Response(200, json={"accounts": []}), calls)
+            ),
+            clock=lambda: now[0],
+        )
+        await client.login()
+        now[0] = 155.0
+        with pytest.raises(IGOAuthTokenExpiredError, match="access token expired"):
+            await client.get_accounts()
+        assert "authenticated=false" in repr(client)
+        await client.aclose()
+
+    _run(scenario())
+    assert len(calls) == 1
+
+
+def test_logout_always_clears_oauth_state_when_request_fails() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.method == "POST":
             return _login_response()
@@ -410,15 +488,15 @@ def test_logout_always_clears_tokens_when_request_fails() -> None:
         await client.login()
         with pytest.raises(Exception, match="operation=logout"):
             await client.logout()
+        assert "authenticated=false" in repr(client)
         with pytest.raises(IGSessionMissingError):
             await client.get_accounts()
-        assert "authenticated=False" in repr(client)
         await client.aclose()
 
     _run(scenario())
 
 
-def test_logout_uses_delete_session_version_one() -> None:
+def test_oauth_logout_uses_delete_session_version_one() -> None:
     calls: list[httpx.Request] = []
 
     async def scenario() -> None:
@@ -431,9 +509,14 @@ def test_logout_uses_delete_session_version_one() -> None:
         await client.aclose()
 
     _run(scenario())
-    assert calls[-1].method == "DELETE"
-    assert calls[-1].url.path == f"{DEMO_BASE_PATH}/session"
-    assert calls[-1].headers["Version"] == "1"
+    request = calls[-1]
+    assert request.method == "DELETE"
+    assert request.url.path == f"{DEMO_BASE_PATH}/session"
+    assert request.headers["Version"] == "1"
+    assert request.headers["Authorization"] == f"Bearer {_ACCESS_TOKEN}"
+    assert request.headers["IG-ACCOUNT-ID"] == "DEMO_ACCOUNT"
+    assert "CST" not in request.headers
+    assert "X-SECURITY-TOKEN" not in request.headers
 
 
 def test_authenticated_requests_fail_without_a_session_before_transport() -> None:

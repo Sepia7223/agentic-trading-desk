@@ -68,11 +68,20 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
 
+class OAuthTokenSummary(StrictModel):
+    """Public-safe OAuth metadata that never contains token values."""
+
+    token_type: Literal["Bearer"] = "Bearer"
+    expires_in: float = Field(gt=0)
+    scope: str | None = None
+
+
 class AuthenticatedSessionSummary(StrictModel):
     """Safe session identity with DEMO established by local transport invariants.
 
-    Session v2 does not necessarily return an environment field. ``environment``
+    Session v3 does not necessarily return an environment field. ``environment``
     derives from the exact configured demo gateway and validated runtime boundary.
+    The OAuth summary deliberately excludes access and refresh token values.
     """
 
     account_id: str
@@ -80,6 +89,7 @@ class AuthenticatedSessionSummary(StrictModel):
     timezone_offset: int | None = None
     lightstreamer_endpoint: str | None = None
     environment: Literal["DEMO"] = "DEMO"
+    oauth: OAuthTokenSummary
 
 
 class AccountBalance(StrictModel):

@@ -110,13 +110,21 @@ gateway and by the immutable `DEMO` and `READ_ONLY` runtime boundary. The
 adapter never infers demo status from a loose hostname substring or a
 user-provided environment label.
 
-IG session v2 responses do not necessarily include an explicit environment
-field. Login success therefore requires a successful HTTP response, valid JSON,
-the required session identity fields, and non-empty `CST` and
-`X-SECURITY-TOKEN` headers. If the body explicitly includes `environment`, only
-`DEMO` is accepted case-insensitively; missing environment information is valid
-because the request destination is already technically restricted to the exact
-demo gateway. Unrelated routing fields are not treated as environment claims.
+The adapter uses OAuth session v3 exclusively. `X-IG-API-KEY` identifies the
+application, while the demo identifier and password establish the user session.
+A successful response must contain the required client and account identity plus
+an OAuth access token, refresh token, Bearer token type, and positive finite
+expiry duration. The body may omit an explicit environment field because the
+request destination is already technically restricted to the exact demo gateway;
+an explicit non-demo environment fails closed.
+
+Authenticated read-only requests send `Authorization: Bearer <access token>`,
+`IG-ACCOUNT-ID`, and the API key. OAuth values remain private in memory and are
+never included in models, logs, exceptions, or CLI output. Access-token expiry is
+calculated with a monotonic clock and a five-second default safety margin. An
+expired token blocks the request before transport. Automatic refresh is not
+implemented; each CLI command creates a fresh session and logs out with
+`DELETE /session` when finished.
 
 Create a local, untracked configuration from the placeholder template:
 
@@ -155,7 +163,8 @@ Mode: READ_ONLY
 
 Output is a typed summary rather than a raw IG response. Historical bars with
 missing close bid or ask values remain visible but are excluded from the
-strategy-ready close series.
+strategy-ready close series. Account IDs are redacted to at most their final
+four characters.
 
 Common safe errors include missing `IG_IDENTIFIER`, `IG_PASSWORD`, or
 `IG_API_KEY`; rejected non-demo URLs; invalid or expired sessions; insufficient

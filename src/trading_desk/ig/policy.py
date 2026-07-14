@@ -9,7 +9,7 @@ from urllib.parse import urlsplit
 
 from trading_desk.ig.errors import ReadOnlyPolicyViolation
 
-LOGIN_VERSION = 2
+LOGIN_VERSION = 3
 LOGOUT_VERSION = 1
 ACCOUNTS_VERSION = 1
 POSITIONS_VERSION = 2

@@ -20,6 +20,7 @@ def test_safety_defaults_are_demo_read_only_and_execution_disabled() -> None:
     assert settings.safety.operating_mode is OperatingMode.READ_ONLY
     assert settings.safety.live_trading_allowed is False
     assert settings.safety.automatic_execution_enabled is False
+    assert settings.broker.oauth_expiry_safety_margin_seconds == 5
 
 
 def test_settings_are_immutable() -> None:
@@ -107,6 +108,7 @@ def test_ig_environment_configuration_is_typed_and_secret() -> None:
             "IG_API_KEY": "test-api-key",
             "IG_REQUEST_TIMEOUT_SECONDS": "12.5",
             "IG_MAX_HISTORICAL_PRICE_POINTS": "250",
+            "IG_OAUTH_EXPIRY_SAFETY_MARGIN_SECONDS": "7.5",
         },
         env_file=None,
     )
@@ -119,6 +121,13 @@ def test_ig_environment_configuration_is_typed_and_secret() -> None:
     assert settings.broker.api_key.get_secret_value() == "test-api-key"
     assert settings.broker.request_timeout_seconds == 12.5
     assert settings.broker.max_historical_price_points == 250
+    assert settings.broker.oauth_expiry_safety_margin_seconds == 7.5
+
+
+@pytest.mark.parametrize("margin", [-1, 61, float("nan"), float("inf")])
+def test_invalid_oauth_expiry_margin_is_rejected(margin: float) -> None:
+    with pytest.raises(ValidationError):
+        BrokerSettings(oauth_expiry_safety_margin_seconds=margin)
 
 
 def test_ig_credentials_remain_optional_until_an_integration_is_used() -> None:

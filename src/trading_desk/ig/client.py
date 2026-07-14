@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import math
+import time
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from decimal import Decimal, InvalidOperation
 from types import TracebackType
@@ -22,6 +24,8 @@ from trading_desk.ig.errors import (
     IGAuthenticationError,
     IGAuthorizationError,
     IGConfigurationError,
+    IGOAuthResponseValidationError,
+    IGOAuthTokenExpiredError,
     IGRateLimitError,
     IGResponseValidationError,
     IGSessionMissingError,
@@ -42,6 +46,7 @@ from trading_desk.ig.models import (
     MarketDetails,
     MarketSearchResult,
     MarketStatus,
+    OAuthTokenSummary,
     OpenPosition,
     PaginationMetadata,
     PositionMarketSnapshot,
@@ -69,18 +74,22 @@ _ALLOWANCE_ERROR_MARKERS = (
 
 
 class IGDemoClient:
-    """Async read-only client whose every request passes through one policy gate."""
+    """OAuth-authenticated demo client guarded by one read-only policy gate."""
 
     def __init__(
         self,
         settings: AppSettings,
         *,
         transport: httpx.AsyncBaseTransport | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._validate_runtime_boundary(settings)
         self._broker_settings = settings.broker
-        self._cst: SecretStr | None = None
-        self._security_token: SecretStr | None = None
+        self._clock = clock
+        self._access_token: SecretStr | None = None
+        self._refresh_token: SecretStr | None = None
+        self._access_token_expires_at: float | None = None
+        self._account_id: str | None = None
         self._client = httpx.AsyncClient(
             base_url=f"{IG_DEMO_BASE_URL}/",
             timeout=httpx.Timeout(settings.broker.request_timeout_seconds),
@@ -89,7 +98,7 @@ class IGDemoClient:
         )
 
     def __repr__(self) -> str:
-        authenticated = self._has_session()
+        authenticated = str(self._has_session()).lower()
         return f"IGDemoClient(environment=DEMO, mode=READ_ONLY, authenticated={authenticated})"
 
     async def __aenter__(self) -> IGDemoClient:
@@ -133,16 +142,6 @@ class IGDemoClient:
                 json_body={"identifier": identifier, "password": password},
                 expect_json=True,
             )
-            cst = response.headers.get("CST")
-            security_token = response.headers.get("X-SECURITY-TOKEN")
-            if not cst or not cst.strip() or not security_token or not security_token.strip():
-                raise IGAuthenticationError(
-                    "IG login response omitted required session headers",
-                    operation=Operation.LOGIN.value,
-                    http_status=response.status_code,
-                    request_id=_request_id(response),
-                )
-
             try:
                 _validate_optional_environment_indicator(data)
             except ValueError:
@@ -153,15 +152,49 @@ class IGDemoClient:
                     request_id=_request_id(response),
                 ) from None
 
-            summary = AuthenticatedSessionSummary(
-                account_id=_required_text(data, "currentAccountId", "accountId"),
-                client_id=_required_text(data, "clientId"),
-                timezone_offset=_optional_int(data.get("timezoneOffset")),
-                lightstreamer_endpoint=_optional_text(data.get("lightstreamerEndpoint")),
-                environment="DEMO",
-            )
-            self._cst = SecretStr(cst.strip())
-            self._security_token = SecretStr(security_token.strip())
+            received_at = self._clock()
+            try:
+                if not math.isfinite(received_at):
+                    raise ValueError("OAuth clock is non-finite")
+                oauth = _mapping(data["oauthToken"])
+                access_token = _required_text(oauth, "access_token").strip()
+                refresh_token = _required_text(oauth, "refresh_token").strip()
+                if not access_token or not refresh_token:
+                    raise ValueError("OAuth tokens must be non-empty")
+                token_type = _required_text(oauth, "token_type").strip()
+                if token_type.casefold() != "bearer":
+                    raise ValueError("unsupported OAuth token type")
+                expires_in = _required_positive_float(oauth, "expires_in")
+                account_id = _required_text(data, "currentAccountId", "accountId").strip()
+                client_id = _required_text(data, "clientId").strip()
+                if not account_id or not client_id:
+                    raise ValueError("OAuth session identity must be non-empty")
+                raw_scope = _optional_text(oauth.get("scope"))
+                scope = raw_scope.strip() or None if raw_scope is not None else None
+                summary = AuthenticatedSessionSummary(
+                    account_id=account_id,
+                    client_id=client_id,
+                    timezone_offset=_optional_int(data.get("timezoneOffset")),
+                    lightstreamer_endpoint=_optional_text(data.get("lightstreamerEndpoint")),
+                    environment="DEMO",
+                    oauth=OAuthTokenSummary(
+                        token_type="Bearer",
+                        expires_in=expires_in,
+                        scope=scope,
+                    ),
+                )
+            except (ValidationError, KeyError, TypeError, ValueError):
+                raise IGOAuthResponseValidationError(
+                    "IG OAuth login response was malformed",
+                    operation=Operation.LOGIN.value,
+                    http_status=response.status_code,
+                    request_id=_request_id(response),
+                ) from None
+
+            self._access_token = SecretStr(access_token)
+            self._refresh_token = SecretStr(refresh_token)
+            self._access_token_expires_at = received_at + expires_in
+            self._account_id = account_id
             return summary
         except (IGAPIError, ValidationError, KeyError, TypeError, ValueError) as error:
             self._clear_session()
@@ -306,14 +339,11 @@ class IGDemoClient:
             "Version": str(version),
         }
         if allowed.requires_session:
-            if not self._has_session():
-                raise IGSessionMissingError(
-                    f"operation {operation.value!r} requires an authenticated IG session"
-                )
-            assert self._cst is not None
-            assert self._security_token is not None
-            headers["CST"] = self._cst.get_secret_value()
-            headers["X-SECURITY-TOKEN"] = self._security_token.get_secret_value()
+            self._require_active_oauth_session(operation)
+            assert self._access_token is not None
+            assert self._account_id is not None
+            headers["Authorization"] = f"Bearer {self._access_token.get_secret_value()}"
+            headers["IG-ACCOUNT-ID"] = self._account_id
 
         try:
             response = await self._client.request(
@@ -396,11 +426,34 @@ class IGDemoClient:
             raise IGConfigurationError("IG base URL must be the canonical demo endpoint")
 
     def _has_session(self) -> bool:
-        return self._cst is not None and self._security_token is not None
+        return (
+            self._access_token is not None
+            and self._refresh_token is not None
+            and self._access_token_expires_at is not None
+            and self._account_id is not None
+        )
+
+    def _require_active_oauth_session(self, operation: Operation) -> None:
+        if not self._has_session():
+            raise IGSessionMissingError(
+                f"operation {operation.value!r} requires an authenticated IG session"
+            )
+        assert self._access_token_expires_at is not None
+        expires_with_margin = (
+            self._access_token_expires_at - self._broker_settings.oauth_expiry_safety_margin_seconds
+        )
+        if self._clock() >= expires_with_margin:
+            self._clear_session()
+            raise IGOAuthTokenExpiredError(
+                "IG OAuth access token expired",
+                operation=operation.value,
+            )
 
     def _clear_session(self) -> None:
-        self._cst = None
-        self._security_token = None
+        self._access_token = None
+        self._refresh_token = None
+        self._access_token_expires_at = None
+        self._account_id = None
 
     @staticmethod
     def _raise_validation(operation: Operation, message: str) -> NoReturn:
@@ -408,7 +461,7 @@ class IGDemoClient:
 
 
 def _validate_optional_environment_indicator(data: Mapping[str, Any]) -> None:
-    """Reject an explicit non-demo environment; absence is valid for session v2."""
+    """Reject an explicit non-demo environment; absence is valid for session v3."""
 
     if "environment" not in data:
         return
@@ -641,6 +694,16 @@ def _required_int(raw: Mapping[str, Any], key: str) -> int:
     if isinstance(value, bool):
         raise TypeError("bool is not an int")
     return int(value)
+
+
+def _required_positive_float(raw: Mapping[str, Any], key: str) -> float:
+    value = raw[key]
+    if isinstance(value, bool):
+        raise TypeError("bool is not a duration")
+    parsed = float(value)
+    if not math.isfinite(parsed) or parsed <= 0:
+        raise ValueError("duration must be finite and positive")
+    return parsed
 
 
 def _optional_int(value: object) -> int | None:

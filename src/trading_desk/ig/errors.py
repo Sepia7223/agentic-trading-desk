@@ -59,3 +59,11 @@ class IGRateLimitError(IGAuthorizationError):
 
 class IGResponseValidationError(IGAPIError):
     """An IG response could not be normalized safely."""
+
+
+class IGOAuthResponseValidationError(IGResponseValidationError):
+    """An OAuth session response was missing required safe fields."""
+
+
+class IGOAuthTokenExpiredError(IGAuthenticationError):
+    """The in-memory OAuth access token is no longer safe to use."""

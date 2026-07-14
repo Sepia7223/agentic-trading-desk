@@ -42,6 +42,7 @@ class BrokerSettings(BaseModel):
     password: SecretStr | None = None
     request_timeout_seconds: float = Field(default=10.0, gt=0, le=60)
     max_historical_price_points: int = Field(default=1000, ge=1, le=10000)
+    oauth_expiry_safety_margin_seconds: float = Field(default=5.0, ge=0, le=60)
 
     @field_validator("base_url")
     @classmethod
@@ -129,6 +130,9 @@ class AppSettings(BaseModel):
             "api_key": values.get("IG_API_KEY") or None,
             "request_timeout_seconds": values.get("IG_REQUEST_TIMEOUT_SECONDS", "10"),
             "max_historical_price_points": values.get("IG_MAX_HISTORICAL_PRICE_POINTS", "1000"),
+            "oauth_expiry_safety_margin_seconds": values.get(
+                "IG_OAUTH_EXPIRY_SAFETY_MARGIN_SECONDS", "5"
+            ),
         }
         safety_values = {
             "operating_mode": values.get("OPERATING_MODE", OperatingMode.READ_ONLY),

@@ -34,7 +34,7 @@ runtime analysis provider and must not receive broker credentials.
 Every IG request must pass through the central allowlist. The complete allowed
 operation surface is:
 
-- `POST /session` version 2: login.
+- `POST /session` version 3: OAuth login.
 - `DELETE /session` version 1: logout.
 - `GET /accounts` version 1: account review.
 - `GET /positions` version 2: open-position review.
@@ -50,12 +50,20 @@ account, position, order, or working order.
 
 ## Session Safety
 
-- Keep `CST` and `X-SECURITY-TOKEN` in private in-memory `SecretStr` fields only.
-- Clear both tokens after every logout attempt and every failed login.
+- Use OAuth session v3 only. Do not retain a parallel CST/X-SECURITY-TOKEN path.
+- Keep access and refresh tokens in private in-memory `SecretStr` fields only.
+- Use `Authorization: Bearer <access token>` and `IG-ACCOUNT-ID` only after the
+  central policy confirms an authenticated read-only operation.
+- Clear access token, refresh token, expiry, and account ID after every logout
+  attempt, failed login, or detected access-token expiry.
 - Never persist or expose tokens through properties, representations, logs,
   exceptions, CLI output, screenshots, tests, or journal records.
 - Errors may contain only HTTP status, IG error code, request ID, and operation.
 - Do not retry login automatically.
-- A login response must explicitly report `DEMO`; missing, unknown, or non-demo
-  environment state fails closed and clears the session.
+- Do not refresh OAuth tokens automatically. No refresh operation belongs in the
+  allowlist until separately documented, implemented, and reviewed.
+- Calculate token expiry with a monotonic clock and fail before transport when the
+  configured safety margin is reached.
+- Missing environment information is accepted because the exact demo gateway and
+  local runtime boundary establish `DEMO`; an explicit non-demo value fails closed.
 - Missing credentials or session state must fail before an authenticated request.

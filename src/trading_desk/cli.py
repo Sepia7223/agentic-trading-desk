@@ -86,6 +86,7 @@ def _config_check(settings: AppSettings) -> int:
     print(f"IG base URL: {settings.broker.base_url}")
     print(f"Request timeout: {settings.broker.request_timeout_seconds:g}s")
     print(f"Historical point limit: {settings.broker.max_historical_price_points}")
+    print(f"OAuth expiry safety margin: {settings.broker.oauth_expiry_safety_margin_seconds:g}s")
     print(f"Credentials configured: {'no' if missing else 'yes'}")
     if missing:
         print(f"Missing: {', '.join(missing)}")
@@ -121,7 +122,8 @@ def _print_accounts(accounts: tuple[Account, ...]) -> None:
     for account in accounts:
         preferred = " preferred" if account.preferred else ""
         print(
-            f"- {account.account_id} | {account.account_name} | {account.account_type.value}"
+            f"- {_redact_account_id(account.account_id)} | {account.account_name}"
+            f" | {account.account_type.value}"
             f"{preferred} | {account.currency} | balance={_money(account.balance.balance)}"
             f" | available={_money(account.balance.available_funds)}"
         )
@@ -178,6 +180,10 @@ def _money(value: Decimal) -> str:
 
 def _optional_decimal(value: Decimal | None) -> str:
     return "unavailable" if value is None else str(value)
+
+
+def _redact_account_id(account_id: str) -> str:
+    return "***" if len(account_id) <= 4 else f"***{account_id[-4:]}"
 
 
 if __name__ == "__main__":
