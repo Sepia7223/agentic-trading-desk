@@ -156,6 +156,8 @@ def _print_market_details(market: MarketDetails) -> None:
     print(f"Type: {market.instrument_type.value}")
     print(f"Status: {market.market_status.value}")
     print(f"Bid/offer: {_optional_decimal(market.bid)} / {_optional_decimal(market.offer)}")
+    updated = market.update_time.isoformat() if market.update_time is not None else "unavailable"
+    print(f"Updated: {updated}")
 
 
 def _print_prices(page: HistoricalPricePage) -> None:

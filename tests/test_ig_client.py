@@ -9,6 +9,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Awaitable, Callable
+from datetime import time as datetime_time
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ from typing import Any
 import httpx
 import pytest
 
-from trading_desk.cli import _redact_account_id
+from trading_desk.cli import _print_market_details, _redact_account_id
 from trading_desk.cli import main as cli_main
 from trading_desk.config import AppSettings, BrokerSettings, SafetySettings
 from trading_desk.ig.client import IGDemoClient, _validate_optional_environment_indicator
@@ -661,8 +662,15 @@ def test_market_search_validates_and_parses_results() -> None:
     _run(scenario())
 
 
-def test_market_details_use_isolated_version_and_parse_rules() -> None:
-    payload = {
+def _market_details_payload(update_time: object = "12:34:56") -> dict[str, object]:
+    snapshot: dict[str, object] = {
+        "marketStatus": "TRADEABLE",
+        "bid": 1.10001,
+        "offer": 1.10009,
+    }
+    if update_time is not _MISSING:
+        snapshot["updateTime"] = update_time
+    return {
         "instrument": {
             "epic": "CS.D.EURUSD.CFD.IP",
             "name": "EUR/USD",
@@ -670,18 +678,19 @@ def test_market_details_use_isolated_version_and_parse_rules() -> None:
             "expiry": "-",
             "controlledRiskAllowed": True,
         },
-        "snapshot": {
-            "marketStatus": "TRADEABLE",
-            "bid": 1.08,
-            "offer": 1.081,
-            "updateTimeUTC": "2026-07-13T12:00:00Z",
-        },
+        "snapshot": snapshot,
         "dealingRules": {
-            "minDealSize": {"value": 0.5, "unit": "POINTS"},
-            "minNormalStopOrLimitDistance": {"value": 5, "unit": "POINTS"},
-            "maxStopOrLimitDistance": {"value": 100, "unit": "POINTS"},
+            "minDealSize": {"unit": "POINTS", "value": 0.5},
+            "minNormalStopOrLimitDistance": {"unit": "POINTS", "value": 5},
+            "maxStopOrLimitDistance": {"unit": "PERCENTAGE", "value": 90},
         },
     }
+
+
+def test_market_details_v3_parses_time_of_day_and_rules(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    payload = _market_details_payload()
 
     def operation(request: httpx.Request) -> httpx.Response:
         assert request.headers["Version"] == str(MARKET_DETAILS_VERSION)
@@ -692,8 +701,169 @@ def test_market_details_use_isolated_version_and_parse_rules() -> None:
         await client.login()
         market = await client.get_market_details("CS.D.EURUSD.CFD.IP")
         assert market.epic == "CS.D.EURUSD.CFD.IP"
+        assert market.instrument_type.value == "CURRENCIES"
+        assert market.market_status.value == "TRADEABLE"
+        assert market.offer == Decimal("1.10009")
+        assert isinstance(market.update_time, datetime_time)
+        assert market.update_time == datetime_time(12, 34, 56)
+        assert market.update_time.tzinfo is None
+        assert "update_time_utc" not in type(market).model_fields
         assert market.min_deal_size is not None
         assert market.min_deal_size.value == Decimal("0.5")
+        _print_market_details(market)
+        await client.aclose()
+
+    _run(scenario())
+    assert "Updated: 12:34:56" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("raw_time", "expected"),
+    [
+        ("12:34:56.789", datetime_time(12, 34, 56, 789000)),
+        ("00:00:00.000001", datetime_time(0, 0, 0, 1)),
+    ],
+)
+def test_market_details_fractional_update_time_parses(
+    raw_time: str, expected: datetime_time
+) -> None:
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                _route_handler(
+                    lambda _: httpx.Response(200, json=_market_details_payload(raw_time))
+                )
+            ),
+        )
+        await client.login()
+        market = await client.get_market_details("CS.D.EURUSD.CFD.IP")
+        assert market.update_time == expected
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_missing_market_details_update_time_is_none() -> None:
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                _route_handler(
+                    lambda _: httpx.Response(200, json=_market_details_payload(_MISSING))
+                )
+            ),
+        )
+        await client.login()
+        market = await client.get_market_details("CS.D.EURUSD.CFD.IP")
+        assert market.update_time is None
+        await client.aclose()
+
+    _run(scenario())
+
+
+@pytest.mark.parametrize(
+    "raw_time",
+    [
+        "",
+        "24:00:00",
+        "12:60:00",
+        "12:34:60",
+        "2026-07-13T12:34:56Z",
+        "12:34",
+        "1:02:03",
+        123456,
+    ],
+)
+def test_invalid_market_details_time_has_safe_diagnostic(raw_time: object) -> None:
+    payload = _market_details_payload(raw_time)
+    payload["unrelatedSensitiveValue"] = "must-not-appear"
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                _route_handler(lambda _: httpx.Response(200, json=payload))
+            ),
+        )
+        await client.login()
+        with pytest.raises(IGResponseValidationError) as captured:
+            await client.get_market_details("CS.D.EURUSD.CFD.IP")
+        diagnostic = str(captured.value)
+        assert "operation=market_details" in diagnostic
+        assert "field=snapshot.updateTime" in diagnostic
+        assert "reason=invalid time-of-day" in diagnostic
+        assert "must-not-appear" not in diagnostic
+        if str(raw_time):
+            assert str(raw_time) not in diagnostic
+        await client.aclose()
+
+    _run(scenario())
+
+
+@pytest.mark.parametrize("missing_structure", ["instrument", "snapshot", "dealingRules"])
+def test_missing_market_details_structures_fail_closed(missing_structure: str) -> None:
+    payload = _market_details_payload()
+    del payload[missing_structure]
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                _route_handler(lambda _: httpx.Response(200, json=payload))
+            ),
+        )
+        await client.login()
+        with pytest.raises(IGResponseValidationError) as captured:
+            await client.get_market_details("CS.D.EURUSD.CFD.IP")
+        assert f"field={missing_structure}" in str(captured.value)
+        assert "reason=missing or invalid object" in str(captured.value)
+        await client.aclose()
+
+    _run(scenario())
+
+
+def test_malformed_market_details_dealing_rule_fails_closed() -> None:
+    payload = _market_details_payload()
+    payload["dealingRules"] = {"minDealSize": {"unit": "POINTS", "value": "bad"}}
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                _route_handler(lambda _: httpx.Response(200, json=payload))
+            ),
+        )
+        await client.login()
+        with pytest.raises(IGResponseValidationError):
+            await client.get_market_details("CS.D.EURUSD.CFD.IP")
+        await client.aclose()
+
+    _run(scenario())
+
+
+@pytest.mark.parametrize("status", ["TRADEABLE", "CLOSED", "OFFLINE", "FUTURE_STATUS"])
+def test_market_details_enums_are_forward_compatible(status: str) -> None:
+    payload = _market_details_payload()
+    snapshot = payload["snapshot"]
+    instrument = payload["instrument"]
+    assert isinstance(snapshot, dict)
+    assert isinstance(instrument, dict)
+    snapshot["marketStatus"] = status
+    instrument["type"] = "FUTURE_INSTRUMENT" if status == "FUTURE_STATUS" else "CURRENCIES"
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(),
+            transport=httpx.MockTransport(
+                _route_handler(lambda _: httpx.Response(200, json=payload))
+            ),
+        )
+        await client.login()
+        market = await client.get_market_details("CS.D.EURUSD.CFD.IP")
+        assert market.market_status.value == status
+        if status == "FUTURE_STATUS":
+            assert market.instrument_type.value == "FUTURE_INSTRUMENT"
         await client.aclose()
 
     _run(scenario())

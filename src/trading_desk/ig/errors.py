@@ -2,6 +2,16 @@
 
 from __future__ import annotations
 
+import re
+
+_SAFE_FIELD_PATH = re.compile(r"[A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z][A-Za-z0-9]*)*\Z")
+_SAFE_VALIDATION_REASONS = {
+    "invalid time-of-day",
+    "missing or invalid object",
+    "missing required value",
+    "invalid value",
+}
+
 
 class IGError(Exception):
     """Base class for errors that expose safe diagnostics only."""
@@ -59,6 +69,30 @@ class IGRateLimitError(IGAuthorizationError):
 
 class IGResponseValidationError(IGAPIError):
     """An IG response could not be normalized safely."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        operation: str,
+        http_status: int | None = None,
+        error_code: str | None = None,
+        request_id: str | None = None,
+        field: str | None = None,
+        reason: str | None = None,
+    ) -> None:
+        safe_message = message
+        if field is not None:
+            safe_field = field if _SAFE_FIELD_PATH.fullmatch(field) else "unknown"
+            safe_reason = reason if reason in _SAFE_VALIDATION_REASONS else "invalid value"
+            safe_message = f"{message}; field={safe_field}; reason={safe_reason}"
+        super().__init__(
+            safe_message,
+            operation=operation,
+            http_status=http_status,
+            error_code=error_code,
+            request_id=request_id,
+        )
 
 
 class IGOAuthResponseValidationError(IGResponseValidationError):

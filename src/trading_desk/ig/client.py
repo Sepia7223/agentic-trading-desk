@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import math
+import re
 import time
 from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
+from datetime import time as datetime_time
 from decimal import Decimal, InvalidOperation
 from types import TracebackType
 from typing import Any, NoReturn
@@ -71,6 +73,14 @@ _ALLOWANCE_ERROR_MARKERS = (
     "exceeded-api-key",
     "exceeded-account-historical-data",
 )
+_TIME_OF_DAY_PATTERN = re.compile(r"(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,6})?\Z")
+
+
+class _SafeFieldValidationError(ValueError):
+    def __init__(self, field: str, reason: str) -> None:
+        self.field = field
+        self.reason = reason
+        super().__init__("safe response-field validation failure")
 
 
 class IGDemoClient:
@@ -274,6 +284,13 @@ class IGDemoClient:
         )
         try:
             return _parse_market_details(data)
+        except _SafeFieldValidationError as error:
+            raise IGResponseValidationError(
+                "IG market details response was malformed",
+                operation=Operation.MARKET_DETAILS.value,
+                field=error.field,
+                reason=error.reason,
+            ) from None
         except (ValidationError, KeyError, TypeError, ValueError, InvalidOperation):
             self._raise_validation(
                 Operation.MARKET_DETAILS, "IG market details response was malformed"
@@ -527,9 +544,13 @@ def _parse_market_search_result(raw: Mapping[str, Any]) -> MarketSearchResult:
 
 
 def _parse_market_details(raw: Mapping[str, Any]) -> MarketDetails:
-    instrument = _mapping(raw["instrument"])
-    snapshot = _mapping(raw["snapshot"])
-    dealing_rules = _mapping(raw["dealingRules"])
+    instrument = _required_market_details_object(raw, "instrument")
+    snapshot = _required_market_details_object(raw, "snapshot")
+    dealing_rules = _required_market_details_object(raw, "dealingRules")
+    try:
+        update_time = _optional_time_of_day(snapshot.get("updateTime"))
+    except (TypeError, ValueError):
+        raise _SafeFieldValidationError("snapshot.updateTime", "invalid time-of-day") from None
     return MarketDetails(
         epic=_required_text(instrument, "epic"),
         instrument_name=_required_text(instrument, "name"),
@@ -538,9 +559,7 @@ def _parse_market_details(raw: Mapping[str, Any]) -> MarketDetails:
         market_status=MarketStatus(_required_text(snapshot, "marketStatus")),
         bid=_optional_decimal(snapshot.get("bid")),
         offer=_optional_decimal(snapshot.get("offer")),
-        update_time_utc=_optional_datetime(
-            snapshot.get("updateTimeUTC", snapshot.get("updateTime"))
-        ),
+        update_time=update_time,
         controlled_risk_allowed=_optional_bool(instrument.get("controlledRiskAllowed")),
         min_deal_size=_optional_dealing_rule(dealing_rules.get("minDealSize")),
         min_normal_stop_or_limit_distance=_optional_dealing_rule(
@@ -550,6 +569,21 @@ def _parse_market_details(raw: Mapping[str, Any]) -> MarketDetails:
             dealing_rules.get("maxStopOrLimitDistance")
         ),
     )
+
+
+def _required_market_details_object(raw: Mapping[str, Any], key: str) -> Mapping[str, Any]:
+    try:
+        return _mapping(raw[key])
+    except (KeyError, TypeError):
+        raise _SafeFieldValidationError(key, "missing or invalid object") from None
+
+
+def _optional_time_of_day(value: object) -> datetime_time | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or _TIME_OF_DAY_PATTERN.fullmatch(value) is None:
+        raise ValueError("expected documented time-of-day")
+    return datetime_time.fromisoformat(value)
 
 
 def _parse_historical_price_page(raw: Mapping[str, Any]) -> HistoricalPricePage:

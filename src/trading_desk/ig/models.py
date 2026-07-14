@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, time
 from decimal import Decimal
 from enum import StrEnum
 from typing import Literal, Self
@@ -147,6 +147,12 @@ class DealingRuleValue(StrictModel):
 
 
 class MarketDetails(StrictModel):
+    """Normalized IG market-details v3 data.
+
+    ``update_time`` is a timezone-naive time-of-day. No date or timezone is
+    inferred from IG's v3 ``snapshot.updateTime`` field.
+    """
+
     epic: str
     instrument_name: str
     instrument_type: InstrumentType
@@ -154,7 +160,7 @@ class MarketDetails(StrictModel):
     market_status: MarketStatus
     bid: Decimal | None = None
     offer: Decimal | None = None
-    update_time_utc: datetime | None = None
+    update_time: time | None = None
     controlled_risk_allowed: bool | None = None
     min_deal_size: DealingRuleValue | None = None
     min_normal_stop_or_limit_distance: DealingRuleValue | None = None

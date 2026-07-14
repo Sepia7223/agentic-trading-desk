@@ -166,6 +166,11 @@ missing close bid or ask values remain visible but are excluded from the
 strategy-ready close series. Account IDs are redacted to at most their final
 four characters.
 
+Market details intentionally use `GET /markets/{epic}` version 3. Its
+`snapshot.updateTime` value is normalized as a timezone-naive time-of-day; the
+adapter does not invent a calendar date or claim a UTC timezone that IG did not
+provide. Market-details retrieval remains strictly read-only.
+
 Common safe errors include missing `IG_IDENTIFIER`, `IG_PASSWORD`, or
 `IG_API_KEY`; rejected non-demo URLs; invalid or expired sessions; insufficient
 authorization; exhausted API allowance; and response-validation failures. Error
