@@ -1,8 +1,21 @@
 # Agentic Trading Desk Development Guide
 
-This repository is being adapted into a safety-first automated trading application.
-Codex is the development tool for changing this codebase. The OpenAI API is a future
-runtime analysis provider and must not receive broker credentials.
+This repository is being adapted into a safety-first quantitative trading application. Codex is the development tool for changing the codebase. The OpenAI API is a future runtime analysis provider and must not receive broker credentials.
+
+## Mandatory Reading Order
+
+Before architectural or behavioral work, every human or AI contributor must read:
+
+1. `docs/00_ENGINEERING_BLUEPRINT.md`
+2. `docs/01_SYSTEM_ARCHITECTURE.md`
+3. `docs/02_ROADMAP.md`
+4. The subsystem-specific document relevant to the task
+5. `docs/10_DEVELOPMENT_STANDARDS.md`
+6. `docs/11_ARCHITECTURAL_DECISIONS.md`
+
+For work involving trade evidence, review, memory, or AI learning, also read `docs/13_TRADE_JOURNAL_AND_MEMORY.md`.
+
+> A milestone is not complete until implementation, tests, architecture, and affected documentation are aligned.
 
 ## Non-Negotiable Safety Constraints
 
@@ -10,29 +23,39 @@ runtime analysis provider and must not receive broker credentials.
 - Default operating mode is always `READ_ONLY`.
 - Live trading is technically disabled.
 - Automatic execution is technically disabled.
-- Unknown broker, position, market, or risk state must result in no trade.
-- The language model must never control position size or bypass hard-coded risk limits.
-- Never use an IG production host. The only broker base URL is
-  `https://demo-api.ig.com/gateway/deal`.
+- Unknown broker, position, market, model, journal, portfolio, or risk state must result in no trade.
+- A language model must never control final position size or bypass deterministic risk limits.
+- Never use an IG production host. The only broker base URL is `https://demo-api.ig.com/gateway/deal`.
 - Do not add real credentials or secrets.
-- Do not implement order execution unless a separately reviewed milestone explicitly
-  authorizes it; the current application remains strictly read-only.
-- Do not allow any AI provider to access IG credentials.
+- Do not inspect `.env`.
+- Do not implement execution unless a separately reviewed milestone explicitly authorizes it.
+- Do not allow any AI provider to access IG credentials or raw authorization data.
+- Strategy, AI, workflow, dashboard, backtest, and journal modules may not call IG directly.
 
-## Development Rules
+## Development Procedure
 
-- Preserve the existing deterministic indicator, score, and macro-pillar calculations
-  unless a defect is explicitly fixed and covered by tests.
-- Keep the MIT license and attribution intact.
-- Add tests before or alongside behavioral changes.
-- Prefer typed boundaries, small modules, and fail-closed behavior.
-- Keep provider-neutral boundaries abstract. The concrete IG adapter must remain
-  behind its centralized read-only policy.
+- Inspect the branch, base commit, `git status`, relevant source, tests, and documentation before editing.
+- Preserve unrelated user changes.
+- Keep changes focused and use typed, narrow interfaces.
+- Use strict or frozen models where appropriate and fail closed on invalid state.
+- Add or update tests with every behavioral change.
+- Keep planned, validated, and future capabilities clearly separated.
+- Record significant architectural changes in `docs/11_ARCHITECTURAL_DECISIONS.md`.
+- Update the roadmap and affected specifications before declaring a milestone complete.
+
+## Quantitative Rules
+
+- Preserve chronology and prevent future-data leakage.
+- Do not assume same-bar execution.
+- Keep final test periods untouched during strategy selection.
+- Use realistic spread, slippage, commission, and funding assumptions.
+- Compare complex strategies against simple controls and ablations.
+- Use deterministic seeds and canonical configuration fingerprints.
+- Do not promote AI-generated research directly into trading behavior.
 
 ## IG Read-Only Boundary
 
-Every IG request must pass through the central allowlist. The complete allowed
-operation surface is:
+Every IG request must pass through the central allowlist. The current complete allowed operation surface is:
 
 - `POST /session` version 3: OAuth login.
 - `DELETE /session` version 1: logout.
@@ -42,28 +65,25 @@ operation surface is:
 - `GET /markets/{epic}` version 3: market details.
 - `GET /prices/{epic}` version 3: one page of historical prices.
 
-All other methods, paths, versions, hosts, and absolute URLs must fail before
-HTTP transport. In particular, never add `/positions/otc`,
-`/working-orders/otc`, `/workingorders/otc`, `/confirms/`, `PUT /session`, or
-any endpoint that creates, changes, closes, deletes, confirms, or switches an
-account, position, order, or working order.
+All other methods, paths, versions, hosts, and absolute URLs must fail before HTTP transport. Never add order, working-order, confirmation, position-mutation, account-switching, or live-host behavior without an explicitly approved milestone.
 
 ## Session Safety
 
-- Use OAuth session v3 only. Do not retain a parallel CST/X-SECURITY-TOKEN path.
+- Use OAuth session v3 only.
 - Keep access and refresh tokens in private in-memory `SecretStr` fields only.
-- Use `Authorization: Bearer <access token>` and `IG-ACCOUNT-ID` only after the
-  central policy confirms an authenticated read-only operation.
-- Clear access token, refresh token, expiry, and account ID after every logout
-  attempt, failed login, or detected access-token expiry.
-- Never persist or expose tokens through properties, representations, logs,
-  exceptions, CLI output, screenshots, tests, or journal records.
-- Errors may contain only HTTP status, IG error code, request ID, and operation.
-- Do not retry login automatically.
-- Do not refresh OAuth tokens automatically. No refresh operation belongs in the
-  allowlist until separately documented, implemented, and reviewed.
-- Calculate token expiry with a monotonic clock and fail before transport when the
-  configured safety margin is reached.
-- Missing environment information is accepted because the exact demo gateway and
-  local runtime boundary establish `DEMO`; an explicit non-demo value fails closed.
-- Missing credentials or session state must fail before an authenticated request.
+- Clear tokens, expiry, and account state after logout attempts, failed login, or detected expiry.
+- Never persist or expose tokens through representations, logs, exceptions, CLI output, screenshots, tests, AI prompts, or journal records.
+- Do not retry login or refresh OAuth tokens automatically unless separately designed and reviewed.
+- Use a monotonic clock for expiry and fail before transport at the safety margin.
+
+## Required Verification
+
+```bash
+python -m ruff format --check .
+python -m ruff check .
+python -m mypy
+python -m pytest
+git diff --check
+```
+
+If checks cannot be run, report that explicitly rather than claiming success.
