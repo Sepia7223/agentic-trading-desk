@@ -22,6 +22,7 @@ validation, placement, amendment, closure, deletion, or account-switching code.
 - [Development Standards](docs/10_DEVELOPMENT_STANDARDS.md)
 - [Architectural Decisions](docs/11_ARCHITECTURAL_DECISIONS.md)
 - [Glossary](docs/12_GLOSSARY.md)
+- [Trade Journal and Memory](docs/13_TRADE_JOURNAL_AND_MEMORY.md)
 
 ## Roles
 

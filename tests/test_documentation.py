@@ -21,6 +21,7 @@ DOCS = tuple(
             "DEVELOPMENT_STANDARDS",
             "ARCHITECTURAL_DECISIONS",
             "GLOSSARY",
+            "TRADE_JOURNAL_AND_MEMORY",
         )
     )
 )
@@ -28,7 +29,7 @@ DOCS = tuple(
 
 def test_numbered_document_set_is_complete_and_has_governed_front_matter() -> None:
     assert tuple(path for path in DOCS if (ROOT / path).is_file()) == DOCS
-    assert tuple(int(Path(path).name[:2]) for path in DOCS) == tuple(range(13))
+    assert tuple(int(Path(path).name[:2]) for path in DOCS) == tuple(range(14))
     for relative_path in DOCS:
         content = (ROOT / relative_path).read_text(encoding="utf-8")
         assert content.startswith("---\n")
