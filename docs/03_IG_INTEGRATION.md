@@ -4,7 +4,7 @@ document: 03_IG_INTEGRATION
 version: 1.0.0
 status: Living Document
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -14,7 +14,7 @@ This document governs authentication, session management, market-data retrieval,
 
 # Current Validated State
 
-Validated:
+## Validated
 
 - exact Demo gateway: `https://demo-api.ig.com/gateway/deal`;
 - OAuth session v3 only;
@@ -29,7 +29,9 @@ Validated:
 - secret redaction and safe diagnostics;
 - read-only CLI operations.
 
-Not implemented:
+## Planned or Future
+
+The following capabilities are not implemented:
 
 - order placement or preview;
 - working orders;

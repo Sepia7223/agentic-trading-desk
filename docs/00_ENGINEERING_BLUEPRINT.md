@@ -4,7 +4,7 @@ document: 00_ENGINEERING_BLUEPRINT
 version: 1.0.0
 status: Living Document
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -58,18 +58,17 @@ The AI Analyst cannot call the broker, approve risk, select position size, chang
 
 # Current Validated State
 
-Validated through Milestone 3:
+Validated through Milestone 2:
 
 - safety-first Python foundation;
 - immutable configuration boundaries;
 - IG OAuth session v3 against the exact Demo gateway;
 - strictly read-only accounts, positions, market search, market details, and historical prices;
-- deterministic baseline strategy;
-- local-linear Kalman trend estimation;
-- three-state Gaussian HMM regime estimation;
-- deterministic signal gates and configuration fingerprints.
+- deterministic baseline indicators, scoring, flags, and fail-closed holding-state behavior.
 
-Milestone 3.5, leakage-controlled backtesting, is planned. Execution, deterministic portfolio risk, AI runtime analysis, automated journaling, and live trading are not currently implemented.
+# Planned and Future State
+
+Milestone 3 regime-aware strategy analysis and Milestone 3.5 leakage-controlled backtesting are planned. Execution, deterministic portfolio risk, AI runtime analysis, automated journaling, and live trading are not currently implemented.
 
 # Long-Term Mission
 

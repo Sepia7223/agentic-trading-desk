@@ -4,7 +4,7 @@ document: 05_MATHEMATICS
 version: 1.0.0
 status: Living Document
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -20,7 +20,7 @@ Every model must be deterministic for identical inputs and configuration, docume
 
 The baseline is the permanent control strategy. It combines explicit trend, momentum, and optional macro information through deterministic rules. It provides a benchmark against which Kalman, HMM, and future additions are evaluated.
 
-# Kalman Local-Linear Trend Model
+# Planned Kalman Local-Linear Trend Model
 
 The latent state contains level and slope:
 
@@ -30,7 +30,7 @@ x_t = [level_t, slope_t]^T
 
 A local-linear transition advances level by the previous slope while allowing controlled process noise. Observed market prices are noisy measurements of latent level.
 
-The implementation exposes filtered level, slope, normalized slope, and numerical diagnostics. Normalized slope is:
+The Milestone 3 design will expose filtered level, slope, normalized slope, and numerical diagnostics. Normalized slope is:
 
 ```text
 normalized_slope = slope / abs(filtered_level)
@@ -38,13 +38,13 @@ normalized_slope = slope / abs(filtered_level)
 
 Invalid, non-finite, or insufficiently supported states fail closed.
 
-# Three-State Gaussian HMM
+# Planned Three-State Gaussian HMM
 
 The HMM estimates an unobserved regime from chronological features such as return, volatility, drawdown, and trend-related information.
 
-Raw numerical state labels are meaningless. The implementation evaluates all six assignments for three states, maps them to semantic regimes using deterministic criteria, and rejects ambiguous mappings when the best and second-best assignments are insufficiently separated.
+Raw numerical state labels are meaningless. The Milestone 3 design evaluates all six assignments for three states, maps them to semantic regimes using deterministic criteria, and rejects ambiguous mappings when the best and second-best assignments are insufficiently separated.
 
-The current conceptual regimes are bullish/low-volatility, transitional, and bearish/high-volatility. Exact labels and mapping rules remain configuration-controlled and testable.
+The planned conceptual regimes are bullish/low-volatility, transitional, and bearish/high-volatility. Exact labels and mapping rules will remain configuration-controlled and testable.
 
 # Probability and Confidence
 

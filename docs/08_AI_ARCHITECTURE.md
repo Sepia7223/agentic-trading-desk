@@ -4,7 +4,7 @@ document: 08_AI_ARCHITECTURE
 version: 1.0.0
 status: Planned Specification
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 

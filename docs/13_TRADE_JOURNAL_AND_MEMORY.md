@@ -4,7 +4,7 @@ document: 13_TRADE_JOURNAL_AND_MEMORY
 version: 1.0.0
 status: Planned Specification
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Backtesting planned for Milestone 3.5)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 implementation_status: Planned
 review_required_after_every_milestone: true
 ---
@@ -19,7 +19,11 @@ Historical memory is advisory. It must never mutate strategy or risk configurati
 
 # Current State
 
-Validated foundations include deterministic strategy outputs, configuration fingerprints, read-only IG market data, normalized domain models, and reproducible strategy analysis.
+## Validated
+
+Validated foundations include deterministic baseline outputs, read-only IG market data, and normalized broker-domain models. Regime-aware strategy outputs and configuration fingerprints are planned for Milestone 3.
+
+## Planned
 
 Persistent journals, automated post-trade review, semantic search, pre-session historical review, chart storage, and AI review reports are planned and not implemented.
 

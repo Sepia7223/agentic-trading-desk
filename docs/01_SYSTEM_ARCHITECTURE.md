@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 3 (Milestone 3.5 planned)
+current_validated_milestone: "2 (Milestone 3 planned)"
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -27,10 +27,10 @@ This is a **living document**. After every completed milestone, review this docu
 - Milestone 0 — Planning
 - Milestone 1 — Foundation
 - Milestone 2 — IG OAuth v3 Demo Read-Only Integration
-- Milestone 3 — Regime-Aware Strategy Engine
 
 ## Planned
 
+- Milestone 3 — Regime-Aware Strategy Engine
 - Milestone 3.5 — Leakage-Controlled Backtesting
 - Milestone 4 — Risk Engine
 - Milestone 5 — Paper Portfolio
@@ -70,7 +70,9 @@ Normalizes broker responses into typed domain models and validates timestamps, b
 
 ## Strategy Engine
 
-Current validated implementation: deterministic baseline, Kalman filter, three-state HMM, deterministic gates, and outputs `LONG_CANDIDATE`, `WATCH`, or `NO_TRADE`. It never executes trades, sizes positions, or accesses broker APIs.
+Current validated implementation: deterministic baseline indicators, three-pillar scoring, decision flags, and fail-closed handling when holding state is unknown.
+
+Milestone 3 plans a Kalman filter, three-state HMM, deterministic gates, and outputs limited to `LONG_CANDIDATE`, `WATCH`, or `NO_TRADE`. The Strategy Engine never executes trades, sizes positions, or accesses broker APIs.
 
 ## Risk Engine
 

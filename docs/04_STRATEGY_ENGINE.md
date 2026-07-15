@@ -4,7 +4,7 @@ document: 04_STRATEGY_ENGINE
 version: 1.0.0
 status: Living Document
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -15,6 +15,15 @@ The Strategy Engine converts validated market data into deterministic trade cand
 # Current Validated Implementation
 
 - deterministic baseline strategy;
+- EMA, RSI, MACD, TRIX, and Bollinger calculations;
+- trend, momentum, and optional macro scoring;
+- exhaustion, bearish, rebound, and death-cross flags;
+- distinct holding and flat decisions;
+- `NO TRADE` when holding state is unknown;
+- backwards-compatible command-line wrappers.
+
+# Planned Milestone 3 Extension
+
 - local-linear Kalman filter for latent level and slope;
 - three-state Gaussian HMM for latent regime estimation;
 - deterministic regime mapping and confidence checks;
@@ -23,7 +32,7 @@ The Strategy Engine converts validated market data into deterministic trade cand
 - outputs: `LONG_CANDIDATE`, `WATCH`, and `NO_TRADE`;
 - variants: `BASELINE_ONLY`, `BASELINE_KALMAN`, `BASELINE_HMM`, and `BASELINE_KALMAN_HMM`.
 
-# Inputs
+# Planned Inputs
 
 - validated historical bars;
 - market metadata and tradeable state;
@@ -31,7 +40,7 @@ The Strategy Engine converts validated market data into deterministic trade cand
 - current holding state;
 - optional macro state, represented as `UNKNOWN` when unavailable rather than silently scored as zero.
 
-# Decision Pipeline
+# Planned Decision Pipeline
 
 1. Validate history, timestamps, market state, spread, configuration, and holding state.
 2. Build features using only information available at the decision cutoff.
@@ -44,7 +53,7 @@ The Strategy Engine converts validated market data into deterministic trade cand
 
 Any invalid prerequisite, numerical failure, ambiguous regime, stale data, or unsupported state fails closed.
 
-# Key Controls
+# Planned Key Controls
 
 - Kalman minimum history: 30 observations.
 - HMM requires sufficient usable observations after feature warm-up and effective observations per state.
@@ -56,7 +65,7 @@ Any invalid prerequisite, numerical failure, ambiguous regime, stale data, or un
 - Same-bar entry is prohibited; execution belongs to the next valid bar in backtesting.
 - Holding state `None` fails closed, `False` may evaluate entry, and `True` cannot produce a duplicate long entry.
 
-# Trade Alignment
+# Planned Trade Alignment
 
 A `LONG_CANDIDATE` requires every mandatory gate to pass, including valid data, acceptable spread, baseline alignment, positive trend, acceptable regime and confidence, and a holding state that permits entry.
 
@@ -68,7 +77,7 @@ The Strategy Engine must never place orders, determine final position size, over
 
 # Planned Evaluation
 
-Milestone 3.5 will compare all strategy variants under identical chronological data, cost assumptions, and splits. It will include simple external benchmark controls without presuming those benchmarks are profitable.
+After Milestone 3 is implemented and validated, Milestone 3.5 will compare all strategy variants under identical chronological data, cost assumptions, and splits. It will include simple external benchmark controls without presuming those benchmarks are profitable.
 
 # Governance
 

@@ -4,7 +4,7 @@ document: 11_ARCHITECTURAL_DECISIONS
 version: 1.1.0
 status: Living Document
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -47,6 +47,8 @@ Strategy, AI, dashboards, journals, and workflow controllers cannot call the bro
 **Status:** Accepted
 
 Use a deterministic baseline enhanced by a local-linear Kalman filter and a three-state Gaussian HMM. Their incremental value must be measured through ablation and out-of-sample testing.
+
+This decision defines the planned Milestone 3 architecture; it does not claim that the regime-aware implementation is present in the Milestone 2 codebase.
 
 # ADR-007 — Leakage-Controlled Backtesting Before Risk and Execution
 

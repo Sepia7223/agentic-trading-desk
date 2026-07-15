@@ -4,7 +4,7 @@ document: 12_GLOSSARY
 version: 1.1.0
 status: Living Document
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -50,11 +50,11 @@ The strategy rejects the opportunity or lacks valid information or confidence.
 
 ## Kalman Filter
 
-A state-space estimator used here to infer latent market level and slope from noisy observations.
+A state-space estimator planned for Milestone 3 to infer latent market level and slope from noisy observations.
 
 ## Hidden Markov Model (HMM)
 
-A probabilistic model used to estimate an unobserved market regime from chronological features.
+A probabilistic model planned for Milestone 3 to estimate an unobserved market regime from chronological features.
 
 ## Regime
 
@@ -62,7 +62,7 @@ A statistical description of the market environment, such as bullish/low-volatil
 
 ## Configuration Fingerprint
 
-A deterministic SHA-256 hash of canonical strategy or risk configuration used for reproducibility and audit linkage.
+A planned deterministic SHA-256 hash of canonical strategy or risk configuration used for reproducibility and audit linkage.
 
 ## Walk-Forward Testing
 

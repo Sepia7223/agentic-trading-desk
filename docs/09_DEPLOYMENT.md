@@ -4,7 +4,7 @@ document: 09_DEPLOYMENT
 version: 1.0.0
 status: Planned Specification
 owner: Agentic Trading Desk Project
-current_validated_milestone: "3 (Milestone 3.5 planned)"
+current_validated_milestone: "2 (Milestone 3 planned)"
 review_required_after_every_milestone: true
 ---
 
@@ -14,7 +14,7 @@ This document defines the planned deployment, operations, security, observabilit
 
 # Status
 
-Production deployment, autonomous operation, and live trading are not implemented. Current validated behavior is local, Demo-only, read-only broker integration plus deterministic strategy analysis.
+Production deployment, autonomous operation, and live trading are not implemented. Current validated behavior is local, Demo-only, read-only broker integration plus deterministic baseline calculations.
 
 # Environment Progression
 

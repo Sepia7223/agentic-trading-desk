@@ -9,7 +9,7 @@ The current adapter supports authenticated, strictly read-only access to the IG 
 - **Codex** is the software development tool used to modify and maintain this repository.
 - **OpenAI API** is the eventual runtime AI analysis provider. It will receive sanitized strategy, risk, and journal context, not broker credentials.
 - **IG Demo** is the required initial broker environment. Configuration accepts only the exact IG Demo REST base URL.
-- **Deterministic strategy calculations** remain local Python code. Indicators, model states, gates, and decision flags are calculated by code, not a language model.
+- **Deterministic strategy calculations** remain local Python code. Indicators, scores, and decision flags are calculated by code, not a language model; planned quantitative models must preserve that boundary.
 - **Deterministic risk controls** remain outside model control. A language model must not choose final position size or bypass risk limits.
 
 ## Current Safety Posture
@@ -49,9 +49,10 @@ Contributors must follow the reading order and milestone governance in [AGENTS.m
 - Milestone 0 — Planning
 - Milestone 1 — Foundation
 - Milestone 2 — IG OAuth v3 Demo Read-Only Integration
-- Milestone 3 — Regime-Aware Strategy Engine
 
-The next planned milestone is **Milestone 3.5 — Leakage-Controlled Backtesting**. Deterministic risk, paper portfolio, historical trade memory, runtime AI analysis, Demo execution, and live trading remain planned or future capabilities.
+## Planned and Future Milestones
+
+The next planned milestone is **Milestone 3 — Regime-Aware Strategy Engine**, followed by **Milestone 3.5 — Leakage-Controlled Backtesting**. Deterministic risk, paper portfolio, historical trade memory, runtime AI analysis, Demo execution, and live trading remain planned or future capabilities.
 
 ## Project Layout
 
@@ -77,7 +78,7 @@ The deterministic baseline preserves the original three-pillar framework:
 
 Bollinger Bands are computed as a supporting exhaustion signal and do not feed directly into the numeric momentum score.
 
-The validated Milestone 3 design adds a local-linear Kalman trend estimate, a three-state Gaussian HMM, deterministic state mapping, strict gates, and configuration fingerprints. The Strategy Engine produces candidates only; it does not execute or size trades.
+The planned Milestone 3 design adds a local-linear Kalman trend estimate, a three-state Gaussian HMM, deterministic state mapping, strict gates, and configuration fingerprints. The Strategy Engine will produce candidates only; it will not execute or size trades.
 
 ## CLI Usage
 
