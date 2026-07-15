@@ -4,6 +4,21 @@ This repository is being adapted into a safety-first automated trading applicati
 Codex is the development tool for changing this codebase. The OpenAI API is a future
 runtime analysis provider and must not receive broker credentials.
 
+## Required Architecture Reading
+
+Before architectural or milestone work, every human, AI, or coding agent must read,
+in order:
+
+1. `docs/00_ENGINEERING_BLUEPRINT.md`
+2. `docs/01_SYSTEM_ARCHITECTURE.md`
+3. `docs/02_ROADMAP.md`
+4. The subsystem-specific document relevant to the task
+5. `docs/10_DEVELOPMENT_STANDARDS.md`
+6. `docs/11_ARCHITECTURAL_DECISIONS.md`
+
+A milestone is not complete until implementation, tests, and affected documentation
+are aligned.
+
 ## Non-Negotiable Safety Constraints
 
 - Default broker environment is always `DEMO`.

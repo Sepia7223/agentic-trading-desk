@@ -7,6 +7,22 @@ The current adapter supports authenticated, strictly read-only access to the IG
 REST demo API. It does not call the OpenAI API and contains no order preview,
 validation, placement, amendment, closure, deletion, or account-switching code.
 
+## Project Documentation
+
+- [Engineering Blueprint](docs/00_ENGINEERING_BLUEPRINT.md)
+- [System Architecture](docs/01_SYSTEM_ARCHITECTURE.md)
+- [Roadmap](docs/02_ROADMAP.md)
+- [IG Integration](docs/03_IG_INTEGRATION.md)
+- [Strategy Engine](docs/04_STRATEGY_ENGINE.md)
+- [Mathematics](docs/05_MATHEMATICS.md)
+- [Backtesting](docs/06_BACKTESTING.md)
+- [Risk Engine](docs/07_RISK_ENGINE.md)
+- [AI Architecture](docs/08_AI_ARCHITECTURE.md)
+- [Deployment](docs/09_DEPLOYMENT.md)
+- [Development Standards](docs/10_DEVELOPMENT_STANDARDS.md)
+- [Architectural Decisions](docs/11_ARCHITECTURAL_DECISIONS.md)
+- [Glossary](docs/12_GLOSSARY.md)
+
 ## Roles
 
 - **Codex** is the software development tool used to modify and maintain this
