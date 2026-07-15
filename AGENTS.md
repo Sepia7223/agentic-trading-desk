@@ -107,3 +107,31 @@ account, position, order, or working order.
   package versions and the selected ablation variant in every result.
 - Preserve regression tests proving that appending future bars cannot change an
   earlier cutoff result and that original three-pillar outputs remain unchanged.
+
+## Backtest Boundary
+
+- Backtests are local simulation only. Backtest modules must not import broker clients,
+  OAuth or secret configuration, HTTP libraries, account state, or mutation surfaces.
+- Use explicit chronological TRAIN, VALIDATION, and TEST periods. Never shuffle bars,
+  tune on TEST, or fit any model, scaler, mapping, benchmark, or threshold with future
+  data relative to its cutoff.
+- A completed-bar signal may fill only on a later valid bar. Default long fills use ask
+  for entry and bid for exit; spread must not be charged a second time.
+- Apply identical data, costs, quantity, timing, and temporary exit policy to every
+  ablation variant. Disabled components must not influence results.
+- Keep quantity fixed at one normalized unit. Do not introduce Kelly, volatility,
+  account-risk, or equity-based sizing.
+- Intrabar ambiguity defaults to `ADVERSE_FIRST`. Open positions at dataset end must be
+  liquidated only at the latest valid, tradeable bid after activation and labeled
+  `FORCED_END_OF_DATA_LIQUIDATION`; otherwise record an unresolved position without a
+  fill or realized P&L.
+- A `NEXT_CLOSE` entry activates after its fill bar closes. Stop and target evaluation
+  starts on the following eligible bar and must not use the fill bar's earlier range.
+- Variant comparison is validation-only. Final TEST evaluation requires an immutable,
+  tamper-evident frozen-selection artifact and may evaluate only its selected variant.
+  Never feed final-test results back into selection.
+- Run fingerprints must include data hash, splits, strategy fingerprint, variant,
+  simulation assumptions, schema, and numerical versions while excluding absolute
+  paths, credentials, account identifiers, machine data, and launch time.
+- A profitable backtest is evidence for further testing, not proof of a profitable live
+  strategy.

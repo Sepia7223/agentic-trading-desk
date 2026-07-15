@@ -7,6 +7,23 @@ The current adapter supports authenticated, strictly read-only access to the IG
 REST demo API. It does not call the OpenAI API and contains no order preview,
 validation, placement, amendment, closure, deletion, or account-switching code.
 
+## Project Documentation
+
+- [Engineering Blueprint](docs/00_ENGINEERING_BLUEPRINT.md)
+- [System Architecture](docs/01_SYSTEM_ARCHITECTURE.md)
+- [Roadmap](docs/02_ROADMAP.md)
+- [IG Integration](docs/03_IG_INTEGRATION.md)
+- [Strategy Engine](docs/04_STRATEGY_ENGINE.md)
+- [Mathematics](docs/05_MATHEMATICS.md)
+- [Backtesting](docs/06_BACKTESTING.md)
+- [Risk Engine](docs/07_RISK_ENGINE.md)
+- [AI Architecture](docs/08_AI_ARCHITECTURE.md)
+- [Deployment](docs/09_DEPLOYMENT.md)
+- [Development Standards](docs/10_DEVELOPMENT_STANDARDS.md)
+- [Architectural Decisions](docs/11_ARCHITECTURAL_DECISIONS.md)
+- [Glossary](docs/12_GLOSSARY.md)
+- [Trade Journal and Memory](docs/13_TRADE_JOURNAL_AND_MEMORY.md)
+
 ## Roles
 
 - **Codex** is the software development tool used to modify and maintain this
@@ -252,6 +269,53 @@ Action: LONG_CANDIDATE
 
 Candidate output is analysis only. It contains no quantity, position size,
 leverage, monetary risk, order type, stop, or limit, and cannot execute a trade.
+
+## Leakage-Controlled Backtesting
+
+Milestone 3.5 provides local CSV/Parquet simulation for the four deterministic variants.
+Data is split chronologically into non-overlapping TRAIN, VALIDATION, and untouched
+TEST periods. Every evaluated signal refits from an expanding or explicitly bounded rolling
+history through its cutoff; no future scaler, Kalman, HMM, mapping, benchmark, fill,
+trade, or equity information is reused.
+Variant comparison is restricted to VALIDATION and contains no test metrics. It can
+freeze one selected variant and immutable configuration into a tamper-evident artifact.
+Only the separate final-test command can release TEST, and it evaluates that frozen
+variant after verifying dataset, split, and configuration fingerprints.
+
+Default fills use the next valid bar's ask for long entry and bid for exit, plus adverse
+slippage. Spread, slippage, fixed/proportional commission, funding, and reserved stop
+premium are itemized once per trade. The common temporary exit policy uses legacy
+baseline exits/exhaustion, a simulation stop, maximum holding period, or forced
+end-of-data liquidation at the latest valid tradeable quote after entry. If no eligible
+quote exists, the position remains explicitly unresolved and its P&L is not treated as
+realized. A `NEXT_CLOSE` entry cannot use that fill bar's earlier high or low for a
+stop or target. Intrabar ambiguity defaults to `ADVERSE_FIRST`.
+
+```bash
+python -m trading_desk.cli backtest run --data data/eurusd_daily.parquet \
+  --epic CS.D.EURUSD.CFD.IP --variant BASELINE_KALMAN_HMM \
+  --train-end 2021-12-31 --validation-end 2023-12-31 --test-end 2025-12-31
+
+python -m trading_desk.cli backtest compare --data data/eurusd_daily.parquet \
+  --epic CS.D.EURUSD.CFD.IP --train-end 2021-12-31 \
+  --validation-end 2023-12-31 --test-end 2025-12-31 \
+  --variants BASELINE_ONLY BASELINE_KALMAN BASELINE_HMM BASELINE_KALMAN_HMM \
+  --freeze-variant BASELINE_KALMAN_HMM \
+  --selection-rationale "Selected from validation evidence" \
+  --selection-output frozen-selection.json
+
+python -m trading_desk.cli backtest final-test \
+  --data data/eurusd_daily.parquet \
+  --selection frozen-selection.json
+```
+
+Local commands print `Mode: BACKTEST`, `Execution: SIMULATED ONLY`, and
+`Live trading: DISABLED`. They do not load IG credentials or authenticate. JSON, trade
+CSV, and Markdown exports contain typed summaries, not raw datasets or account data.
+See `docs/backtesting-methodology.md` for formulas and limitations.
+
+**A profitable backtest is evidence for further testing, not proof of a profitable
+live strategy.**
 
 ## Attribution
 

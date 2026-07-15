@@ -8,9 +8,23 @@ import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 
 from pydantic import ValidationError
 
+from trading_desk.backtest.comparison import (
+    compare_variants,
+    evaluate_final_test,
+    freeze_selection,
+)
+from trading_desk.backtest.configuration import (
+    BacktestConfiguration,
+    FrozenSelection,
+    SplitConfiguration,
+)
+from trading_desk.backtest.data import load_dataset
+from trading_desk.backtest.engine import BacktestEngine
+from trading_desk.backtest.reports import export_json, export_markdown, export_trades_csv
 from trading_desk.config import AppSettings
 from trading_desk.ig import IGDemoClient, PriceResolution
 from trading_desk.ig.errors import IGError
@@ -23,7 +37,12 @@ from trading_desk.ig.models import (
 )
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
-from trading_desk.strategy.models import StrategyBarResolution, StrategyContext, TradeCandidate
+from trading_desk.strategy.models import (
+    StrategyBarResolution,
+    StrategyContext,
+    StrategyVariant,
+    TradeCandidate,
+)
 from trading_desk.strategy.pipeline import RegimeAwareStrategyPipeline
 
 
@@ -66,11 +85,58 @@ def build_parser() -> argparse.ArgumentParser:
     walk_forward.add_argument("--start-index", type=int, required=True)
     walk_forward.add_argument("--end-index", type=int, required=True)
     walk_forward.add_argument("--macro-score", type=int, choices=range(-2, 3))
+
+    backtest_parser = subcommands.add_parser("backtest", help="Local simulation only")
+    backtest_commands = backtest_parser.add_subparsers(dest="backtest_command", required=True)
+    for command_name in ("run", "compare"):
+        command = backtest_commands.add_parser(command_name)
+        command.add_argument("--data", required=True)
+        command.add_argument("--epic", required=True)
+        command.add_argument(
+            "--resolution",
+            choices=[item.value for item in StrategyBarResolution],
+            default=StrategyBarResolution.DAY.value,
+        )
+        command.add_argument("--train-end", required=True)
+        command.add_argument("--validation-end", required=True)
+        command.add_argument("--test-end", required=True)
+    run = backtest_commands.choices["run"]
+    run.add_argument(
+        "--variant",
+        choices=[item.value for item in StrategyVariant],
+        default=StrategyVariant.BASELINE_KALMAN_HMM.value,
+    )
+    run.add_argument("--output-json")
+    run.add_argument("--output-csv")
+    run.add_argument("--output-markdown")
+    compare = backtest_commands.choices["compare"]
+    compare.add_argument(
+        "--variants",
+        nargs="+",
+        choices=[item.value for item in StrategyVariant],
+        default=[item.value for item in StrategyVariant],
+    )
+    compare.add_argument("--freeze-variant", choices=[item.value for item in StrategyVariant])
+    compare.add_argument("--selection-rationale")
+    compare.add_argument("--selection-output")
+    final_test = backtest_commands.add_parser("final-test")
+    final_test.add_argument("--data", required=True)
+    final_test.add_argument("--selection", required=True)
+    final_test.add_argument("--output-json")
+    final_test.add_argument("--output-csv")
+    final_test.add_argument("--output-markdown")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "backtest":
+        _print_backtest_header()
+        try:
+            return _run_backtest_command(args)
+        except (OSError, ValidationError, ValueError) as error:
+            print(f"Backtest error: {error}", file=sys.stderr)
+            return 2
     try:
         settings = AppSettings.from_environment()
     except (ValidationError, ValueError) as error:
@@ -98,6 +164,117 @@ def _print_safety_header() -> None:
     print("Environment: DEMO")
     print("Mode: READ_ONLY")
     print("Execution: UNAVAILABLE")
+
+
+def _print_backtest_header() -> None:
+    print("Mode: BACKTEST")
+    print("Execution: SIMULATED ONLY")
+    print("Live trading: DISABLED")
+
+
+def _run_backtest_command(args: argparse.Namespace) -> int:
+    if args.backtest_command == "final-test":
+        selection = FrozenSelection.model_validate_json(
+            Path(args.selection).read_text(encoding="utf-8")
+        )
+        dataset = load_dataset(args.data, selection.backtest_configuration.resolution)
+        final_report = evaluate_final_test(dataset, selection)
+        run = final_report.run
+        print("Report: FINAL_TEST")
+        print(f"Selection: {final_report.selection_identifier}")
+        _print_backtest_run(run, "Final test")
+        _export_backtest_run(run, args)
+        return 0
+
+    resolution = StrategyBarResolution(args.resolution)
+    dataset = load_dataset(args.data, resolution)
+    splits = SplitConfiguration(
+        train_end=_date_boundary(args.train_end),
+        validation_end=_date_boundary(args.validation_end),
+        test_end=_date_boundary(args.test_end),
+    )
+    variant = (
+        StrategyVariant(args.variant)
+        if args.backtest_command == "run"
+        else StrategyVariant.BASELINE_KALMAN_HMM
+    )
+    configuration = BacktestConfiguration(
+        dataset_source=Path(args.data).name,
+        epic=args.epic,
+        resolution=resolution,
+        splits=splits,
+        variant=variant,
+    )
+    if args.backtest_command == "run":
+        run = BacktestEngine(configuration).run(dataset)
+        _print_backtest_run(run, "Validation")
+        _export_backtest_run(run, args)
+    elif args.backtest_command == "compare":
+        variants = tuple(StrategyVariant(value) for value in args.variants)
+        runs, comparison = compare_variants(dataset, configuration, variants=variants)
+        print(f"Baseline control: {comparison.baseline_variant.value}")
+        print("Report: VALIDATION_ONLY")
+        for variant_name, validation_return, drawdown, count in zip(
+            comparison.variants,
+            comparison.validation_net_returns,
+            comparison.validation_maximum_drawdowns,
+            comparison.validation_trade_counts,
+            strict=True,
+        ):
+            print(
+                f"- {variant_name.value}: validation={validation_return:.6f}"
+                f" drawdown={drawdown:.6f} trades={count}"
+            )
+        freeze_values = (
+            args.freeze_variant,
+            args.selection_rationale,
+            args.selection_output,
+        )
+        if any(freeze_values) and not all(freeze_values):
+            raise ValueError(
+                "freezing requires --freeze-variant, --selection-rationale, and --selection-output"
+            )
+        if all(freeze_values):
+            selection = freeze_selection(
+                runs,
+                comparison,
+                configuration,
+                StrategyVariant(args.freeze_variant),
+                selection_rationale=args.selection_rationale,
+            )
+            Path(args.selection_output).write_text(
+                selection.model_dump_json(indent=2),
+                encoding="utf-8",
+            )
+            print(f"Frozen selection: {selection.selection_identifier}")
+    else:
+        raise ValueError("unsupported backtest command")
+    return 0
+
+
+def _print_backtest_run(run, label: str) -> None:  # type: ignore[no-untyped-def]
+    print(f"Variant: {run.variant.value}")
+    print(f"Run fingerprint: {run.run_fingerprint}")
+    print(f"{label} net return: {run.metrics.net_return:.6f}")
+    print(f"Maximum drawdown: {run.metrics.maximum_drawdown:.6f}")
+    print(f"Trades: {run.metrics.trade_count}")
+    print(f"Unresolved positions: {len(run.unresolved_positions)}")
+
+
+def _export_backtest_run(run, args: argparse.Namespace) -> None:  # type: ignore[no-untyped-def]
+    if args.output_json:
+        export_json(run, args.output_json)
+    if args.output_csv:
+        export_trades_csv(run, args.output_csv)
+    if args.output_markdown:
+        export_markdown(run, args.output_markdown)
+
+
+def _date_boundary(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed.replace(hour=23, minute=59, second=59, microsecond=999999)
 
 
 def _config_check(settings: AppSettings) -> int:
