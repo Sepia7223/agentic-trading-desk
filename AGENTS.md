@@ -135,3 +135,22 @@ account, position, order, or working order.
   paths, credentials, account identifiers, machine data, and launch time.
 - A profitable backtest is evidence for further testing, not proof of a profitable live
   strategy.
+
+## Risk Boundary
+
+- The Risk Engine is the sole approval and maximum-quantity authority after strategy
+  analysis. Strategy, AI, Paper Portfolio, and broker adapters may not bypass it.
+- Risk code is local and deterministic. It must not import broker or HTTP clients, load
+  credentials or `.env`, use hidden clocks, call AI, or persist directly to SQLite.
+- Inject complete immutable candidate, account, and market snapshots plus an explicit
+  UTC evaluation timestamp. Unknown, incomplete, stale, inconsistent, or non-finite
+  required state must reject.
+- Use `Decimal` for every price, quantity, monetary value, ratio, and fraction. Quantity
+  must round down to an increment compatible with both configured and market rules.
+- Evaluate projected post-trade gross, instrument, and asset-class exposure, not only
+  current exposure. Equality at daily-loss, drawdown, position-count, and
+  consecutive-loss limits rejects.
+- An active kill switch always prevents approval. AI cannot change limits, reset loss
+  state, approve candidates, or override a rejection.
+- Approved intents are immutable, fingerprinted, and invalid at or after expiry. They
+  are decision records, not broker orders or Paper Portfolio transactions.

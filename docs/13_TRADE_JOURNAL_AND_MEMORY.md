@@ -13,7 +13,7 @@ depends_on:
   - 06_BACKTESTING.md
   - 07_RISK_ENGINE.md
   - 08_AI_ARCHITECTURE.md
-current_validated_milestone: "3.5 (Trade intelligence planned for Milestone 5.5)"
+current_validated_milestone: "4 (Paper Portfolio planned for Milestone 5)"
 implementation_status: Planned
 review_required_after_every_milestone: true
 ---
@@ -146,14 +146,22 @@ Includes:
 
 - risk decision ID;
 - candidate ID;
-- approval or rejection;
+- signal ID;
+- approval, rejection, expiry, invalid-input, or kill-switch status;
+- proposed and approved quantity;
+- risk budget and final risk amount;
+- final risk fraction and notional exposure;
 - passed gates;
 - failed gates;
-- position-size result;
-- exposure state;
-- daily risk state;
-- kill-switch state;
-- deterministic rejection reasons.
+- stable deterministic reason codes;
+- daily-loss policy;
+- account and market snapshot IDs;
+- strategy, risk-configuration, and decision fingerprints;
+- evaluation timestamp and candidate expiry.
+
+Milestone 4 returns this immutable typed record directly. An approval may also
+contain an immutable expiring approved intent. Neither record is a broker order,
+and persistent journal storage remains planned.
 
 ## Execution Record
 

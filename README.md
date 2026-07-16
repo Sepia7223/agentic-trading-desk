@@ -70,6 +70,7 @@ src/trading_desk/
     regime.py               causal three-state Gaussian HMM
     score.py                three-pillar scoring and decision flags
     signal_engine.py        mandatory long-only signal gates
+  risk/                     deterministic approval, sizing, exposure, and decision records
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
@@ -269,6 +270,41 @@ Action: LONG_CANDIDATE
 
 Candidate output is analysis only. It contains no quantity, position size,
 leverage, monetary risk, order type, stop, or limit, and cannot execute a trade.
+
+## Deterministic Risk Engine
+
+Milestone 4 adds a local, fail-closed authority between strategy candidates and
+the future Paper Portfolio:
+
+```text
+strategy candidate -> explicit risk candidate -> ordered risk gates
+                   -> RiskDecision -> optional expiring ApprovedTradeIntent
+```
+
+The caller must inject complete, timestamped account and market snapshots. The
+engine does not call IG, load credentials, use HTTP, read `.env`, use AI, or
+infer missing state. Unknown holding, P&L, exposure, position-count, quote,
+dealing-rule, account, or market state rejects.
+
+Sizing uses `Decimal` only:
+
+```text
+risk budget   = account equity * per-trade risk fraction
+risk per unit = abs(entry - stop) * value per price unit
+raw quantity  = risk budget / risk per unit
+```
+
+Quantity is constrained by available capital, configured and market size
+rules, and projected gross, instrument, and asset-class exposure, then rounded
+down to a compatible increment. Daily realized/total losses, drawdown,
+consecutive losses, open-position counts, freshness, spread, market status,
+entry/stop direction, and the kill switch are mandatory gates. The same inputs,
+configuration, and explicit evaluation timestamp produce the same canonical
+decision fingerprint.
+
+An approved intent contains no broker operation and expires deterministically.
+Paper Portfolio accounting remains planned for Milestone 5, and execution
+remains unavailable.
 
 ## Leakage-Controlled Backtesting
 

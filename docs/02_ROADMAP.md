@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 3.5 (Milestone 4 planned)
+current_validated_milestone: 4 (Milestone 5 planned)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -32,7 +32,7 @@ roadmap reflects the new validated state.
   M2 IG Read-Only Integration    ✅ Complete
   M3 Strategy Engine             ✅ Complete
   M3.5 Backtesting               ✅ Complete
-  M4 Risk Engine                 ⏳ Planned
+  M4 Risk Engine                 ✅ Complete
   M5 Paper Portfolio             ⏳ Planned
   M6 AI Analyst                  ⏳ Planned
   M7 Demo Execution              ⏳ Planned
@@ -62,9 +62,18 @@ tamper-evident frozen selection artifact is required to release the final
 `TEST` split. Unresolved end-of-data positions are reported without
 fabricating realized profit or loss.
 
+# Validated Milestone 4
+
+The deterministic local Risk Engine is the sole approval and quantity
+authority for trade candidates. It uses injected account and market snapshots,
+Decimal-only sizing, fail-closed freshness and state gates, daily-loss and
+drawdown limits, projected exposure limits, position-count controls, a kill
+switch, stable reason codes, and immutable expiring approved intents. It has no
+broker, HTTP, credential, AI, or execution dependency.
+
 # Next Active Milestone
 
-## M4 Risk Engine
+## M5 Paper Portfolio
 
-The deterministic Risk Engine is planned next. It remains unimplemented,
-and no current backtest result can authorize broker execution.
+Paper Portfolio accounting remains planned. Milestone 4 decisions and approved
+intents do not execute, mutate, or simulate broker positions.

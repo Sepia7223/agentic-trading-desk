@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 3.5 (Milestone 4 planned)
+current_validated_milestone: 4 (Milestone 5 planned)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -192,6 +192,78 @@ position and does not fabricate a fill or realized P&L.
 
 Non-tradeable or chronologically invalid prices are not executable evidence.
 Explicit unresolved state preserves auditability and keeps metrics honest.
+
+------------------------------------------------------------------------
+
+# ADR-010 --- Risk Engine as Sole Approval Authority
+
+**Status:** Accepted
+
+## Decision
+
+Every strategy candidate must pass through the deterministic Risk Engine. Only
+it may approve a candidate and determine maximum permitted quantity. Strategy,
+AI, Paper Portfolio, and future execution components cannot bypass or replace
+that decision.
+
+------------------------------------------------------------------------
+
+# ADR-011 --- Fail Closed on Unknown Risk State
+
+**Status:** Accepted
+
+## Decision
+
+Unknown, incomplete, stale, inconsistent, or non-finite candidate, account,
+market, P&L, exposure, position-count, quote, or dealing-rule state rejects.
+Unknown holding state is never treated as flat.
+
+------------------------------------------------------------------------
+
+# ADR-012 --- Decimal Financial Arithmetic
+
+**Status:** Accepted
+
+## Decision
+
+Risk prices, quantities, money, ratios, percentages, sizing, and exposure use
+`Decimal`. Quantity is constrained first and rounded down, never up, before
+final risk and notional are recalculated.
+
+------------------------------------------------------------------------
+
+# ADR-013 --- Explicit State and Time Injection
+
+**Status:** Accepted
+
+## Decision
+
+The caller supplies immutable account and market snapshots plus the UTC
+evaluation timestamp. The Risk Engine has no hidden wall clock, broker lookup,
+credential loader, HTTP client, or direct persistence dependency.
+
+------------------------------------------------------------------------
+
+# ADR-014 --- Immutable Expiring Approved Intents
+
+**Status:** Accepted
+
+## Decision
+
+Approval produces an immutable, fingerprinted intent linked to candidate,
+decision, account snapshot, and market snapshot IDs. The intent is invalid at
+or after expiry and is not an order or execution instruction.
+
+------------------------------------------------------------------------
+
+# ADR-015 --- AI Cannot Override Risk
+
+**Status:** Accepted
+
+## Decision
+
+AI may later explain decisions but cannot approve candidates, modify limits,
+select quantity, reset loss or kill-switch state, or override any gate.
 
 ------------------------------------------------------------------------
 

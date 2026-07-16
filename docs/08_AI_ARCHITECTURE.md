@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 3.5 (AI implementation planned for Milestone
+current_validated_milestone: 4 (AI implementation planned for Milestone
   6)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md

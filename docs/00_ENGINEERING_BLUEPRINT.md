@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 3.5 (Milestone 4 planned)
+current_validated_milestone: 4 (Milestone 5 planned)
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -131,19 +131,23 @@ validation.
 
 ## Risk Layer
 
-The risk engine is the authority for whether a candidate trade may
-proceed.
+The validated deterministic Risk Engine is the sole authority for whether a
+candidate may proceed and for the maximum permitted quantity.
 
-Future responsibilities:
+Current responsibilities:
 
 -   Position sizing
 -   Exposure limits
 -   Daily loss limits
--   Portfolio limits
+-   Drawdown and position-count limits
 -   Kill switch
--   Duplicate protection
--   Market availability
--   Session validation
+-   Candidate, account, and market freshness
+-   Market eligibility and dealing-rule validation
+
+Account and market state are injected explicitly. Unknown state rejects. The
+engine uses Decimal sizing, projected exposure, immutable decision records, and
+expiring approved intents. It has no broker, HTTP, credential, AI, or execution
+dependency.
 
 No trade may bypass the risk engine.
 

@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 3.5 (Milestone 4 planned)
+current_validated_milestone: 4 (Milestone 5 planned)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -44,10 +44,10 @@ After every completed milestone:
 -   Milestone 2 -- IG OAuth v3 Demo Read-Only Integration
 -   Milestone 3 -- Regime-Aware Strategy Engine
 -   Milestone 3.5 -- Leakage-Controlled Backtesting
+-   Milestone 4 -- Deterministic Risk Engine
 
 ## Planned
 
--   Milestone 4 -- Risk Engine
 -   Milestone 5 -- Paper Portfolio
 -   Milestone 6 -- AI Analyst
 -   Milestone 7 -- Demo Execution
@@ -201,16 +201,25 @@ Must never:
 
 ## Risk Engine
 
-Planned.
+Validated in Milestone 4 as a deterministic local decision boundary.
 
 Responsibilities:
 
--   position sizing
--   exposure limits
--   kill switch
--   portfolio constraints
+-   approve or reject strategy candidates
+-   calculate maximum permitted Decimal quantity
+-   enforce candidate, account, and market freshness
+-   enforce stop, daily-loss, drawdown, position-count, and projected exposure limits
+-   apply an overriding kill switch
+-   produce immutable decision records and expiring approved intents
 
-Risk decisions are authoritative.
+Account and market state are injected explicitly. Unknown or incomplete state
+rejects. Risk decisions are authoritative and cannot be overridden by AI. The
+subsystem has no broker, HTTP, credential, storage, or execution dependency.
+
+## Paper Portfolio
+
+Planned for Milestone 5. It may consume approved intents but cannot bypass or
+recalculate the Risk Engine's decision.
 
 ## Execution Engine
 
