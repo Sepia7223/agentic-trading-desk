@@ -475,3 +475,13 @@ A milestone is not complete until implementation, tests, architecture, and this 
 The system should not merely remember whether a trade won or lost.
 
 It should preserve the full decision context, evaluate whether the process was correct, compare the trade with similar historical evidence, and turn completed activity into disciplined research without allowing historical memory to bypass deterministic strategy and risk governance.
+
+# Automated Demo Cycle Records
+
+Every bounded cycle records its evaluation timestamp, strategy outcome,
+candidate or rejection, Risk Decision, preflight, order-limit state, halt state,
+and execution result when present. The persisted snapshot includes the
+hash-linked execution journal and idempotency keys. Ambiguous submission,
+broker error, integrity failure, and reconciliation mismatch produce a durable
+halt record. Credentials, OAuth values, headers, raw responses, and full account
+identifiers are never journal fields.

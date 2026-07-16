@@ -26,19 +26,32 @@ from trading_desk.backtest.configuration import (
 from trading_desk.backtest.data import load_dataset
 from trading_desk.backtest.engine import BacktestEngine
 from trading_desk.backtest.reports import export_json, export_markdown, export_trades_csv
-from trading_desk.config import AppSettings
-from trading_desk.execution.config import ExecutionConfiguration
+from trading_desk.config import AppSettings, OperatingMode, SafetySettings
+from trading_desk.execution.automated import (
+    AutomatedCycleStatus,
+    AutomatedDemoRunner,
+    AutomatedHaltReason,
+    create_initial_state,
+    halt_state,
+)
+from trading_desk.execution.config import (
+    AutomatedDemoExecutionPolicy,
+    ExecutionConfiguration,
+    ExecutionMode,
+)
 from trading_desk.execution.engine import ExecutionEngine
 from trading_desk.execution.errors import ExecutionError
 from trading_desk.execution.fingerprints import fingerprint as execution_fingerprint
 from trading_desk.execution.idempotency import ExecutionIdempotencyStore
 from trading_desk.execution.models import (
+    ExecutionEventType,
     ExecutionRequest,
     ExecutionResult,
     OperatorConfirmation,
 )
 from trading_desk.execution.preflight import run_preflight
 from trading_desk.execution.reconciliation import reconcile_position
+from trading_desk.execution.state import AutomatedDemoStateStore
 from trading_desk.ig import IGDemoClient, PriceResolution
 from trading_desk.ig.errors import IGError
 from trading_desk.ig.execution import IGDemoExecutionAdapter
@@ -225,6 +238,21 @@ def build_parser() -> argparse.ArgumentParser:
     reconcile.add_argument("--request", required=True)
     reconcile.add_argument("--result", required=True)
     reconcile.add_argument("--enable-execution", action="store_true")
+    smoke = execution_commands.add_parser("automated-demo-smoke")
+    smoke.add_argument("--epic", required=True)
+    smoke.add_argument("--max-orders", type=int, choices=(1,), default=1)
+    smoke.add_argument("--enable-execution", action="store_true")
+    smoke.add_argument("--enable-automatic-demo-execution", action="store_true")
+    smoke.add_argument("--initialize-state", action="store_true")
+    smoke.add_argument("--state-file", default=".trading-desk/automated-demo-state.json")
+    soak = execution_commands.add_parser("automated-demo-run")
+    soak.add_argument("--epic", required=True)
+    soak.add_argument("--cycles", type=int, choices=range(1, 25), required=True)
+    soak.add_argument("--interval-seconds", type=int, default=3600)
+    soak.add_argument("--max-orders-per-day", type=int, choices=(1,), default=1)
+    soak.add_argument("--enable-execution", action="store_true")
+    soak.add_argument("--enable-automatic-demo-execution", action="store_true")
+    soak.add_argument("--state-file", default=".trading-desk/automated-demo-state.json")
     return parser
 
 
@@ -248,10 +276,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         _print_ai_header()
         return asyncio.run(_run_ai_command(args))
     if args.command == "execution":
-        _print_execution_header()
+        _print_execution_header(args)
         try:
             return asyncio.run(_run_execution_command(args))
-        except (ExecutionError, IGError, OSError, ValidationError, ValueError) as error:
+        except (
+            ExecutionError,
+            IGError,
+            OSError,
+            RuntimeError,
+            TypeError,
+            ValidationError,
+            ValueError,
+        ) as error:
             print(f"Execution error: {error}", file=sys.stderr)
             return 2
     try:
@@ -305,15 +341,18 @@ def _print_ai_header() -> None:
     print("Live trading: DISABLED")
 
 
-def _print_execution_header() -> None:
+def _print_execution_header(args: argparse.Namespace) -> None:
+    automated = args.execution_command in {"automated-demo-smoke", "automated-demo-run"}
     print("Environment: IG DEMO")
     print("Mode: CONTROLLED EXECUTION")
     print("Live trading: DISABLED")
-    print("Automatic execution: DISABLED")
-    print("Operator confirmation: REQUIRED")
+    print(f"Automatic execution: {'EXPLICIT DEMO MODE' if automated else 'DISABLED'}")
+    print(f"Operator confirmation: {'POLICY BOUND' if automated else 'REQUIRED'}")
 
 
 async def _run_execution_command(args: argparse.Namespace) -> int:
+    if args.execution_command in {"automated-demo-smoke", "automated-demo-run"}:
+        return await _run_automated_demo_command(args)
     configuration = ExecutionConfiguration(execution_enabled=args.enable_execution)
     if args.execution_command == "submit" and not configuration.execution_enabled:
         raise ValueError("execution requires the explicit --enable-execution switch")
@@ -394,6 +433,144 @@ async def _run_execution_command(args: argparse.Namespace) -> int:
     raise ValueError("unsupported execution command")
 
 
+async def _run_automated_demo_command(args: argparse.Namespace) -> int:
+    if not args.enable_execution or not args.enable_automatic_demo_execution:
+        raise ValueError("automated Demo mode requires both explicit enable switches")
+    if args.execution_command == "automated-demo-run" and args.interval_seconds < 3600:
+        raise ValueError("automated Demo interval must be at least 3600 seconds")
+    settings = AppSettings.from_environment()
+    settings = settings.model_copy(
+        update={
+            "safety": SafetySettings(
+                operating_mode=OperatingMode.CONTROLLED_EXECUTION,
+                live_trading_allowed=False,
+                automatic_execution_enabled=True,
+            )
+        }
+    )
+    execution_configuration = ExecutionConfiguration(
+        execution_enabled=True,
+        automatic_execution_enabled=True,
+        execution_mode=ExecutionMode.AUTOMATED_DEMO,
+        require_operator_confirmation=False,
+    )
+    policy = AutomatedDemoExecutionPolicy(
+        enabled=True,
+        maximum_orders_per_day=(
+            args.max_orders_per_day
+            if args.execution_command == "automated-demo-run"
+            else args.max_orders
+        ),
+    )
+    store = AutomatedDemoStateStore(args.state_file)
+    cycles = args.cycles if args.execution_command == "automated-demo-run" else 1
+    last_status = AutomatedCycleStatus.NO_SIGNAL
+    for cycle_number in range(1, cycles + 1):
+        evaluated_at = datetime.now(UTC)
+        lock = store.acquire_lock()
+        try:
+            async with IGDemoExecutionAdapter(settings) as adapter:
+                if not store.exists():
+                    if not getattr(args, "initialize_state", False):
+                        raise ValueError(
+                            "automated Demo state is missing; use --initialize-state once"
+                        )
+                    accounts = await adapter.get_accounts()
+                    preferred = tuple(account for account in accounts if account.preferred)
+                    if len(preferred) != 1:
+                        raise ValueError("exactly one preferred Demo account is required")
+                    from trading_desk.execution.idempotency import IdempotencySnapshot
+
+                    store.save(
+                        create_initial_state(preferred[0], evaluated_at),
+                        IdempotencySnapshot(),
+                        (),
+                    )
+                snapshot = store.load()
+                idempotency = ExecutionIdempotencyStore(snapshot.idempotency)
+                from trading_desk.execution.journal import InMemoryExecutionJournal
+
+                journal = InMemoryExecutionJournal(snapshot.journal_records)
+                runner = AutomatedDemoRunner(
+                    adapter,
+                    execution_configuration=execution_configuration,
+                    policy=policy,
+                    state=snapshot.state,
+                    idempotency=idempotency,
+                    journal=journal,
+                )
+                try:
+                    result = await runner.run_cycle(args.epic, evaluated_at)
+                except (
+                    IGError,
+                    ExecutionError,
+                    OSError,
+                    TypeError,
+                    ValidationError,
+                    ValueError,
+                ) as error:
+                    halt_reason = (
+                        AutomatedHaltReason.BROKER_ERROR
+                        if isinstance(error, (IGError, ExecutionError, OSError))
+                        else AutomatedHaltReason.INTEGRITY_FAILURE
+                    )
+                    halted = halt_state(runner.state, halt_reason)
+                    journal.append(
+                        ExecutionEventType.AUTOMATED_HALTED,
+                        evaluated_at,
+                        {"reason": halt_reason.value},
+                    )
+                    store.save(halted, idempotency.snapshot(), journal.records())
+                    raise
+                store.save(result.state, idempotency.snapshot(), journal.records())
+        finally:
+            store.release_lock(lock)
+        _print_automated_demo_result(cycle_number, result)
+        last_status = result.status
+        if result.state.halted:
+            return 2
+        if cycle_number < cycles:
+            await asyncio.sleep(args.interval_seconds)
+    if args.execution_command == "automated-demo-smoke":
+        return 0 if last_status is AutomatedCycleStatus.ACCEPTED else 3
+    return 0
+
+
+def _print_automated_demo_result(cycle_number: int, result) -> None:  # type: ignore[no-untyped-def]
+    print(f"Cycle: {cycle_number}")
+    print(f"Instrument: {result.epic}")
+    print(f"Strategy action: {result.strategy_action}")
+    print(f"Cycle status: {result.status.value}")
+    print(f"Candidate ID: {result.candidate_id or 'unavailable'}")
+    print(f"Risk Decision ID: {result.risk_decision_id or 'unavailable'}")
+    print(f"Approved Trade Intent ID: {result.approved_intent_id or 'unavailable'}")
+    print(f"Approved quantity: {_optional_decimal(result.approved_quantity)}")
+    print(f"Submitted quantity: {_optional_decimal(result.submitted_quantity)}")
+    print(f"Protective stop: {_optional_decimal(result.stop_reference)}")
+    print(f"Request fingerprint: {result.request_fingerprint or 'unavailable'}")
+    if result.execution is not None:
+        execution = result.execution
+        print(f"Submission timestamp: {_optional_datetime(execution.result.submitted_at)}")
+        print(f"Deal reference: {_redact_reference(execution.result.deal_reference or '')}")
+        print(f"Broker confirmation: {_enum_value(execution.result.confirmation_status)}")
+        print(f"Confirmed size: {_optional_decimal(execution.result.accepted_quantity)}")
+        print(f"Confirmed entry: {_optional_decimal(execution.result.entry_level)}")
+        reconciliation = execution.reconciliation
+        print(
+            "Position reconciliation: "
+            + (reconciliation.status.value if reconciliation is not None else "unavailable")
+        )
+    print(f"Journal records: {len(result.journal_record_ids)}")
+    print(f"Automatic halt state: {'HALTED' if result.state.halted else 'CLEAR'}")
+    print("Session cleanup: CLEARED")
+    if result.reason_codes:
+        print("Reasons: " + ", ".join(result.reason_codes))
+
+
+def _optional_datetime(value: datetime | None) -> str:
+    return "unavailable" if value is None else value.isoformat()
+
+
 def _read_model(path: str, model_type):  # type: ignore[no-untyped-def]
     return model_type.model_validate_json(Path(path).read_text(encoding="utf-8"))
 
@@ -448,8 +625,12 @@ def _refresh_execution_market(
         midpoint = (details.bid + details.offer) / Decimal("2")
         spread_bps = Decimal("10000") * (details.offer - details.bid) / midpoint
     minimum_size = details.min_deal_size.value if details.min_deal_size is not None else None
-    minimum_stop = _dealing_distance(details.min_normal_stop_or_limit_distance, details.offer)
-    maximum_stop = _dealing_distance(details.max_stop_or_limit_distance, details.offer)
+    minimum_stop = _dealing_distance(
+        details.min_normal_stop_or_limit_distance, details.offer, details.scaling_factor
+    )
+    maximum_stop = _dealing_distance(
+        details.max_stop_or_limit_distance, details.offer, details.scaling_factor
+    )
     return prior.model_copy(
         update={
             "snapshot_id": execution_fingerprint(
@@ -484,11 +665,11 @@ def _refresh_execution_market(
     )
 
 
-def _dealing_distance(rule, reference):  # type: ignore[no-untyped-def]
+def _dealing_distance(rule, reference, scaling_factor=None):  # type: ignore[no-untyped-def]
     if rule is None or reference is None:
         return None
     if rule.unit is DealingRuleUnit.POINTS:
-        return rule.value
+        return rule.value if scaling_factor is None else rule.value / scaling_factor
     if rule.unit is DealingRuleUnit.PERCENTAGE:
         return reference * rule.value / Decimal("100")
     return None

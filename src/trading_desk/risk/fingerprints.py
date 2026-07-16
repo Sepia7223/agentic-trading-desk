@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -32,6 +32,10 @@ def canonicalize(value: object) -> object:
             raise ValueError("naive datetime cannot be fingerprinted")
         normalized = value.astimezone(UTC).isoformat(timespec="microseconds")
         return normalized.replace("+00:00", "Z")
+    if isinstance(value, date):
+        return value.isoformat()
+    if isinstance(value, time):
+        return value.isoformat(timespec="microseconds")
     if isinstance(value, timedelta):
         return canonicalize(Decimal(str(value.total_seconds())))
     if isinstance(value, Enum):

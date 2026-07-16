@@ -26,21 +26,22 @@ validated.
 
 Validated: - Local development environment. - Demo-only broker
 integration. - Read-only broker operations. - Disabled-by-default controlled
-Demo opening with explicit operator confirmation and no unattended scheduling.
+Demo opening with manual confirmation or hard-limited automated Demo policy.
 
 Planned: - Dedicated 24/7 machine. - Docker deployment. - Monitoring. -
 Automated restart. - Backup strategy. - Secure remote administration.
 
 The Milestone 5 paper ledger currently uses deterministic in-memory storage and
 explicit JSON event exports for local CLI workflows. SQLite, migrations,
-automatic restart recovery, and unattended operation remain planned. Paper
+automatic restart recovery, and production unattended operation remain planned. Paper
 commands do not load broker credentials or connect to IG.
 
 Milestone 7 does not create a daemon or deployment service. A real Demo order
-requires an operator-invoked CLI command, controlled mode, explicit enablement,
-fresh typed inputs, and local credentials. The automated suite uses mock
-transport only; the separately authorized manual Demo smoke test remains
-pending. Production deployment and live-host configuration are prohibited.
+requires an operator-invoked CLI command, controlled mode, explicit dual
+enablement for automated mode, fresh typed state, and local credentials. The
+automated suite uses mock transport; real operational validation remains
+pending until an eligible Demo signal confirms and reconciles. Production
+deployment and live-host configuration are prohibited.
 
 # Deployment Principles
 
@@ -112,3 +113,13 @@ After every deployment-related milestone:
 
 Deployment documentation must always match the validated operational
 environment.
+
+## Demo Soak Operation
+
+The bounded soak command is an operator-launched process, not a production
+daemon. It runs at most 24 cycles with intervals of at least one hour and at
+most one Demo order per day. Each cycle opens and clears its OAuth session.
+Fingerprint-validated state lives under ignored `.trading-desk/` storage and
+uses an exclusive lock; stale locks and integrity failures require human review.
+No automatic restart, halt clearing, live deployment, or secret persistence is
+provided.

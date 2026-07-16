@@ -85,11 +85,11 @@ def run_preflight(
         expiry_reasons.append(ExecutionReasonCode.APPROVAL_EXPIRED)
     gate("APPROVAL_FRESHNESS", *expiry_reasons)
 
-    confirmation_reasons = (
-        ()
-        if confirmation_matches(request, confirmation, evaluation_timestamp, configuration)
-        else (ExecutionReasonCode.OPERATOR_CONFIRMATION_REQUIRED,)
-    )
+    confirmation_reasons: tuple[ExecutionReasonCode, ...] = ()
+    if configuration.require_operator_confirmation and not confirmation_matches(
+        request, confirmation, evaluation_timestamp, configuration
+    ):
+        confirmation_reasons = (ExecutionReasonCode.OPERATOR_CONFIRMATION_REQUIRED,)
     gate("OPERATOR_CONFIRMATION", *confirmation_reasons)
 
     duplicate_reasons: list[ExecutionReasonCode] = []

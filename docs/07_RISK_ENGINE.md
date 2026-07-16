@@ -193,3 +193,13 @@ After every milestone affecting risk management:
 
 A risk milestone is not complete until implementation, tests, and
 documentation agree.
+
+## Automated Demo Limits
+
+Automated Demo evaluation applies the stricter of Risk Engine and execution
+policy limits. Initial caps are 0.1% risk, 1% notional/exposure, 0.5% daily
+loss, 1% drawdown, two consecutive losses, one position, one order per cycle
+and day, and a one-hour cooldown. Quantity is capped at broker minimum unless a
+smaller explicit policy cap applies and can never exceed current or original
+Risk approval. Unknown account economics, contract value, market rules, or
+position state halt submission.

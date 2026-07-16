@@ -27,6 +27,7 @@ def map_strategy_candidate(
     target_reference: Decimal | None,
     bid: Decimal | None,
     ask: Decimal | None,
+    spread_bps: Decimal | None = None,
     volatility_or_atr: Decimal | None,
     market_status: RiskMarketStatus,
     holding_state: bool | None,
@@ -60,7 +61,11 @@ def map_strategy_candidate(
         target_reference=target_reference,
         bid=bid,
         ask=ask,
-        spread_bps=Decimal(str(strategy_candidate.current_spread_bps)),
+        spread_bps=(
+            spread_bps
+            if spread_bps is not None
+            else Decimal(str(strategy_candidate.current_spread_bps))
+        ),
         volatility_or_atr=volatility_or_atr,
         market_status=market_status,
         holding_state=holding_state,

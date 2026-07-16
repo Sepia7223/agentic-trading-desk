@@ -31,3 +31,22 @@ def test_execution_command_is_disabled_before_config_or_network_access(
     assert "Automatic execution: DISABLED" in captured.out
     assert "Operator confirmation: REQUIRED" in captured.out
     assert "explicit --enable-execution" in captured.err
+
+
+def test_automated_demo_command_requires_both_switches_before_env_or_network(
+    capsys,
+) -> None:  # type: ignore[no-untyped-def]
+    exit_code = main(
+        [
+            "execution",
+            "automated-demo-smoke",
+            "--epic",
+            "CS.D.EURUSD.CFD.IP",
+            "--enable-execution",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "Automatic execution: EXPLICIT DEMO MODE" in captured.out
+    assert "Operator confirmation: POLICY BOUND" in captured.out
+    assert "both explicit enable switches" in captured.err

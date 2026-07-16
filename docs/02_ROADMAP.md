@@ -97,10 +97,14 @@ It opens only one explicitly enabled, operator-confirmed long market position,
 revalidates the Risk Engine against fresh state, never increases quantity,
 attempts submission once, requires broker confirmation, reconciles read-only
 positions, and writes linked append-only records. Automated validation uses
-mock transport; the separately authorized real Demo smoke test remains pending.
+mock transport. A disabled-by-default `AUTOMATED_DEMO` observation mode adds
+dual enable switches, one-order daily/cycle limits, cooldown, strict loss,
+drawdown, exposure and quantity limits, persistent halt/idempotency state, and
+no-retry reconciliation. Real operational validation remains pending until a
+naturally eligible signal completes the Demo lifecycle.
 
 # Next Active Milestone
 
 Milestone 8, durable Trade Journal integration, remains planned. Live trading,
-automatic unattended execution, closure, amendment, working orders, account
-switching, and AI execution authority remain unavailable.
+unbounded automation, closure, amendment, working orders, account switching,
+short execution, and AI execution authority remain unavailable.

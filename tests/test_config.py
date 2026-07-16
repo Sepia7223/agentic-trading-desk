@@ -34,8 +34,14 @@ def test_live_trading_and_automatic_execution_are_rejected() -> None:
     with pytest.raises(ValidationError, match="live trading is disabled"):
         SafetySettings(live_trading_allowed=True)
 
-    with pytest.raises(ValidationError, match="automatic execution is disabled"):
+    with pytest.raises(ValidationError, match="requires CONTROLLED_EXECUTION"):
         SafetySettings(automatic_execution_enabled=True)
+
+    enabled = SafetySettings(
+        operating_mode=OperatingMode.CONTROLLED_EXECUTION,
+        automatic_execution_enabled=True,
+    )
+    assert enabled.live_trading_allowed is False
 
 
 @pytest.mark.parametrize(

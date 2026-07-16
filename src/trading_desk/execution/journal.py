@@ -27,8 +27,13 @@ class ExecutionJournal(Protocol):
 
 
 class InMemoryExecutionJournal:
-    def __init__(self) -> None:
-        self._records: list[ExecutionJournalRecord] = []
+    def __init__(self, records: tuple[ExecutionJournalRecord, ...] = ()) -> None:
+        previous: str | None = None
+        for sequence, record in enumerate(records, start=1):
+            if record.sequence != sequence or record.previous_record_fingerprint != previous:
+                raise ValueError("execution journal hash chain is invalid")
+            previous = record.record_fingerprint
+        self._records = list(records)
 
     def append(
         self,

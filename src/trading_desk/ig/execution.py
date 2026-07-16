@@ -205,8 +205,6 @@ class IGDemoExecutionAdapter(IGDemoClient):
             raise ValueError("operating mode must be CONTROLLED_EXECUTION")
         if settings.safety.live_trading_allowed:
             raise ValueError("live trading must remain disabled")
-        if settings.safety.automatic_execution_enabled:
-            raise ValueError("automatic execution must remain disabled")
         if settings.broker.base_url != IG_DEMO_BASE_URL:
             raise ValueError("IG base URL must be the canonical demo endpoint")
 

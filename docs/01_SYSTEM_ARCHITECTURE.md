@@ -329,3 +329,12 @@ reproducibility over rapid feature growth.
 
 Every subsystem should be independently understandable, independently
 testable, and independently replaceable.
+
+## Bounded Automated Demo Runner
+
+The runner composes read-only IG data, the causal Strategy Engine, the Risk
+Engine, execution preflight, the existing one-attempt mutation adapter,
+confirmation, and reconciliation. Fingerprinted local state carries daily
+counts, cooldown, account identity, idempotency, journal links, and a latched
+halt. No Strategy, Risk, AI, Paper Portfolio, or journal component receives a
+broker mutation dependency.

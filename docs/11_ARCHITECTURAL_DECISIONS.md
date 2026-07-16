@@ -433,6 +433,20 @@ fills, events, positions, or history.
 AI may explain completed execution records but cannot create requests, confirm,
 submit, retry, reconcile, choose quantity, or access broker credentials.
 
+# ADR-039 --- Automated Demo Execution Is Explicit and Bounded
+
+**Status:** Accepted
+
+Automated execution is permitted only through an explicitly enabled
+`AUTOMATED_DEMO` mode on the exact Demo gateway. It uses immutable limits,
+minimum broker size, deterministic Risk Engine approval, one submission
+attempt, persistent idempotency, confirmation, reconciliation, and a latched
+halt state. It cannot increase approved quantity, remove protective stops,
+retry ambiguous submissions, continue after unresolved state, use a live host,
+or receive AI authority. `MANUAL_CONFIRMED` remains the default execution mode.
+
+**Affected Milestones:** 7 and later Demo observation.
+
 # Adding Future ADRs
 
 Every significant architectural change should add a new ADR using this

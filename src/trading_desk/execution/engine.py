@@ -108,14 +108,14 @@ class ExecutionEngine:
                 request,
             )
             return outcome
-        assert confirmation is not None
         assert preflight.validated_quantity is not None
-        self._journal(
-            ExecutionEventType.OPERATOR_CONFIRMED,
-            evaluation_timestamp,
-            confirmation,
-            request,
-        )
+        if confirmation is not None:
+            self._journal(
+                ExecutionEventType.OPERATOR_CONFIRMED,
+                evaluation_timestamp,
+                confirmation,
+                request,
+            )
         if not self.idempotency.reserve_submission(request):
             result = _result(
                 request,

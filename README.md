@@ -134,8 +134,8 @@ override deterministic systems, and provider failure cannot block them.
 
 ## Controlled IG Demo Execution
 
-Milestone 7 adds a dedicated execution subsystem for one explicitly confirmed
-long `MARKET` position opening through `POST /positions/otc` version 2. It uses
+Milestone 7 adds a dedicated execution subsystem for one long `MARKET`
+position opening through `POST /positions/otc` version 2. It uses
 only `https://demo-api.ig.com/gateway/deal`; confirmation lookup is
 `GET /confirms/{dealReference}` version 1. The existing read-only IG allowlist
 and broker protocol remain unchanged.
@@ -143,18 +143,44 @@ and broker protocol remain unchanged.
 Execution is disabled by default. Submission requires `CONTROLLED_EXECUTION`,
 the explicit `--enable-execution` CLI switch, an intact unexpired approved
 intent, fresh account and market state, a second Risk Engine approval, a bound
-operator confirmation, acceptable price/spread drift, and unused idempotency
-keys. Quantity is rounded down and may only stay equal or decrease.
+operator confirmation in the default manual mode, acceptable price/spread
+drift, and unused idempotency keys. Quantity is rounded down and may only stay
+equal or decrease.
 
 Submission is attempted once. A timeout, malformed acknowledgement, unknown
 confirmation, or confirmation mismatch is potentially executed and requires
 reconciliation; it is never retried automatically. Automated tests use mocks
-only. A real IG Demo smoke test requires separate operator authorization and
-has not been run for this implementation.
+only.
+
+A separate `AUTOMATED_DEMO` mode is implemented for bounded observation. It is
+disabled by default and requires both `--enable-execution` and
+`--enable-automatic-demo-execution`. The initial policy permits one order per
+cycle and day, one open Demo position, a 0.1% risk fraction, 1% notional,
+0.5% daily loss, 1% drawdown, a one-hour cooldown, long market orders only,
+and a protective stop. State is fingerprinted, hash-linked, and locked against
+concurrent runners. Any unresolved submission latches a halt.
+
+```powershell
+python -m trading_desk.cli execution automated-demo-smoke `
+  --epic CS.D.EURUSD.CFD.IP --max-orders 1 `
+  --enable-execution --enable-automatic-demo-execution --initialize-state
+
+python -m trading_desk.cli execution automated-demo-run `
+  --epic CS.D.EURUSD.CFD.IP --cycles 24 --interval-seconds 3600 `
+  --max-orders-per-day 1 --enable-execution `
+  --enable-automatic-demo-execution
+```
+
+The manual mode retains request-bound confirmation. Automated mode replaces it
+only with stricter immutable Demo policy authorization and dual switches. It
+never forces a trade: `WATCH`, `NO_TRADE`, and risk rejection are safe cycle
+results. Operational validation remains pending until a naturally eligible
+signal is confirmed and reconciled in IG Demo.
 
 Every execution command prints `Environment: IG DEMO`,
-`Mode: CONTROLLED EXECUTION`, `Live trading: DISABLED`,
-`Automatic execution: DISABLED`, and `Operator confirmation: REQUIRED`.
+`Mode: CONTROLLED EXECUTION`, and `Live trading: DISABLED`. Manual commands
+also print `Automatic execution: DISABLED` and `Operator confirmation:
+REQUIRED`; automated commands identify the explicit Demo policy boundary.
 
 ## Strategy Framework
 

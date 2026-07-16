@@ -128,3 +128,12 @@ Before completing work:
 
 This document shall be reviewed whenever development standards or
 engineering workflow change.
+
+## Automated Demo Change Standard
+
+Changes to automated Demo policy require tests for explicit authorization,
+exact-host enforcement, quantity non-increase, stop preservation, order/day
+limits, cooldown, loss/drawdown halts, one-attempt behavior, confirmation,
+reconciliation, persistent idempotency, concurrent-run rejection, and secret
+sanitization. A safe no-signal result must never be converted into a forced
+trade for testing.

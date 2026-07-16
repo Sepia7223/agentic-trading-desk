@@ -1,6 +1,10 @@
 """Controlled IG Demo execution boundary."""
 
-from trading_desk.execution.config import ExecutionConfiguration
+from trading_desk.execution.config import (
+    AutomatedDemoExecutionPolicy,
+    ExecutionConfiguration,
+    ExecutionMode,
+)
 from trading_desk.execution.engine import ExecutionEngine
 from trading_desk.execution.models import (
     ExecutionOutcome,
@@ -11,11 +15,13 @@ from trading_desk.execution.models import (
 )
 
 __all__ = [
+    "AutomatedDemoExecutionPolicy",
     "ExecutionConfiguration",
     "ExecutionEngine",
     "ExecutionOutcome",
     "ExecutionPreflightResult",
     "ExecutionRequest",
     "ExecutionResult",
+    "ExecutionMode",
     "OperatorConfirmation",
 ]

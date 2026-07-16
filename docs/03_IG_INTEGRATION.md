@@ -44,6 +44,7 @@ Validated through Milestone 7:
 -   `POST /positions/otc`, version 2, for one long market-position opening
 -   `GET /confirms/{dealReference}`, version 1, for bounded confirmation
 -   One-attempt submission, idempotency, and read-only position reconciliation
+-   Disabled-by-default bounded automated Demo observation mode
 
 Not yet implemented:
 
@@ -51,7 +52,7 @@ Not yet implemented:
 -   Position modification
 -   Position closure
 -   Live account support
--   Automatic unattended execution
+-   Unbounded or production automatic execution
 -   Account switching
 
 # Design Goals
@@ -168,3 +169,14 @@ After every milestone affecting broker behavior:
 
 A milestone affecting IG integration is not complete until this document
 reflects the validated implementation.
+
+## Automated Demo Boundary
+
+The automated runner uses the same exact Demo host and mutation allowlist as
+manual controlled execution: `POST /positions/otc` version 2 and
+`GET /confirms/{dealReference}` version 1. It may also use the existing
+read-only accounts, positions, market-details, and historical-price operations.
+Market-details v3 normalizes contract size, lot size, pip value, scaling factor,
+currency, minimum size, and stop rules. Missing economics or dealing rules halt
+before submission. Redirects, absolute mutation URLs, production hosts, closure,
+amendment, working orders, and account switching remain rejected.

@@ -196,6 +196,23 @@ submitted at most once, including across restored persisted state.
 
 The controlled live trading environment planned for future milestones.
 
+## AUTOMATED_DEMO
+
+A disabled-by-default controlled-execution mode requiring dual explicit CLI
+switches and the canonical IG Demo gateway. It permits at most one eligible
+long market-position opening per cycle and day under immutable risk limits.
+
+## Automated Halt
+
+A fingerprinted persistent state that prevents further submission after an
+ambiguous response, broker error, integrity failure, risk-limit breach, or
+reconciliation failure. It is never cleared automatically.
+
+## MANUAL_CONFIRMED
+
+The default controlled-execution mode. One exact unexpired operator
+confirmation is required for each execution request.
+
 # Documentation Governance
 
 Update this glossary whenever new technical terms, models, or

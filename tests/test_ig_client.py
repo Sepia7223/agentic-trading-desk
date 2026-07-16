@@ -677,6 +677,10 @@ def _market_details_payload(update_time: object = "12:34:56") -> dict[str, objec
             "type": "CURRENCIES",
             "expiry": "-",
             "controlledRiskAllowed": True,
+            "lotSize": 1,
+            "contractSize": "100000",
+            "valueOfOnePip": "10",
+            "currencies": [{"code": "USD", "isDefault": True}],
         },
         "snapshot": snapshot,
         "dealingRules": {
@@ -704,6 +708,9 @@ def test_market_details_v3_parses_time_of_day_and_rules(
         assert market.instrument_type.value == "CURRENCIES"
         assert market.market_status.value == "TRADEABLE"
         assert market.offer == Decimal("1.10009")
+        assert market.currency_code == "USD"
+        assert market.contract_size == Decimal("100000")
+        assert market.value_of_one_pip == Decimal("10")
         assert isinstance(market.update_time, datetime_time)
         assert market.update_time == datetime_time(12, 34, 56)
         assert market.update_time.tzinfo is None

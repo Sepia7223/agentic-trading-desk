@@ -9,7 +9,8 @@ runtime analysis provider and must not receive broker credentials.
 - Default broker environment is always `DEMO`.
 - Default operating mode is always `READ_ONLY`.
 - Live trading is technically disabled.
-- Automatic unattended execution is technically disabled.
+- Automatic execution is disabled by default. Only the separately reviewed,
+  hard-limited `AUTOMATED_DEMO` mode may enable it.
 - Unknown broker, position, market, or risk state must result in no trade.
 - The language model must never control position size or bypass hard-coded risk limits.
 - Never use an IG production host. The only broker base URL is
@@ -20,12 +21,13 @@ runtime analysis provider and must not receive broker credentials.
 
 ## Controlled Execution Boundary
 
-- Milestone 7 permits only one explicitly confirmed long IG Demo market-position
-  opening through the dedicated execution port. The read-only broker port and
+- Milestone 7 permits only one long IG Demo market-position opening through the
+  dedicated execution port. The read-only broker port and
   read-only endpoint allowlist remain mutation-free.
 - Execution defaults to disabled and requires `CONTROLLED_EXECUTION`, canonical
-  Demo gateway validation, explicit enablement, current Risk Engine revalidation,
-  and a request-bound unexpired operator confirmation.
+  Demo gateway validation, explicit enablement, and current Risk Engine
+  revalidation. `MANUAL_CONFIRMED` requires a request-bound confirmation;
+  `AUTOMATED_DEMO` requires dual enable switches and immutable policy authority.
 - The exact execution allowlist is `POST /positions/otc` version 2 and
   `GET /confirms/{dealReference}` version 1. No other mutation path is permitted.
 - Never increase approved quantity, remove or loosen the approved stop, alter
@@ -35,10 +37,12 @@ runtime analysis provider and must not receive broker credentials.
 - Broker acceptance requires confirmation evidence. Final completion requires
   reconciliation against read-only positions. Mismatches are recorded and are
   never amended automatically.
+- Automated Demo state must be fingerprinted, persist idempotency and journal
+  links, reject concurrent runners, and latch every unresolved execution halt.
 - Strategy, Risk, AI, Paper Portfolio, and journal packages must not import the
   mutation adapter. AI cannot create, confirm, retry, or reconcile execution.
-- Live hosts, position closure/amendment, working orders, account switching, and
-  unattended automatic execution remain prohibited.
+- Live hosts, position closure/amendment, working orders, account switching,
+  short execution, and policy-changing automation remain prohibited.
 
 ## Development Rules
 

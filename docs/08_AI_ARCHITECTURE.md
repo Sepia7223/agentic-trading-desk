@@ -150,3 +150,10 @@ After every AI-related milestone:
 
 No AI milestone is complete until implementation, tests, and
 documentation remain aligned.
+
+## Automated Demo Exclusion
+
+No AI provider participates in automated Demo evaluation, candidate mapping,
+risk approval, request creation, submission, confirmation, reconciliation, halt
+management, or state recovery. AI may review sanitized immutable records only
+after the deterministic lifecycle completes.
