@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 3.5 (Milestone 4 planned)
+current_validated_milestone: 4 (Milestone 5 planned)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -36,6 +36,9 @@ The goal is consistency, maintainability, safety, and reproducibility.
 -   Explicit exceptions.
 -   No hidden global state.
 -   No silent failures.
+-   `Decimal` for financial prices, quantities, money, ratios, and fractions.
+-   Explicit caller-supplied UTC evaluation timestamps for deterministic decisions.
+-   Canonical sorted serialization for reproducibility fingerprints.
 
 # Testing Standards
 
@@ -46,6 +49,7 @@ Every feature should include:
 -   Deterministic test data.
 -   Failure-path tests.
 -   Safety-boundary tests.
+-   Exact boundary tests at, below, and above financial limits.
 
 All required quality gates must pass before merge:
 

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 3.5 (Milestone 4 planned)
+current_validated_milestone: 4 (Milestone 5 planned)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -33,8 +33,30 @@ trade candidates.
 
 ## Risk Engine
 
-The deterministic approval subsystem that decides whether a trade
-candidate may proceed toward execution.
+The deterministic sole approval and maximum-quantity authority that evaluates
+a trade candidate against injected account, market, and configuration state.
+
+## Account Risk State
+
+An immutable caller-supplied snapshot of equity, capital, P&L, drawdown,
+exposure, position counts, consecutive losses, and kill-switch state. Missing
+or incomplete state rejects.
+
+## Market Risk State
+
+An immutable caller-supplied quote and dealing-rule snapshot used for freshness,
+spread, stop, size, increment, and value-per-price-unit gates.
+
+## Approved Trade Intent
+
+An immutable expiring record of a Risk Engine approval and maximum permitted
+quantity. It is not a broker order and cannot execute a trade.
+
+## Risk Decision
+
+An immutable journal-compatible approval or rejection record containing typed
+gates, stable reason codes, Decimal sizing results, snapshot IDs, and canonical
+fingerprints.
 
 ## Execution Engine
 
