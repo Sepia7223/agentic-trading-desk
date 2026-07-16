@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -39,6 +39,9 @@ The goal is consistency, maintainability, safety, and reproducibility.
 -   `Decimal` for financial prices, quantities, money, ratios, and fractions.
 -   Explicit caller-supplied UTC evaluation timestamps for deterministic decisions.
 -   Canonical sorted serialization for reproducibility fingerprints.
+-   Append-only monotonic event sequences for simulated portfolio state.
+-   Liquidation-side bid marking for open long positions.
+-   Atomic validation-before-commit for multi-record portfolio transitions.
 
 # Testing Standards
 

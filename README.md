@@ -71,10 +71,40 @@ src/trading_desk/
     score.py                three-pillar scoring and decision flags
     signal_engine.py        mandatory long-only signal gates
   risk/                     deterministic approval, sizing, exposure, and decision records
+  portfolio/                local-only paper positions, fills, accounting, and event replay
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
 ```
+
+## Paper Portfolio
+
+Milestone 5 adds a deterministic local paper portfolio. It can consume only an
+untampered, unexpired `APPROVED` Risk Decision and its immutable approved intent.
+It never increases approved quantity and has no IG, HTTP, credential, AI, or
+broker-execution dependency.
+
+Long entries fill from ask plus configured adverse slippage. Open positions are
+marked and closed from bid, the liquidation side. Commissions and UTC-daily
+funding are itemized with `Decimal`; cash, equity, exposure, realized P&L, and
+unrealized P&L are reconstructed from a fingerprint-chained append-only event
+ledger. Duplicate approvals are rejected. Missing or non-tradeable quotes never
+fabricate fills, and an uncloseable end-of-data position remains unresolved and
+unrealized.
+
+Local commands use JSON files and never load broker settings:
+
+```powershell
+python -m trading_desk.cli portfolio create --timestamp 2026-07-15T12:00:00+00:00 --output events.json
+python -m trading_desk.cli portfolio state --events events.json
+python -m trading_desk.cli portfolio replay --events events.json
+```
+
+The `open`, `mark`, and `close` subcommands require explicit typed JSON inputs
+and UTC timestamps. Every portfolio command prints `Mode: PAPER`,
+`Execution: SIMULATED ONLY`, `Broker connectivity: DISABLED`, and
+`Live trading: DISABLED`. SQLite persistence and all real execution remain
+unavailable.
 
 ## Strategy Framework
 
@@ -303,8 +333,8 @@ configuration, and explicit evaluation timestamp produce the same canonical
 decision fingerprint.
 
 An approved intent contains no broker operation and expires deterministically.
-Paper Portfolio accounting remains planned for Milestone 5, and execution
-remains unavailable.
+Paper Portfolio accounting is available as local simulation only; broker
+execution remains unavailable.
 
 ## Leakage-Controlled Backtesting
 
