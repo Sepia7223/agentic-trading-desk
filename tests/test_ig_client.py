@@ -677,6 +677,10 @@ def _market_details_payload(update_time: object = "12:34:56") -> dict[str, objec
             "type": "CURRENCIES",
             "expiry": "-",
             "controlledRiskAllowed": True,
+            "lotSize": 1,
+            "contractSize": "100000",
+            "valueOfOnePip": "10",
+            "currencies": [{"code": "USD", "isDefault": True}],
         },
         "snapshot": snapshot,
         "dealingRules": {
@@ -704,6 +708,9 @@ def test_market_details_v3_parses_time_of_day_and_rules(
         assert market.instrument_type.value == "CURRENCIES"
         assert market.market_status.value == "TRADEABLE"
         assert market.offer == Decimal("1.10009")
+        assert market.currency_code == "USD"
+        assert market.contract_size == Decimal("100000")
+        assert market.value_of_one_pip == Decimal("10")
         assert isinstance(market.update_time, datetime_time)
         assert market.update_time == datetime_time(12, 34, 56)
         assert market.update_time.tzinfo is None
@@ -1144,9 +1151,12 @@ def test_client_refuses_unsafe_runtime_boundaries(
 
 def test_source_contains_no_execution_endpoints_or_order_operation_methods() -> None:
     source_root = REPO_ROOT / "src"
-    source = "\n".join(
-        path.read_text(encoding="utf-8") for path in sorted(source_root.rglob("*.py"))
-    ).lower()
+    read_only_files = (
+        source_root / "trading_desk" / "ig" / "client.py",
+        source_root / "trading_desk" / "ig" / "policy.py",
+        source_root / "trading_desk" / "ports" / "broker.py",
+    )
+    source = "\n".join(path.read_text(encoding="utf-8") for path in read_only_files).lower()
     forbidden_endpoints = (
         "/positions/otc",
         "/working-orders/otc",

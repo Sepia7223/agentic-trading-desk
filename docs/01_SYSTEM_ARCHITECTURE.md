@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -47,10 +47,11 @@ After every completed milestone:
 -   Milestone 4 -- Deterministic Risk Engine
 -   Milestone 5 -- Paper Portfolio
 -   Milestone 6 -- AI Analyst
+-   Milestone 7 -- Controlled IG Demo Execution
 
 ## Planned
 
--   Milestone 7 -- Demo Execution
+-   Milestone 8 -- Durable Trade Journal
 
 ------------------------------------------------------------------------
 
@@ -145,11 +146,15 @@ Current validated capabilities:
 -   Market details version 3
 -   Historical prices
 -   Private in-memory token lifecycle and fail-closed session cleanup
+-   Dedicated controlled execution adapter for one Demo market-position opening
+-   Broker confirmation lookup and read-only position reconciliation
 
 Must never: - evaluate strategies - calculate risk - generate signals
 
-The current Broker Layer has no order, working-order, position-mutation,
-account-switching, production-host, or live-trading operation.
+The read-only adapter remains mutation-free. The separate execution adapter
+allows only `POST /positions/otc` version 2 and the matching confirmation lookup.
+It has no closure, amendment, working-order, account-switching, production-host,
+or live-trading operation.
 
 ## Market Data Layer
 
@@ -224,9 +229,13 @@ bypassing or recalculating the Risk Engine's decision.
 
 ## Execution Engine
 
-Planned.
-
-Responsible only for translating approved trades into broker operations.
+Validated in Milestone 7. It consumes only intact approved intents, refreshes
+broker account/market/position state, re-runs the Risk Engine, and permits
+quantity to stay equal or decrease. It requires explicit enablement and a bound
+operator confirmation, reserves idempotency before one submission attempt,
+requires broker confirmation before acceptance, and reconciles the resulting
+position without automatic correction. Ambiguous results are never retried and
+remain reconciliation-required.
 
 ## Monitoring Layer
 
@@ -320,3 +329,12 @@ reproducibility over rapid feature growth.
 
 Every subsystem should be independently understandable, independently
 testable, and independently replaceable.
+
+## Bounded Automated Demo Runner
+
+The runner composes read-only IG data, the causal Strategy Engine, the Risk
+Engine, execution preflight, the existing one-attempt mutation adapter,
+confirmation, and reconciliation. Fingerprinted local state carries daily
+counts, cooldown, account identity, idempotency, journal links, and a latched
+halt. No Strategy, Risk, AI, Paper Portfolio, or journal component receives a
+broker mutation dependency.

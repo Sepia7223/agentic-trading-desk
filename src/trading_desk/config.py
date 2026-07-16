@@ -24,6 +24,7 @@ class OperatingMode(StrEnum):
     """Runtime operating modes."""
 
     READ_ONLY = "READ_ONLY"
+    CONTROLLED_EXECUTION = "CONTROLLED_EXECUTION"
 
 
 class BrokerSettings(BaseModel):
@@ -81,8 +82,11 @@ class SafetySettings(BaseModel):
     def reject_enabled_trading(self) -> Self:
         if self.live_trading_allowed:
             raise ValueError("live trading is disabled")
-        if self.automatic_execution_enabled:
-            raise ValueError("automatic execution is disabled")
+        if (
+            self.automatic_execution_enabled
+            and self.operating_mode is not OperatingMode.CONTROLLED_EXECUTION
+        ):
+            raise ValueError("automatic execution requires CONTROLLED_EXECUTION")
         return self
 
 

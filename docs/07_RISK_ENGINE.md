@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -41,11 +41,13 @@ No trade may bypass this subsystem.
 
 ## Validated Downstream Consumer
 
-The Milestone 5 Paper Portfolio is the only implemented consumer of approved
-intents. It validates decision integrity, expiry, snapshots, fingerprints, and
-the approved quantity ceiling before a simulated entry. It returns a complete
-`AccountRiskState` for later risk evaluations. Broker order execution, broker
-position mutation, live trading, and runtime AI remain unavailable.
+The Milestone 5 Paper Portfolio consumes approved intents only for simulation.
+The separate Milestone 7 Execution Engine consumes them only after integrity,
+expiry, snapshot, fingerprint, current-state, and operator-confirmation checks.
+It re-runs this Risk Engine immediately before submission and computes the final
+quantity as the rounded-down minimum of the original approval, current approval,
+request, and execution limit. It cannot increase quantity or bypass rejection.
+Live trading and AI risk authority remain unavailable.
 
 # Engineering Philosophy
 
@@ -191,3 +193,13 @@ After every milestone affecting risk management:
 
 A risk milestone is not complete until implementation, tests, and
 documentation agree.
+
+## Automated Demo Limits
+
+Automated Demo evaluation applies the stricter of Risk Engine and execution
+policy limits. Initial caps are 0.1% risk, 1% notional/exposure, 0.5% daily
+loss, 1% drawdown, two consecutive losses, one position, one order per cycle
+and day, and a one-hour cooldown. Quantity is capped at broker minimum unless a
+smaller explicit policy cap applies and can never exceed current or original
+Risk approval. Unknown account economics, contract value, market rules, or
+position state halt submission.

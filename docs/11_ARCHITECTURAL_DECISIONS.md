@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -362,6 +362,90 @@ structured evidence.
 AI research hypotheses require human review and controlled deterministic tests.
 They cannot deploy themselves or change strategy, risk, kill-switch, or
 portfolio configuration.
+
+# ADR-029 --- Dedicated Execution Mutation Boundary
+
+**Status:** Accepted
+
+Only the Execution Engine may use the separate broker mutation port. The
+existing broker port and IG read-only allowlist remain mutation-free.
+
+# ADR-030 --- Exact Demo Host for Execution
+
+**Status:** Accepted
+
+Controlled execution accepts only `https://demo-api.ig.com/gateway/deal` and
+rejects production, redirects, alternate components, and caller URLs.
+
+# ADR-031 --- Explicit Operator Confirmation
+
+**Status:** Accepted
+
+Confirmation is required by default and binds request fingerprint, quantity,
+instrument, direction, drift limit, confirmation time, and expiry.
+
+# ADR-032 --- Immediate Risk Revalidation
+
+**Status:** Accepted
+
+Fresh account, market, and position state must pass the deterministic Risk
+Engine immediately before submission. Quantity may only remain equal or fall.
+
+# ADR-033 --- One Submission Attempt
+
+**Status:** Accepted
+
+Idempotency is reserved before transport. Ambiguous outcomes are potentially
+executed, consume the intent, require reconciliation, and are never retried.
+
+# ADR-034 --- Confirmation Before Acceptance
+
+**Status:** Accepted
+
+An HTTP acknowledgement is not acceptance. A matching broker confirmation is
+required; rejection, missing fields, mismatch, or timeout fails closed.
+
+# ADR-035 --- Reconciliation Before Completion
+
+**Status:** Accepted
+
+Accepted deals are compared with read-only open positions. Discrepancies are
+recorded and never corrected by automated amendment.
+
+# ADR-036 --- Immutable Idempotency Keys
+
+**Status:** Accepted
+
+Intent IDs, decision fingerprints, request IDs, request fingerprints, and deal
+references are replay-protected and exportable for restart persistence.
+
+# ADR-037 --- Paper and Demo Records Stay Separate
+
+**Status:** Accepted
+
+Broker fills create separate Demo records and never overwrite Paper Portfolio
+fills, events, positions, or history.
+
+# ADR-038 --- AI Has No Execution Authority
+
+**Status:** Accepted
+
+AI may explain completed execution records but cannot create requests, confirm,
+submit, retry, reconcile, choose quantity, or access broker credentials.
+
+# ADR-039 --- Automated Demo Execution Is Explicit and Bounded
+
+**Status:** Accepted
+
+Automated execution is permitted only through an explicitly enabled
+`AUTOMATED_DEMO` mode on the exact Demo gateway. It uses immutable limits,
+minimum broker size, deterministic Risk Engine approval, one submission
+attempt, persistent idempotency, confirmation, reconciliation, and a latched
+halt state. It cannot increase approved quantity, remove protective stops,
+retry ambiguous submissions, continue after unresolved state, use a live host,
+or receive AI authority. `MANUAL_CONFIRMED` remains the default execution mode.
+
+**Affected Milestones:** 7 and later Demo observation.
 
 # Adding Future ADRs
 

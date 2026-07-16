@@ -561,6 +561,11 @@ def _parse_market_details(raw: Mapping[str, Any]) -> MarketDetails:
         offer=_optional_decimal(snapshot.get("offer")),
         update_time=update_time,
         controlled_risk_allowed=_optional_bool(instrument.get("controlledRiskAllowed")),
+        currency_code=_default_currency_code(instrument.get("currencies")),
+        lot_size=_optional_decimal(instrument.get("lotSize")),
+        contract_size=_optional_decimal(instrument.get("contractSize")),
+        value_of_one_pip=_optional_decimal(instrument.get("valueOfOnePip")),
+        scaling_factor=_optional_decimal(snapshot.get("scalingFactor")),
         min_deal_size=_optional_dealing_rule(dealing_rules.get("minDealSize")),
         min_normal_stop_or_limit_distance=_optional_dealing_rule(
             dealing_rules.get("minNormalStopOrLimitDistance")
@@ -569,6 +574,22 @@ def _parse_market_details(raw: Mapping[str, Any]) -> MarketDetails:
             dealing_rules.get("maxStopOrLimitDistance")
         ),
     )
+
+
+def _default_currency_code(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, list):
+        raise _SafeFieldValidationError("instrument.currencies", "expected a list")
+    currencies = value
+    defaults = []
+    for item in currencies:
+        currency = _mapping(item)
+        if currency.get("isDefault") is True:
+            defaults.append(_required_text(currency, "code"))
+    if len(defaults) != 1:
+        raise _SafeFieldValidationError("instrument.currencies", "one default is required")
+    return defaults[0]
 
 
 def _required_market_details_object(raw: Mapping[str, Any], key: str) -> Mapping[str, Any]:

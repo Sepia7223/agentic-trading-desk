@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -311,7 +311,12 @@ AI analyst.
 
 ## M7
 
-Demo execution.
+Controlled IG Demo execution. The validated implementation is disabled by
+default, long-only, risk-revalidated, one-attempt, and reconciled. Manual mode
+is operator-confirmed; a separate bounded automated Demo mode requires dual
+switches, strict limits, and persistent halt state. It does not include live
+trading, closure, amendments, working orders, account switching, unbounded
+automation, or AI authority.
 
 ## M8
 
@@ -413,3 +418,14 @@ Before beginning a new milestone:
 This ensures the documentation remains the project's authoritative
 engineering reference rather than a historical record created after
 implementation.
+
+## Bounded Automated Demo Observation
+
+`MANUAL_CONFIRMED` remains the default controlled-execution mode. The separate
+`AUTOMATED_DEMO` mode is disabled by default and needs dual explicit switches,
+the exact Demo gateway, deterministic strategy and Risk approval, minimum
+broker size, a protective stop, persistent idempotency, and a clear halt state.
+One submission attempt is allowed. Live hosts, shorts, closure, amendment,
+working orders, account switching, AI authority, and retry after ambiguity are
+structurally unavailable. Real broker validation must not be claimed until a
+naturally eligible Demo order confirms and reconciles.

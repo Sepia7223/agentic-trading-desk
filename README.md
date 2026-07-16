@@ -3,9 +3,10 @@
 Safety-first automated trading application foundation, adapted from the original
 MIT-licensed Claude + Robinhood MCP Agentic Trading Desk.
 
-The current adapter supports authenticated, strictly read-only access to the IG
-REST demo API. It does not call the OpenAI API and contains no order preview,
-validation, placement, amendment, closure, deletion, or account-switching code.
+The broker integration supports authenticated read-only IG Demo access plus a
+separate, disabled-by-default controlled boundary for opening one long Demo
+market position. It contains no live, closure, amendment, working-order,
+deletion, or account-switching capability.
 
 ## Project Documentation
 
@@ -41,16 +42,14 @@ validation, placement, amendment, closure, deletion, or account-switching code.
 ## Current Safety Posture
 
 - `broker_environment`: `DEMO`
-- `operating_mode`: `READ_ONLY`
+- `operating_mode`: `READ_ONLY` by default; `CONTROLLED_EXECUTION` is explicit
 - `live_trading_allowed`: `false`
 - `automatic_execution_enabled`: `false`
 
-Unknown broker, position, market, or risk state must result in no trade. Order
-execution is intentionally absent in this milestone.
-
-The broker protocol and IG adapter are read-only and contain no order preview,
-validation, or execution methods. Those concerns require separate interfaces
-and are outside this milestone.
+Unknown broker, position, market, risk, approval, confirmation, or reconciliation
+state results in no submission or a reconciliation-required state. The existing
+broker protocol remains read-only. Mutation exists only behind the dedicated
+execution port and exact IG Demo allowlist.
 
 ## Project Layout
 
@@ -73,6 +72,7 @@ src/trading_desk/
   risk/                     deterministic approval, sizing, exposure, and decision records
   portfolio/                local-only paper positions, fills, accounting, and event replay
   ai/                       disabled-by-default sanitized advisory analysis and research
+  execution/                controlled preflight, confirmation, idempotency, and reconciliation
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
@@ -104,8 +104,8 @@ python -m trading_desk.cli portfolio replay --events events.json
 The `open`, `mark`, and `close` subcommands require explicit typed JSON inputs
 and UTC timestamps. Every portfolio command prints `Mode: PAPER`,
 `Execution: SIMULATED ONLY`, `Broker connectivity: DISABLED`, and
-`Live trading: DISABLED`. SQLite persistence and all real execution remain
-unavailable.
+`Live trading: DISABLED`. The Paper Portfolio remains unable to call any broker
+or execution adapter.
 
 ## AI Analyst
 
@@ -131,6 +131,56 @@ The default commands return `DISABLED` without loading broker configuration.
 Every response is structured, fingerprinted, source-linked, and carries the
 mandatory advisory statement. AI cannot approve, size, execute, mutate, or
 override deterministic systems, and provider failure cannot block them.
+
+## Controlled IG Demo Execution
+
+Milestone 7 adds a dedicated execution subsystem for one long `MARKET`
+position opening through `POST /positions/otc` version 2. It uses
+only `https://demo-api.ig.com/gateway/deal`; confirmation lookup is
+`GET /confirms/{dealReference}` version 1. The existing read-only IG allowlist
+and broker protocol remain unchanged.
+
+Execution is disabled by default. Submission requires `CONTROLLED_EXECUTION`,
+the explicit `--enable-execution` CLI switch, an intact unexpired approved
+intent, fresh account and market state, a second Risk Engine approval, a bound
+operator confirmation in the default manual mode, acceptable price/spread
+drift, and unused idempotency keys. Quantity is rounded down and may only stay
+equal or decrease.
+
+Submission is attempted once. A timeout, malformed acknowledgement, unknown
+confirmation, or confirmation mismatch is potentially executed and requires
+reconciliation; it is never retried automatically. Automated tests use mocks
+only.
+
+A separate `AUTOMATED_DEMO` mode is implemented for bounded observation. It is
+disabled by default and requires both `--enable-execution` and
+`--enable-automatic-demo-execution`. The initial policy permits one order per
+cycle and day, one open Demo position, a 0.1% risk fraction, 1% notional,
+0.5% daily loss, 1% drawdown, a one-hour cooldown, long market orders only,
+and a protective stop. State is fingerprinted, hash-linked, and locked against
+concurrent runners. Any unresolved submission latches a halt.
+
+```powershell
+python -m trading_desk.cli execution automated-demo-smoke `
+  --epic CS.D.EURUSD.CFD.IP --max-orders 1 `
+  --enable-execution --enable-automatic-demo-execution --initialize-state
+
+python -m trading_desk.cli execution automated-demo-run `
+  --epic CS.D.EURUSD.CFD.IP --cycles 24 --interval-seconds 3600 `
+  --max-orders-per-day 1 --enable-execution `
+  --enable-automatic-demo-execution
+```
+
+The manual mode retains request-bound confirmation. Automated mode replaces it
+only with stricter immutable Demo policy authorization and dual switches. It
+never forces a trade: `WATCH`, `NO_TRADE`, and risk rejection are safe cycle
+results. Operational validation remains pending until a naturally eligible
+signal is confirmed and reconciled in IG Demo.
+
+Every execution command prints `Environment: IG DEMO`,
+`Mode: CONTROLLED EXECUTION`, and `Live trading: DISABLED`. Manual commands
+also print `Automatic execution: DISABLED` and `Operator confirmation:
+REQUIRED`; automated commands identify the explicit Demo policy boundary.
 
 ## Strategy Framework
 
@@ -359,8 +409,8 @@ configuration, and explicit evaluation timestamp produce the same canonical
 decision fingerprint.
 
 An approved intent contains no broker operation and expires deterministically.
-Paper Portfolio accounting is available as local simulation only; broker
-execution remains unavailable.
+Paper Portfolio accounting remains local simulation only. Controlled IG Demo
+execution is a separate, explicitly enabled, operator-confirmed boundary.
 
 ## Leakage-Controlled Backtesting
 

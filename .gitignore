@@ -22,6 +22,7 @@ ENV/
 
 # Local configuration and secrets
 .env
+.trading-desk/
 .env.*
 !.env.example
 *.pem

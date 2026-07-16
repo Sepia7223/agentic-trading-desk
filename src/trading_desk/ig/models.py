@@ -162,6 +162,11 @@ class MarketDetails(StrictModel):
     offer: Decimal | None = None
     update_time: time | None = None
     controlled_risk_allowed: bool | None = None
+    currency_code: str | None = Field(default=None, pattern=r"[A-Z]{3}")
+    lot_size: Decimal | None = Field(default=None, gt=0)
+    contract_size: Decimal | None = Field(default=None, gt=0)
+    value_of_one_pip: Decimal | None = Field(default=None, gt=0)
+    scaling_factor: Decimal | None = Field(default=None, gt=0)
     min_deal_size: DealingRuleValue | None = None
     min_normal_stop_or_limit_distance: DealingRuleValue | None = None
     max_stop_or_limit_distance: DealingRuleValue | None = None
