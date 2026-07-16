@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -266,6 +266,42 @@ AI may later explain decisions but cannot approve candidates, modify limits,
 select quantity, reset loss or kill-switch state, or override any gate.
 
 ------------------------------------------------------------------------
+
+# ADR-016 --- Paper Portfolio Is the Approved Simulated-Intent Consumer
+
+**Status:** Accepted
+
+Only the local Paper Portfolio may consume approved intents in Milestone 5. It
+cannot bypass risk, increase quantity, access IG, or perform broker execution.
+
+# ADR-017 --- Append-Only Ledger and Deterministic Replay
+
+**Status:** Accepted
+
+Fingerprint-chained monotonic events are the source of truth. State snapshots
+are canonical and replay of an intact ordered stream must be byte-equivalent.
+
+# ADR-018 --- Liquidation-Side Valuation and Ambiguity
+
+**Status:** Accepted
+
+Long entries use ask; long marks and exits use bid. Same-bar stop/target
+ambiguity defaults to adverse-first, and rejection mode never fabricates a fill.
+
+# ADR-019 --- Duplicate Approval and Unresolved Position Policy
+
+**Status:** Accepted
+
+Decision IDs, fingerprints, and candidate IDs are consumable at most once.
+Positions without an eligible tradeable exit quote remain unresolved and
+unrealized.
+
+# ADR-020 --- Explicit UTC Daily Accounting
+
+**Status:** Accepted
+
+Callers supply UTC timestamps. UTC date boundaries reset only daily realized
+P&L and start-of-day equity; cumulative history and consecutive losses persist.
 
 # Adding Future ADRs
 

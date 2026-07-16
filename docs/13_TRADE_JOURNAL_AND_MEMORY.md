@@ -13,8 +13,8 @@ depends_on:
   - 06_BACKTESTING.md
   - 07_RISK_ENGINE.md
   - 08_AI_ARCHITECTURE.md
-current_validated_milestone: "4 (Paper Portfolio planned for Milestone 5)"
-implementation_status: Planned
+current_validated_milestone: "5"
+implementation_status: Partially validated; durable journal storage remains planned
 review_required_after_every_milestone: true
 ---
 
@@ -58,6 +58,10 @@ The current platform includes:
 - immutable simulated backtest signals, fills, completed trades, and equity records;
 - explicit forced-liquidation and unresolved-position records;
 - configuration, dataset, split, and run fingerprints.
+- append-only paper intent acceptance and rejection events;
+- simulated position, mark, funding, close, unresolved, and state-snapshot events;
+- immutable closed paper trade records linked to strategy, risk, and portfolio fingerprints;
+- a journal protocol that keeps the Paper Portfolio independent from storage and AI.
 
 ## Planned
 

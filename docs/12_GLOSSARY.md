@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -57,6 +57,22 @@ quantity. It is not a broker order and cannot execute a trade.
 An immutable journal-compatible approval or rejection record containing typed
 gates, stable reason codes, Decimal sizing results, snapshot IDs, and canonical
 fingerprints.
+
+## Paper Portfolio
+
+The local-only deterministic consumer of approved Risk Engine intents. It
+simulates position lifecycle and accounting without broker connectivity or
+execution authority.
+
+## Portfolio Event Ledger
+
+A monotonic append-only, SHA-256 fingerprint-chained sequence that is the source
+of truth for reproducible paper portfolio state.
+
+## Unresolved Position
+
+A simulated position for which no eligible tradeable exit quote exists. It
+remains unrealized and is never converted into fabricated realized P&L.
 
 ## Execution Engine
 

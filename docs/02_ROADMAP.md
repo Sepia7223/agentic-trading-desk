@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -33,7 +33,7 @@ roadmap reflects the new validated state.
   M3 Strategy Engine             ✅ Complete
   M3.5 Backtesting               ✅ Complete
   M4 Risk Engine                 ✅ Complete
-  M5 Paper Portfolio             ⏳ Planned
+  M5 Paper Portfolio             Complete
   M6 AI Analyst                  ⏳ Planned
   M7 Demo Execution              ⏳ Planned
   M8 Trade Journal               ⏳ Planned
@@ -71,9 +71,18 @@ drawdown limits, projected exposure limits, position-count controls, a kill
 switch, stable reason codes, and immutable expiring approved intents. It has no
 broker, HTTP, credential, AI, or execution dependency.
 
-# Next Active Milestone
+# Validated Milestone 5
 
 ## M5 Paper Portfolio
 
-Paper Portfolio accounting remains planned. Milestone 4 decisions and approved
-intents do not execute, mutate, or simulate broker positions.
+The local-only Paper Portfolio consumes intact, unexpired approved intents,
+simulates long position lifecycle events, uses liquidation-side marks, prevents
+approval replay, and reconciles Decimal cash, P&L, exposure, and equity from a
+fingerprint-chained append-only ledger. It projects deterministic AccountRiskState
+snapshots for the next Risk Engine evaluation. Missing valid quotes leave
+positions unresolved rather than fabricating realized P&L.
+
+# Next Active Milestone
+
+Milestone 6, AI Analyst, remains planned and advisory-only. It cannot mutate the
+Paper Portfolio, approve risk, or access broker credentials.

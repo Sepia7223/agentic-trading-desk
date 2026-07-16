@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Deployment planned for Milestone 12)
+current_validated_milestone: 5 (Deployment planned for Milestone 12)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -29,6 +29,11 @@ integration. - Read-only broker operations.
 
 Planned: - Dedicated 24/7 machine. - Docker deployment. - Monitoring. -
 Automated restart. - Backup strategy. - Secure remote administration.
+
+The Milestone 5 paper ledger currently uses deterministic in-memory storage and
+explicit JSON event exports for local CLI workflows. SQLite, migrations,
+automatic restart recovery, and unattended operation remain planned. Paper
+commands do not load broker credentials or connect to IG.
 
 # Deployment Principles
 

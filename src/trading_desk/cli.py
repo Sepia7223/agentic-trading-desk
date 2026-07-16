@@ -1,4 +1,4 @@
-"""Safe command-line interface for read-only IG demo inspection."""
+"""Safe CLI for read-only IG inspection and local deterministic simulation."""
 
 from __future__ import annotations
 
@@ -35,6 +35,17 @@ from trading_desk.ig.models import (
     MarketSearchResult,
     OpenPosition,
 )
+from trading_desk.portfolio import (
+    InMemoryPortfolioRepository,
+    MarketQuote,
+    PaperPortfolio,
+    PortfolioEvent,
+    replay,
+)
+from trading_desk.portfolio.errors import PortfolioError
+from trading_desk.portfolio.models import FillReason
+from trading_desk.risk.models import RiskDecision
+from trading_desk.risk.models import TradeCandidate as RiskTradeCandidate
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
 from trading_desk.strategy.models import (
@@ -125,6 +136,34 @@ def build_parser() -> argparse.ArgumentParser:
     final_test.add_argument("--output-json")
     final_test.add_argument("--output-csv")
     final_test.add_argument("--output-markdown")
+
+    portfolio_parser = subcommands.add_parser("portfolio", help="Local paper simulation only")
+    portfolio_commands = portfolio_parser.add_subparsers(dest="portfolio_command", required=True)
+    create_portfolio = portfolio_commands.add_parser("create")
+    create_portfolio.add_argument("--portfolio-id", default="paper-portfolio")
+    create_portfolio.add_argument("--timestamp", required=True)
+    create_portfolio.add_argument("--output", required=True)
+    for name in ("state", "replay"):
+        command = portfolio_commands.add_parser(name)
+        command.add_argument("--events", required=True)
+    open_position = portfolio_commands.add_parser("open")
+    open_position.add_argument("--events", required=True)
+    open_position.add_argument("--decision", required=True)
+    open_position.add_argument("--candidate", required=True)
+    open_position.add_argument("--market", required=True)
+    open_position.add_argument("--timestamp", required=True)
+    open_position.add_argument("--output", required=True)
+    mark_position = portfolio_commands.add_parser("mark")
+    mark_position.add_argument("--events", required=True)
+    mark_position.add_argument("--market", required=True)
+    mark_position.add_argument("--timestamp", required=True)
+    mark_position.add_argument("--output", required=True)
+    close_position = portfolio_commands.add_parser("close")
+    close_position.add_argument("--events", required=True)
+    close_position.add_argument("--position-id", required=True)
+    close_position.add_argument("--market", required=True)
+    close_position.add_argument("--timestamp", required=True)
+    close_position.add_argument("--output", required=True)
     return parser
 
 
@@ -136,6 +175,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_backtest_command(args)
         except (OSError, ValidationError, ValueError) as error:
             print(f"Backtest error: {error}", file=sys.stderr)
+            return 2
+    if args.command == "portfolio":
+        _print_portfolio_header()
+        try:
+            return _run_portfolio_command(args)
+        except (OSError, PortfolioError, ValidationError, ValueError) as error:
+            print(f"Portfolio error: {error}", file=sys.stderr)
             return 2
     try:
         settings = AppSettings.from_environment()
@@ -170,6 +216,92 @@ def _print_backtest_header() -> None:
     print("Mode: BACKTEST")
     print("Execution: SIMULATED ONLY")
     print("Live trading: DISABLED")
+
+
+def _print_portfolio_header() -> None:
+    print("Mode: PAPER")
+    print("Execution: SIMULATED ONLY")
+    print("Broker connectivity: DISABLED")
+    print("Live trading: DISABLED")
+
+
+def _run_portfolio_command(args: argparse.Namespace) -> int:
+    if args.portfolio_command == "create":
+        portfolio = PaperPortfolio()
+        state = portfolio.create(args.portfolio_id, _utc_argument(args.timestamp))
+        _write_portfolio_events(args.output, portfolio.events)
+        _print_portfolio_state(state)
+        return 0
+    events = _read_portfolio_events(args.events)
+    if args.portfolio_command in {"state", "replay"}:
+        _print_portfolio_state(replay(events))
+        return 0
+    repository = InMemoryPortfolioRepository()
+    repository.commit(events, replay(events))
+    portfolio = PaperPortfolio(repository=repository)
+    timestamp = _utc_argument(args.timestamp)
+    market = MarketQuote.model_validate_json(Path(args.market).read_text(encoding="utf-8"))
+    if args.portfolio_command == "open":
+        decision = RiskDecision.model_validate_json(Path(args.decision).read_text(encoding="utf-8"))
+        candidate = RiskTradeCandidate.model_validate_json(
+            Path(args.candidate).read_text(encoding="utf-8")
+        )
+        open_result = portfolio.open_position(decision, candidate, market, timestamp)
+        print(f"Intent accepted: {'yes' if open_result.accepted else 'no'}")
+        if open_result.rejection is not None:
+            print(
+                "Reasons: " + ", ".join(item.value for item in open_result.rejection.reason_codes)
+            )
+    elif args.portfolio_command == "mark":
+        portfolio.mark(market, timestamp)
+        print("Position marked: yes")
+    elif args.portfolio_command == "close":
+        close_result = portfolio.close_position(
+            args.position_id,
+            market,
+            timestamp,
+            reason=FillReason.MANUAL_SIMULATED_EXIT,
+        )
+        print(f"Trade fingerprint: {close_result.trade.trade_fingerprint}")
+        print(f"Net P&L: {close_result.trade.net_pnl}")
+    else:
+        raise ValueError("unsupported portfolio command")
+    _write_portfolio_events(args.output, portfolio.events)
+    _print_portfolio_state(portfolio.state)
+    return 0
+
+
+def _read_portfolio_events(path: str) -> tuple[PortfolioEvent, ...]:
+    import json
+
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    if not isinstance(payload, list):
+        raise ValueError("portfolio event file must contain a JSON list")
+    return tuple(PortfolioEvent.model_validate(item) for item in payload)
+
+
+def _write_portfolio_events(path: str, events: tuple[PortfolioEvent, ...]) -> None:
+    import json
+
+    payload = [event.model_dump(mode="json") for event in events]
+    Path(path).write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def _print_portfolio_state(state) -> None:  # type: ignore[no-untyped-def]
+    print(f"Portfolio: {state.portfolio_id}")
+    print(f"Snapshot: {state.snapshot_id}")
+    print(f"Cash: {state.cash} {state.base_currency}")
+    print(f"Equity: {state.equity} {state.base_currency}")
+    print(f"Realized P&L: {state.realized_pnl}")
+    print(f"Unrealized P&L: {state.unrealized_pnl}")
+    print(f"Open positions: {state.open_position_count}")
+
+
+def _utc_argument(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None or parsed.utcoffset() != UTC.utcoffset(parsed):
+        raise ValueError("portfolio timestamp must be timezone-aware UTC")
+    return parsed.astimezone(UTC)
 
 
 def _run_backtest_command(args: argparse.Namespace) -> int:

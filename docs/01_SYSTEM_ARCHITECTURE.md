@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -45,10 +45,10 @@ After every completed milestone:
 -   Milestone 3 -- Regime-Aware Strategy Engine
 -   Milestone 3.5 -- Leakage-Controlled Backtesting
 -   Milestone 4 -- Deterministic Risk Engine
+-   Milestone 5 -- Paper Portfolio
 
 ## Planned
 
--   Milestone 5 -- Paper Portfolio
 -   Milestone 6 -- AI Analyst
 -   Milestone 7 -- Demo Execution
 

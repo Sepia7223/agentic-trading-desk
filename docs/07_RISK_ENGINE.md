@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -39,9 +39,12 @@ No trade may bypass this subsystem.
 -   Canonical SHA-256 configuration, input, and decision fingerprints.
 -   Immutable approved intents that are invalid at or after expiry.
 
-## Planned
+## Validated Downstream Consumer
 
-Paper Portfolio accounting is planned for Milestone 5. Broker order execution,
+The Milestone 5 Paper Portfolio is the only implemented consumer of approved
+intents. It validates decision integrity, expiry, snapshots, fingerprints, and
+the approved quantity ceiling before a simulated entry. It returns a complete
+`AccountRiskState` for later risk evaluations. Broker order execution, broker
 position mutation, live trading, and runtime AI remain unavailable.
 
 # Engineering Philosophy

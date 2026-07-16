@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 4 (Milestone 5 planned)
+current_validated_milestone: 5
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -81,6 +81,11 @@ Regime Detection → Signal Engine → Risk Engine → Execution Decision →
 Broker Adapter → Monitoring → Trade Journal
 
 Failure at any stage prevents execution.
+
+For Milestone 5, "execution" means local simulation only. The validated path is
+Risk Engine approved intent -> Paper Portfolio -> append-only journal events ->
+updated AccountRiskState. The Paper Portfolio has no broker or AI dependency,
+cannot increase approved quantity, and values long positions at bid.
 
 ------------------------------------------------------------------------
 

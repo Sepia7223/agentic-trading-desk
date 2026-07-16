@@ -29,6 +29,21 @@ runtime analysis provider and must not receive broker credentials.
 - Keep provider-neutral boundaries abstract. The concrete IG adapter must remain
   behind its centralized read-only policy.
 
+## Paper Portfolio Boundary
+
+- Only an intact, unexpired `APPROVED` Risk Decision and its matching immutable
+  approved intent may open a simulated position.
+- Never increase approved quantity or alter approved direction, stop, target,
+  expiry, risk amount, or strategy/risk fingerprints.
+- The paper ledger is append-only, sequence-ordered, and fingerprint-chained;
+  replay must reproduce the canonical state exactly.
+- Use ask plus adverse slippage for long entries and bid minus adverse slippage
+  for long exits. Mark open longs at bid.
+- Reject duplicate approvals and unknown, stale, malformed, mismatched, or
+  non-tradeable state. Never fabricate a fill for unresolved positions.
+- Use explicit UTC timestamps and `Decimal` accounting. AI, IG, HTTP, credentials,
+  and broker mutation code must not be imported by `trading_desk.portfolio`.
+
 ## IG Read-Only Boundary
 
 Every IG request must pass through the central allowlist. The complete allowed
