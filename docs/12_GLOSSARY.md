@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -212,6 +212,43 @@ reconciliation failure. It is never cleared automatically.
 
 The default controlled-execution mode. One exact unexpired operator
 confirmation is required for each execution request.
+
+## Journal Envelope
+
+An immutable versioned wrapper around an existing source record containing
+source links, UTC timestamps, deterministic payload serialization, and
+fingerprints.
+
+## Fingerprint Chain
+
+A sequence in which each journal record includes the previous record's SHA-256
+fingerprint, making ordering and historical alteration detectable.
+
+## Amendment
+
+A new immutable correction or note linked to an original journal record. It
+does not replace, update, or delete the original.
+
+## Recovery-Read-Only Mode
+
+A fail-closed startup state that permits evidence inspection but blocks appends
+after an unrecoverable journal integrity finding.
+
+## Process Classification
+
+A deterministic assessment of whether the trading process was valid,
+rule-violating, erroneous, unresolved, or unknown, independent of profit or
+loss.
+
+## Financial Outcome
+
+The separate `WIN`, `LOSS`, `BREAKEVEN`, `UNREALIZED`, or `UNKNOWN`
+classification of a trade result.
+
+## Structured Similarity
+
+Deterministic filtered or normalized-distance comparison of completed trade
+features. It is not machine learning or semantic vector search.
 
 # Documentation Governance
 

@@ -13,8 +13,8 @@ depends_on:
   - 06_BACKTESTING.md
   - 07_RISK_ENGINE.md
   - 08_AI_ARCHITECTURE.md
-current_validated_milestone: "7"
-implementation_status: Advisory analysis records validated; durable journal storage remains planned
+current_validated_milestone: "8"
+implementation_status: Durable append-only journal, deterministic review, retrieval, backup, and export validated
 review_required_after_every_milestone: true
 ---
 
@@ -66,19 +66,33 @@ The current platform includes:
 - deterministic structured historical retrieval with explicit time cutoffs;
 - daily, weekly, monthly, signal, risk, trade, portfolio, anomaly, comparison,
   and research-hypothesis advisory modes.
+- durable SQLite persistence with an explicit database path, schema version 1,
+  migrations, transactions, foreign keys, WAL, and restart-safe readback;
+- immutable sequence-ordered journal envelopes with source and parent IDs,
+  deterministic Decimal-safe payloads, and SHA-256 fingerprint chaining;
+- duplicate and missing-parent rejection, explicit deferred linkage, atomic
+  batch rollback, integrity reports, and recovery-read-only startup behavior;
+- amendments that preserve originals and prohibit hard deletion;
+- deterministic post-trade reviews that separate process classification from
+  financial outcome, plus UTC daily, weekly, and monthly summaries;
+- structured cutoff-aware filtering, pagination, query fingerprints, lineage
+  reconstruction, and normalized-distance historical comparison;
+- SQLite-consistent checksummed backups with retention and sanitized bounded
+  JSONL, CSV, and Markdown exports;
+- a read-only journal facade for AI analysis with no upstream mutation methods.
 
 ## Planned
 
-The following are not yet implemented:
+The following remain future and are not implemented:
 
-- persistent trade journal database;
-- automated signal journaling;
-- post-trade review workflow;
-- semantic trade search;
-- AI-generated review reports;
-- pre-session historical similarity review;
-- chart and screenshot storage;
-- historical lesson retrieval.
+- automatic wiring of every runtime source event into the durable writer;
+- semantic vector or embedding search;
+- autonomous strategy or risk modification;
+- automatic deployment of AI hypotheses;
+- live-trading memory feedback;
+- production data warehouse, cloud persistence, distributed streaming, and
+  multi-user access;
+- chart and screenshot storage.
 
 # Architectural Role
 
@@ -168,8 +182,8 @@ Includes:
 - evaluation timestamp and candidate expiry.
 
 Milestone 4 returns this immutable typed record directly. An approval may also
-contain an immutable expiring approved intent. Neither record is a broker order,
-and persistent journal storage remains planned.
+contain an immutable expiring approved intent. Neither record is a broker order.
+Milestone 8 can wrap either source record without changing it.
 
 ## Execution Record
 
@@ -390,16 +404,17 @@ Validated backtests produce immutable simulated signal, fill, trade, equity,
 rejection, and unresolved-position records. A forced end-of-data liquidation is
 distinguished from an unresolved position with no valid exit quote. Unresolved
 positions have no fabricated fill or realized P&L. These local research records
-are not broker orders and are not yet stored in a persistent journal database.
+are not broker orders and can now be wrapped in the Milestone 8 journal.
 
 ## Milestone 5
 
 The Paper Portfolio emits append-only local journal-compatible events and trade
-records. Durable database persistence remains planned.
+records. Milestone 8 provides durable wrapping and persistence without changing
+the Paper Portfolio models or ledger.
 
-## Milestone 5.5
+## Historical Milestone 5.5 Proposal
 
-Implement the Trade Intelligence and Historical Memory Engine:
+The earlier proposal anticipated:
 
 - automated journaling;
 - post-trade review;
@@ -412,7 +427,7 @@ Implement the Trade Intelligence and Historical Memory Engine:
 Validated: the AI Analyst consumes sanitized journal-compatible records in
 advisory mode, uses structured retrieval first, and appends immutable analysis
 records. It cannot modify source history. Raw provider responses are not stored,
-and durable journal/database integration remains planned.
+and Milestone 8 now provides the durable read-only evidence integration.
 
 ## Milestone 7
 
@@ -423,8 +438,16 @@ risk decision, approved intent, execution request, and safe broker references
 where available. Payloads are represented by fingerprints; credentials, OAuth
 values, authorization headers, and raw broker messages are never journaled.
 
-Paper simulation and Demo execution records remain separate. Durable SQLite
-storage and the broader Trade Journal milestone remain planned.
+Paper simulation and Demo execution records remain separate.
+
+## Milestone 8
+
+Validated: explicit-path SQLite schema version 1, migrations, transactional
+append, source-parent linkage, fingerprint chains, restart integrity checks,
+recovery-read-only mode, amendments, deterministic reviews, structured queries,
+lineage, normalized-distance similarity, checksummed backups, sanitized exports,
+and AI read-only access. Automatic wiring of every runtime producer, semantic
+vector search, cloud persistence, and autonomous feedback remain future.
 
 # Acceptance Criteria
 

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -137,3 +137,14 @@ limits, cooldown, loss/drawdown halts, one-attempt behavior, confirmation,
 reconciliation, persistent idempotency, concurrent-run rejection, and secret
 sanitization. A safe no-signal result must never be converted into a forced
 trade for testing.
+
+## Durable Journal Change Standard
+
+Journal changes require tests for immutable configuration, schema and migration
+transactions, restart persistence, chain and payload integrity, parents,
+duplicate identity, atomic rollback, amendments, UTC review boundaries, cutoff
+enforcement, deterministic similarity, backup verification, export redaction,
+and absence of broker or credential dependencies. Never add update or hard
+delete SQL for historical evidence. Migration failures roll back; corruption is
+reported and never silently repaired. Source models are wrapped, not copied into
+divergent journal-specific contracts.

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -429,3 +429,14 @@ One submission attempt is allowed. Live hosts, shorts, closure, amendment,
 working orders, account switching, AI authority, and retry after ambiguity are
 structurally unavailable. Real broker validation must not be claimed until a
 naturally eligible Demo order confirms and reconciles.
+
+## Validated Durable Evidence Boundary
+
+Milestone 8 adds an explicit-path SQLite evidence store after the validated
+Strategy, Risk, Paper, Demo Execution, and AI boundaries. Source models remain
+authoritative and immutable; the journal wraps them in linked, versioned,
+fingerprint-chained envelopes. Transactional batches, migrations, startup
+integrity checks, amendments, deterministic reviews, cutoff-aware retrieval,
+backups, and sanitized exports are validated. The journal cannot call a broker,
+approve or execute a trade, or mutate upstream state. Semantic memory,
+autonomous learning, cloud persistence, and live-memory feedback remain future.

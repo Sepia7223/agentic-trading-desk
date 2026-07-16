@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -103,8 +103,20 @@ drawdown, exposure and quantity limits, persistent halt/idempotency state, and
 no-retry reconciliation. Real operational validation remains pending until a
 naturally eligible signal completes the Demo lifecycle.
 
+# Validated Milestone 8
+
+The durable local Trade Journal wraps validated immutable source records in a
+versioned envelope and persists them to SQLite with transactions, foreign keys,
+WAL, deterministic Decimal-safe serialization, source linkage, and a global
+SHA-256 fingerprint chain. Amendments preserve originals; hard deletion and
+source-record updates are unavailable. Restart verification, recovery-read-only
+mode, deterministic post-trade and UTC periodic reviews, cutoff-aware queries,
+normalized-distance comparison, consistent backups, and sanitized JSONL, CSV,
+and Markdown exports are validated. AI access is read-only.
+
 # Next Active Milestone
 
-Milestone 8, durable Trade Journal integration, remains planned. Live trading,
-unbounded automation, closure, amendment, working orders, account switching,
-short execution, and AI execution authority remain unavailable.
+Milestone 9 is not defined by this change. Semantic vector search, autonomous
+learning or parameter changes, cloud persistence, live trading, unbounded
+automation, closure, working orders, account switching, short execution, and AI
+execution authority remain future and unavailable.

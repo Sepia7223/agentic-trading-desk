@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7 (Deployment planned for Milestone 12)
+current_validated_milestone: 8 (Deployment planned for Milestone 12)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -123,3 +123,14 @@ Fingerprint-validated state lives under ignored `.trading-desk/` storage and
 uses an exclusive lock; stale locks and integrity failures require human review.
 No automatic restart, halt clearing, live deployment, or secret persistence is
 provided.
+
+## Milestone 8 Local Journal Operation
+
+SQLite journal, backup, and export paths are always operator supplied; the
+application does not create implicit home or working-directory storage. Startup
+enforces schema version 1, allowed migrations, foreign keys, WAL where
+appropriate, and integrity verification. Invalid evidence enters
+recovery-read-only mode and is not silently repaired. Backups use SQLite's
+consistent backup API, explicit existing destinations, checksums, verification,
+and bounded retention. Cloud persistence, automatic scheduling, remote backup,
+multi-user operation, and distributed streaming remain future.

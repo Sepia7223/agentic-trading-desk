@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -116,3 +116,13 @@ leakage protections, release boundaries, and known limitations here.
 
 A backtesting milestone is not complete until this document matches the
 validated implementation.
+
+## Milestone 8 Historical Evidence
+
+Validated backtest records may be wrapped by the durable journal without
+changing their dataset, split, configuration, chronology, fill, or outcome
+fields. Journal query and review cutoffs prohibit future records, and journal
+similarity is deterministic normalized-distance comparison rather than model
+training. Journal summaries do not select variants or release final-test data.
+Automatic parameter optimization and feedback from journal outcomes remain
+future and prohibited.

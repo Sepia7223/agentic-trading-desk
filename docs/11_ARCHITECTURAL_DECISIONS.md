@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -446,6 +446,87 @@ retry ambiguous submissions, continue after unresolved state, use a live host,
 or receive AI authority. `MANUAL_CONFIRMED` remains the default execution mode.
 
 **Affected Milestones:** 7 and later Demo observation.
+
+# ADR-040 --- Journal as Append-Only Evidence Store
+
+**Status:** Accepted
+
+The durable journal records immutable evidence and has no decision, risk,
+portfolio, broker, or execution authority. Historical records have no update or
+hard-delete operation.
+
+# ADR-041 --- SQLite as Initial Persistence
+
+**Status:** Accepted
+
+SQLite schema version 1 provides local transactions, foreign keys, WAL,
+consistent backup, migration support, and restart-safe operation. Cloud and
+distributed persistence remain future.
+
+# ADR-042 --- Wrap Existing Source Models
+
+**Status:** Accepted
+
+Validated Strategy, Risk, Paper, Execution, reconciliation, and AI models remain
+authoritative. A stable journal envelope wraps their deterministic serialized
+form rather than introducing divergent domain copies.
+
+# ADR-043 --- Fingerprint-Chained Lineage
+
+**Status:** Accepted
+
+Every record has source, payload, previous-record, and journal fingerprints plus
+source-parent identifiers and monotonic sequence. Lineage and integrity are
+reconstructable after restart.
+
+# ADR-044 --- Amendments Instead of Updates
+
+**Status:** Accepted
+
+Corrections append linked amendment evidence. The original remains intact;
+realized-fact corrections require an approval reference and hard deletion is
+unavailable.
+
+# ADR-045 --- Deterministic Reviews Before AI
+
+**Status:** Accepted
+
+Post-trade and periodic metrics and classifications are calculated by local code
+before any advisory interpretation. Process quality is separate from financial
+outcome.
+
+# ADR-046 --- Structured Retrieval Before Semantic Memory
+
+**Status:** Accepted
+
+Typed filters, explicit UTC cutoffs, stable ordering, pagination, query
+fingerprints, and deterministic normalized distance are validated first.
+Embeddings and semantic vector search remain future.
+
+# ADR-047 --- Explicit Backup and Recovery
+
+**Status:** Accepted
+
+Backups require explicit destinations, SQLite-consistent copying, checksums,
+verification, and retention. Startup corruption enters recovery-read-only mode
+and is never silently repaired.
+
+# ADR-048 --- Hard Deletion Is Prohibited
+
+**Status:** Accepted
+
+Milestone 8 configuration rejects hard deletion and the repository exposes no
+delete method or historical update method.
+
+# ADR-049 --- AI Journal Access Is Read-Only
+
+**Status:** Accepted
+
+AI may query sanitized cutoff-bounded evidence through a read-only facade and
+may append a separate analysis only through an authorized boundary. It cannot
+amend, rewrite, delete, or mutate upstream systems.
+
+**Affected Milestones:** 8 and later evidence/review work.
 
 # Adding Future ADRs
 

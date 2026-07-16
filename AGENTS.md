@@ -87,6 +87,38 @@ runtime analysis provider and must not receive broker credentials.
 - AI analysis records are append-only. Raw provider responses are not stored.
   Structured retrieval precedes any future semantic retrieval.
 
+## Durable Journal Boundary
+
+- The journal is an append-only evidence store. It has no broker, strategy,
+  risk, portfolio, or execution authority and must not import IG or execution
+  adapters.
+- Wrap validated immutable source records in the common envelope. Do not create
+  divergent copies of Strategy, Risk, Paper, Execution, reconciliation, or AI
+  domain models.
+- Use explicit database and export paths, UTC timestamps, deterministic
+  Decimal-safe serialization, schema migrations, foreign keys, transactional
+  batches, and a globally ordered SHA-256 fingerprint chain.
+- Never update or hard-delete historical records. A correction is a linked,
+  immutable amendment with evidence; the original remains unchanged.
+- Reject duplicate identities and missing required parents. Deferred linkage is
+  explicit, limited by record type, visible to integrity checks, and never a
+  silent repair.
+- Startup verifies schema, SQLite integrity, foreign keys, sequence, chain,
+  payload/source fingerprints, parents, and amendments. Corruption fails closed
+  into recovery-read-only mode; never silently rewrite evidence.
+- Reviews and similarity calculations are deterministic and cutoff bounded.
+  Process quality and financial outcome remain separate classifications.
+- AI receives only the `ReadOnlyJournal` facade. It may query sanitized evidence
+  and append a separate AI analysis through an authorized writer, but cannot
+  amend, rewrite, delete, or use future records.
+- Prohibit credentials, OAuth values, authorization headers, raw login or
+  provider responses, unnecessary account identifiers, and machine-specific
+  paths in persisted payloads and exports.
+- Backups use SQLite's consistent backup API, an explicit destination, checksum
+  verification, and retention. Exports are bounded and sanitized.
+- Semantic embeddings, autonomous parameter changes, cloud storage, distributed
+  queues, multi-user mutation, and any journal-to-execution flow remain future.
+
 ## IG Read-Only Boundary
 
 Every IG request must pass through the central allowlist. The complete allowed

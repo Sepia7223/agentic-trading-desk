@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -338,3 +338,14 @@ confirmation, and reconciliation. Fingerprinted local state carries daily
 counts, cooldown, account identity, idempotency, journal links, and a latched
 halt. No Strategy, Risk, AI, Paper Portfolio, or journal component receives a
 broker mutation dependency.
+
+## Durable Journal Architecture
+
+Validated activity flows through immutable source records into a storage-neutral
+writer port and an explicit-path SQLite repository. The repository owns schema
+version 1, migration, foreign-key and WAL setup, transaction boundaries,
+sequence ordering, parent links, and the global fingerprint chain. Read-only
+query, lineage, integrity, review, similarity, backup, and export services sit
+downstream. AI receives only a read-only facade. No reverse path from journal to
+Strategy, Risk, Portfolio, Broker, or Execution exists. Cloud storage, event
+streaming, multi-user writes, and semantic retrieval remain future.
