@@ -134,3 +134,10 @@ recovery-read-only mode and is not silently repaired. Backups use SQLite's
 consistent backup API, explicit existing destinations, checksums, verification,
 and bounded retention. Cloud persistence, automatic scheduling, remote backup,
 multi-user operation, and distributed streaming remain future.
+# Milestone 7.5 Scheduler Operations
+
+The scheduler is a bounded planner with explicit local state. It derives action and
+completed-bar identities from UTC timestamps, deduplicates persisted action IDs, and
+does not treat sleep timing as market identity. Runtime storage paths remain explicit.
+Deployment must preserve one-writer state ownership, journal integrity, Demo-only
+configuration, and fail-closed execution halts.

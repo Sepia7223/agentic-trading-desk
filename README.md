@@ -218,6 +218,31 @@ Similarity is deterministic structured comparison, not machine learning.
 Semantic vector search, autonomous learning, cloud persistence, and journal-led
 strategy, risk, portfolio, or execution changes remain future and prohibited.
 
+## Market Context And Strategy Routing
+
+Milestone 7.5 was applied after Milestone 8 in repository history. It adds a
+deterministic, cutoff-safe Market Context Engine, validated-strategy registry,
+capital-preservation route, UTC/DST-aware session classifier, structured event
+windows, and completed-bar scheduler. New context and router evidence uses the
+existing durable append-only journal record taxonomy.
+
+Validated capability is deliberately narrow: the existing trend/regime strategy
+is the only executable strategy. Range mean reversion, volatility breakout, and
+post-news continuation are `RESEARCH_ONLY`; the router can evaluate and journal
+them but cannot send them to Risk or execution. AI has no strategy-selection
+authority. A missing, stale, conflicting, illiquid, event-blocked, or otherwise
+invalid context routes to capital preservation.
+
+Context classification uses only observations available through the explicit
+cutoff. Session windows use IANA time zones for London, New York, and Tokyo;
+completed-bar identities derive from UTC boundaries rather than process sleep
+timing. Context-aware historical expectancy is grouped by strategy, session,
+overlap, liquidity, volatility, trend, event state, weekday, spread bucket,
+instrument, and timeframe, with sample-size flags and no automatic promotion.
+
+Still prohibited are forced trades, AI-selected strategies, research-strategy
+execution, live trading, online learning, and automatic parameter changes.
+
 ## Strategy Framework
 
 The deterministic strategy layer preserves the original three-pillar framework:

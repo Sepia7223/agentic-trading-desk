@@ -148,3 +148,10 @@ and absence of broker or credential dependencies. Never add update or hard
 delete SQL for historical evidence. Migration failures roll back; corruption is
 reported and never silently repaired. Source models are wrapped, not copied into
 divergent journal-specific contracts.
+# Milestone 7.5 Development Rules
+
+Context, router, and scheduler code must remain deterministic, immutable, typed, and
+cutoff-safe. Test DST transition weeks, event release/revision visibility, duplicate
+bar suppression, restart behavior, metadata fingerprints, research isolation, and
+capital preservation. No context package may import broker mutation, credentials,
+AI authority, Risk approval, or execution submission code.

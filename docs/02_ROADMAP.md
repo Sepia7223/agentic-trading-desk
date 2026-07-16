@@ -36,7 +36,8 @@ roadmap reflects the new validated state.
   M5 Paper Portfolio             Complete
   M6 AI Analyst                  Complete
   M7 Demo Execution              Complete
-  M8 Trade Journal               ⏳ Planned
+  M7.5 Context & Router          Complete
+  M8 Trade Journal               Complete
   M9 Dashboard                   ⏳ Planned
   M10 Knowledge & Memory         ⏳ Planned
   M11 Multi-Agent Architecture   ⏳ Planned
@@ -120,3 +121,12 @@ Milestone 9 is not defined by this change. Semantic vector search, autonomous
 learning or parameter changes, cloud persistence, live trading, unbounded
 automation, closure, working orders, account switching, short execution, and AI
 execution authority remain future and unavailable.
+# Milestone 7.5 - Completed
+
+Milestone 7.5 is implemented on top of the completed Milestone 8 lineage. Validated:
+completed-bar scheduling, UTC/DST sessions, observable liquidity, causal volatility,
+structured event windows, deterministic registry/router, explicit capital
+preservation, research isolation, and context-aware historical reporting. Research
+only: range mean reversion, volatility breakout, post-news continuation. Future:
+separately reviewed promotion of any research strategy. Milestone 8 durable journal
+remains completed and persists the new evidence record types.

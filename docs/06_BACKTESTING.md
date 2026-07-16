@@ -126,3 +126,11 @@ similarity is deterministic normalized-distance comparison rather than model
 training. Journal summaries do not select variants or release final-test data.
 Automatic parameter optimization and feedback from journal outcomes remain
 future and prohibited.
+# Milestone 7.5 Context-Aware Reporting
+
+Validated reporting groups closed observations by strategy, session, overlap,
+liquidity, volatility, trend, event state, weekday, spread bucket, instrument, and
+timeframe. It reports count, return, drawdown, Sharpe, Sortino, profit factor, win
+rate, payoff, exposure, turnover, costs, MFE, MAE, recent performance, and stability.
+Records after the explicit cutoff are excluded and insufficient samples are marked.
+These summaries cannot promote or dynamically retune a strategy.

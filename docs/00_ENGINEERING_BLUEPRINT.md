@@ -440,3 +440,11 @@ integrity checks, amendments, deterministic reviews, cutoff-aware retrieval,
 backups, and sanitized exports are validated. The journal cannot call a broker,
 approve or execute a trade, or mutate upstream state. Semantic memory,
 autonomous learning, cloud persistence, and live-memory feedback remain future.
+# Milestone 7.5 - Market Context And Strategy Routing
+
+**Validated:** deterministic session, liquidity, volatility, event, context,
+registry, routing, capital-preservation, completed-bar scheduling, and
+context-grouped reporting are implemented. Only the existing trend/regime
+strategy is validated. **Research:** range, breakout, and post-news strategies
+are isolated as `RESEARCH_ONLY`. **Future/prohibited:** AI selection, automatic
+promotion, forced trades, and live trading remain unavailable.

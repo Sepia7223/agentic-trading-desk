@@ -254,3 +254,16 @@ features. It is not machine learning or semantic vector search.
 
 Update this glossary whenever new technical terms, models, or
 architectural concepts become part of the validated implementation.
+# Milestone 7.5 Terms
+
+**Market Context Snapshot:** immutable cutoff-stamped classification of session,
+liquidity, volatility, trend, event, news caution, and market quality.
+
+**Strategy Router:** deterministic metadata gate that can select at most one validated
+strategy or capital preservation.
+
+**Research Only:** strategy status that permits evaluation and journaling but blocks
+candidate delivery to Risk and execution.
+
+**Completed-Bar Identity:** UTC timeframe boundary used to prevent unfinished or
+duplicate evaluations independently of runner wake-up timing.

@@ -508,3 +508,11 @@ hash-linked execution journal and idempotency keys. Ambiguous submission,
 broker error, integrity failure, and reconciliation mismatch produce a durable
 halt record. Credentials, OAuth values, headers, raw responses, and full account
 identifiers are never journal fields.
+# Milestone 7.5 Evidence Records
+
+The completed Milestone 8 journal taxonomy now includes `SCHEDULER_CYCLE`,
+`MARKET_CONTEXT`, `SESSION_CLASSIFICATION`, `EVENT_CONTEXT`, `ROUTER_DECISION`,
+`STRATEGY_ELIGIBILITY`, `RESEARCH_STRATEGY_RESULT`, and
+`CAPITAL_PRESERVATION_DECISION`. These are append-only evidence without trading
+authority. Historical expectancy is cutoff-bounded deterministic memory and cannot
+change strategy status, thresholds, Risk decisions, or execution policy.

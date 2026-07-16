@@ -185,3 +185,10 @@ endpoint, open `.env`, or persist API keys, passwords, OAuth values,
 authorization headers, raw login bodies, or provider responses. Broker facts
 are preserved as separate immutable source records; corrections require linked
 amendments and evidence. No broker capability changed in Milestone 8.
+# Milestone 7.5 Integration Boundary
+
+Market context consumes normalized completed bars and public market state from the
+existing IG Demo boundary. It does not add broker endpoints, credentials, hosts, or
+HTTP authority. The router cannot call the Demo mutation adapter; any later selected
+candidate must still pass the unchanged Risk and controlled Demo execution systems.
+Research-only routes never reach either system. Live trading remains prohibited.

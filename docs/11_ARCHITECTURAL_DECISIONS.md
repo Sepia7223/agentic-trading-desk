@@ -557,3 +557,13 @@ Review this document after every milestone.
 
 Record all accepted architectural decisions before marking the milestone
 complete.
+# Milestone 7.5 Decisions
+
+- **Accepted:** route by validated context instead of weakening one universal strategy.
+- **Accepted:** capital preservation is an explicit successful routing outcome.
+- **Accepted:** structured timestamped events precede any AI news interpretation.
+- **Accepted:** research-only status is technically blocked from Risk and execution.
+- **Accepted:** sessions use UTC plus IANA zones for DST correctness.
+- **Accepted:** scheduling is keyed by completed-bar boundaries, not sleep cadence.
+- **Accepted:** promotion is a fingerprinted, leakage-controlled, separately reviewed act.
+- **Rejected:** AI strategy selection, raw-news execution, forced trades, and online retuning.
