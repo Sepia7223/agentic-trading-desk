@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 5
+current_validated_milestone: 6
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md

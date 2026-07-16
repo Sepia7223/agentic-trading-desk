@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 5
+current_validated_milestone: 6
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -34,7 +34,7 @@ roadmap reflects the new validated state.
   M3.5 Backtesting               ✅ Complete
   M4 Risk Engine                 ✅ Complete
   M5 Paper Portfolio             Complete
-  M6 AI Analyst                  ⏳ Planned
+  M6 AI Analyst                  Complete
   M7 Demo Execution              ⏳ Planned
   M8 Trade Journal               ⏳ Planned
   M9 Dashboard                   ⏳ Planned
@@ -82,7 +82,15 @@ fingerprint-chained append-only ledger. It projects deterministic AccountRiskSta
 snapshots for the next Risk Engine evaluation. Missing valid quotes leave
 positions unresolved rather than fabricating realized P&L.
 
+# Validated Milestone 6
+
+The provider-neutral AI Analyst explains, reviews, compares, and proposes
+research from sanitized deterministic records. Analysis and network providers
+default to disabled. Requests, prompts, responses, and append-only analysis
+records are strict and fingerprinted. AI cannot approve, size, execute, mutate,
+or override, and provider failure cannot block deterministic workflows.
+
 # Next Active Milestone
 
-Milestone 6, AI Analyst, remains planned and advisory-only. It cannot mutate the
-Paper Portfolio, approve risk, or access broker credentials.
+Milestone 7, controlled IG Demo execution, remains planned. No order or broker
+mutation capability is implemented by Milestone 6.

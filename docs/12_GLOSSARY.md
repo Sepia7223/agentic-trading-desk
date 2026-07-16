@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 5
+current_validated_milestone: 6
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -81,8 +81,26 @@ operations. Not yet implemented.
 
 ## AI Analyst
 
-An advisory subsystem that explains, reviews, and researches. It does
-not approve or execute trades.
+The provider-neutral, disabled-by-default advisory subsystem that explains,
+reviews, compares, and proposes research from sanitized deterministic records.
+It does not approve, size, execute, mutate, or override.
+
+## Sanitized Context
+
+A strict bounded representation that excludes credentials, authorization data,
+raw broker responses, full account identifiers, local paths, and unnecessary
+metadata before provider invocation.
+
+## AI Analysis Record
+
+An immutable append-only record linking a structured advisory response to its
+sanitized input fingerprint, source IDs, provider metadata, policy version, and
+configuration fingerprint.
+
+## Structured Historical Retrieval
+
+Deterministic filtering by explicit attributes and time cutoff. It is the
+primary evidence mechanism and prevents future-record leakage.
 
 ## LONG_CANDIDATE
 

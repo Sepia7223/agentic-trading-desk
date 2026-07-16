@@ -1,6 +1,5 @@
 ---
-current_validated_milestone: 5 (AI implementation planned for Milestone
-  6)
+current_validated_milestone: 6
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -24,11 +23,15 @@ decisions.
 
 # Current State
 
-Validated: - No AI controls trading decisions. - Deterministic strategy
-is the source of trade candidates.
+Validated: - Provider-neutral AI Analyst protocol. - Disabled-by-default local
+analysis. - Deterministic sanitization and prompt policy. - Strict structured
+responses. - Append-only analysis records. - Structured historical retrieval.
+- Signal and risk explanation, trade review, portfolio summary, historical
+comparison, anomaly review, research hypotheses, and periodic report modes.
 
-Planned: - AI Analyst - Research assistant - Trade reviewer -
-Performance summarizer - Multi-agent collaboration
+Planned: - Optional isolated network provider adapter. - Durable journal
+database. - Semantic retrieval for qualitative records. - Multi-agent
+collaboration.
 
 # Core Principles
 
@@ -72,7 +75,7 @@ Market Data → Strategy Engine → Risk Engine → Monitoring → AI Analysis
 
 AI does not alter upstream decisions.
 
-# Planned AI Roles
+# Validated AI Roles
 
 ## AI Analyst
 
@@ -85,6 +88,25 @@ Evaluates hypotheses and summarizes experiments.
 ## AI Reviewer
 
 Reviews completed trades and identifies strengths and weaknesses.
+
+# Provider and Sanitization Boundary
+
+Provider access is abstract and disabled by default. The current implementation
+has no OpenAI SDK or live provider adapter. Only sanitized structured data may
+cross the port. Credentials, authorization data, raw broker responses, full
+account identifiers, local paths, machine metadata, unsafe questions, future
+records, and oversized requests fail before invocation.
+
+Prompts are deterministic and versioned. Provider prose is inherently not
+guaranteed reproducible, so every response is schema-validated, source-linked,
+policy-checked, and fingerprinted without claiming deterministic generation.
+Raw provider responses are not stored.
+
+# Failure Isolation
+
+Disabled, rejected, timed-out, malformed, or failed AI analysis returns a safe
+typed status. Strategy output, Risk Decisions, approved intents, Paper Portfolio
+state, and source journal history remain unchanged and continue independently.
 
 ## Future Multi-Agent System
 
