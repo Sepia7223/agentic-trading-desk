@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 5
+current_validated_milestone: 6
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -46,10 +46,10 @@ After every completed milestone:
 -   Milestone 3.5 -- Leakage-Controlled Backtesting
 -   Milestone 4 -- Deterministic Risk Engine
 -   Milestone 5 -- Paper Portfolio
+-   Milestone 6 -- AI Analyst
 
 ## Planned
 
--   Milestone 6 -- AI Analyst
 -   Milestone 7 -- Demo Execution
 
 ------------------------------------------------------------------------
@@ -218,8 +218,9 @@ subsystem has no broker, HTTP, credential, storage, or execution dependency.
 
 ## Paper Portfolio
 
-Planned for Milestone 5. It may consume approved intents but cannot bypass or
-recalculate the Risk Engine's decision.
+Validated in Milestone 5. It consumes approved intents for local simulation,
+maintains the append-only paper ledger, and projects AccountRiskState without
+bypassing or recalculating the Risk Engine's decision.
 
 ## Execution Engine
 
@@ -237,6 +238,13 @@ Records:
 -   reports
 
 ## AI Analyst
+
+Validated in Milestone 6 as a provider-neutral advisory boundary. It consumes
+only sanitized immutable records, emits strict source-linked analysis, and may
+append AI analysis records. It cannot import broker or mutation engines,
+approve risk, select quantity, mutate portfolio state, or execute. Provider
+access is disabled by default and provider failure cannot block deterministic
+systems.
 
 May:
 

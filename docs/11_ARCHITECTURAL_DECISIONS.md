@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 5
+current_validated_milestone: 6
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -302,6 +302,66 @@ unrealized.
 
 Callers supply UTC timestamps. UTC date boundaries reset only daily realized
 P&L and start-of-day equity; cumulative history and consecutive losses persist.
+
+# ADR-021 --- AI Is Advisory Only
+
+**Status:** Accepted
+
+AI may explain, review, compare, and propose research. Deterministic strategy,
+risk, and portfolio systems remain authoritative; AI cannot approve, size,
+execute, mutate, or override.
+
+# ADR-022 --- Provider-Neutral Disabled-by-Default Interface
+
+**Status:** Accepted
+
+Domain code depends on an abstract provider protocol. Analysis and network
+access default to disabled, and no concrete network provider is included.
+
+# ADR-023 --- Deterministic Sanitization Boundary
+
+**Status:** Accepted
+
+Only bounded, structured, redacted records may reach a provider. Secrets,
+authorization structures, raw broker data, paths, unsafe questions, and future
+historical records fail closed.
+
+# ADR-024 --- Structured Validated AI Output
+
+**Status:** Accepted
+
+Responses require a strict schema, advisory acknowledgment, source links,
+operational-language policy checks, and canonical fingerprints.
+
+# ADR-025 --- Provider Failure Isolation
+
+**Status:** Accepted
+
+Provider disablement, timeout, refusal, error, or malformed output cannot alter
+or block deterministic workflows.
+
+# ADR-026 --- Append-Only AI Analysis Records
+
+**Status:** Accepted
+
+Validated advisory responses may append immutable analysis records but cannot
+rewrite source journal history. Raw provider responses are not stored.
+
+# ADR-027 --- Structured Retrieval Before Semantic Retrieval
+
+**Status:** Accepted
+
+Historical evidence uses deterministic filters and explicit cutoffs first.
+Future semantic retrieval is limited to qualitative records and cannot replace
+structured evidence.
+
+# ADR-028 --- No Automatic Strategy or Risk Changes
+
+**Status:** Accepted
+
+AI research hypotheses require human review and controlled deterministic tests.
+They cannot deploy themselves or change strategy, risk, kill-switch, or
+portfolio configuration.
 
 # Adding Future ADRs
 

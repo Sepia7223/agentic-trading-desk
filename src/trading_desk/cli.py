@@ -12,6 +12,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from trading_desk.ai import AIAnalyst, AnalysisMode
 from trading_desk.backtest.comparison import (
     compare_variants,
     evaluate_final_test,
@@ -164,6 +165,23 @@ def build_parser() -> argparse.ArgumentParser:
     close_position.add_argument("--market", required=True)
     close_position.add_argument("--timestamp", required=True)
     close_position.add_argument("--output", required=True)
+
+    ai_parser = subcommands.add_parser("ai", help="Advisory analysis only")
+    ai_commands = ai_parser.add_subparsers(dest="ai_command", required=True)
+    explain_signal = ai_commands.add_parser("explain-signal")
+    explain_signal.add_argument("--record-id", required=True)
+    explain_risk = ai_commands.add_parser("explain-risk")
+    explain_risk.add_argument("--decision-id", required=True)
+    review_trade = ai_commands.add_parser("review-trade")
+    review_trade.add_argument("--trade-id", required=True)
+    daily_review = ai_commands.add_parser("daily-review")
+    daily_review.add_argument("--date", required=True)
+    weekly_review = ai_commands.add_parser("weekly-review")
+    weekly_review.add_argument("--week", required=True)
+    monthly_review = ai_commands.add_parser("monthly-review")
+    monthly_review.add_argument("--month", required=True)
+    comparison = ai_commands.add_parser("historical-comparison")
+    comparison.add_argument("--trade-id", required=True)
     return parser
 
 
@@ -183,6 +201,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (OSError, PortfolioError, ValidationError, ValueError) as error:
             print(f"Portfolio error: {error}", file=sys.stderr)
             return 2
+    if args.command == "ai":
+        _print_ai_header()
+        return asyncio.run(_run_ai_command(args))
     try:
         settings = AppSettings.from_environment()
     except (ValidationError, ValueError) as error:
@@ -223,6 +244,45 @@ def _print_portfolio_header() -> None:
     print("Execution: SIMULATED ONLY")
     print("Broker connectivity: DISABLED")
     print("Live trading: DISABLED")
+
+
+def _print_ai_header() -> None:
+    print("Mode: AI ANALYSIS")
+    print("Authority: ADVISORY ONLY")
+    print("Broker access: DISABLED")
+    print("Risk override: DISABLED")
+    print("Portfolio mutation: DISABLED")
+    print("Live trading: DISABLED")
+
+
+async def _run_ai_command(args: argparse.Namespace) -> int:
+    modes = {
+        "explain-signal": AnalysisMode.SIGNAL_EXPLANATION,
+        "explain-risk": AnalysisMode.RISK_DECISION_EXPLANATION,
+        "review-trade": AnalysisMode.TRADE_REVIEW,
+        "daily-review": AnalysisMode.DAILY_REVIEW,
+        "weekly-review": AnalysisMode.WEEKLY_REVIEW,
+        "monthly-review": AnalysisMode.MONTHLY_REVIEW,
+        "historical-comparison": AnalysisMode.HISTORICAL_COMPARISON,
+    }
+    identifiers = (
+        getattr(args, "record_id", None),
+        getattr(args, "decision_id", None),
+        getattr(args, "trade_id", None),
+        getattr(args, "date", None),
+        getattr(args, "week", None),
+        getattr(args, "month", None),
+    )
+    source_id = next(item for item in identifiers if item is not None)
+    result = await AIAnalyst().analyze_context(
+        mode=modes[args.ai_command],
+        created_at=datetime.now(UTC),
+        source_record_ids=(source_id,),
+        raw_context={},
+    )
+    print(f"Status: {result.status.value}")
+    print(result.safe_message)
+    return 0
 
 
 def _run_portfolio_command(args: argparse.Namespace) -> int:

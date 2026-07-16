@@ -44,6 +44,24 @@ runtime analysis provider and must not receive broker credentials.
 - Use explicit UTC timestamps and `Decimal` accounting. AI, IG, HTTP, credentials,
   and broker mutation code must not be imported by `trading_desk.portfolio`.
 
+## AI Analyst Boundary
+
+- AI is advisory only. Strategy, Risk Engine, and Paper Portfolio records remain
+  authoritative and immutable to AI.
+- Analysis and network-provider access default to disabled. No deterministic
+  workflow may depend on provider availability.
+- Only strict sanitized records may cross the provider interface. Reject secrets,
+  authorization structures, raw broker responses, account identifiers, local
+  paths, unsafe questions, oversized input, and future historical records.
+- Providers cannot approve or reject trades, determine quantity, change stops,
+  targets, configurations, risk limits, kill switches, or portfolio state, or
+  provide execution instructions.
+- Prompts are versioned and deterministic. Responses must be structured,
+  source-linked, policy-validated, fingerprinted, and include the mandatory
+  advisory statement.
+- AI analysis records are append-only. Raw provider responses are not stored.
+  Structured retrieval precedes any future semantic retrieval.
+
 ## IG Read-Only Boundary
 
 Every IG request must pass through the central allowlist. The complete allowed

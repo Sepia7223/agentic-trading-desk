@@ -13,8 +13,8 @@ depends_on:
   - 06_BACKTESTING.md
   - 07_RISK_ENGINE.md
   - 08_AI_ARCHITECTURE.md
-current_validated_milestone: "5"
-implementation_status: Partially validated; durable journal storage remains planned
+current_validated_milestone: "6"
+implementation_status: Advisory analysis records validated; durable journal storage remains planned
 review_required_after_every_milestone: true
 ---
 
@@ -62,6 +62,10 @@ The current platform includes:
 - simulated position, mark, funding, close, unresolved, and state-snapshot events;
 - immutable closed paper trade records linked to strategy, risk, and portfolio fingerprints;
 - a journal protocol that keeps the Paper Portfolio independent from storage and AI.
+- append-only structured AI analysis records linked to immutable source IDs;
+- deterministic structured historical retrieval with explicit time cutoffs;
+- daily, weekly, monthly, signal, risk, trade, portfolio, anomaly, comparison,
+  and research-hypothesis advisory modes.
 
 ## Planned
 
@@ -390,7 +394,8 @@ are not broker orders and are not yet stored in a persistent journal database.
 
 ## Milestone 5
 
-The Paper Portfolio should use the journal as its permanent audit trail.
+The Paper Portfolio emits append-only local journal-compatible events and trade
+records. Durable database persistence remains planned.
 
 ## Milestone 5.5
 
@@ -404,7 +409,10 @@ Implement the Trade Intelligence and Historical Memory Engine:
 
 ## Milestone 6
 
-The AI Analyst consumes journal and memory data in advisory mode.
+Validated: the AI Analyst consumes sanitized journal-compatible records in
+advisory mode, uses structured retrieval first, and appends immutable analysis
+records. It cannot modify source history. Raw provider responses are not stored,
+and durable journal/database integration remains planned.
 
 ## Milestone 7+
 

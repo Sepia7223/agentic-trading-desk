@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 5
+current_validated_milestone: 6
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -177,6 +177,11 @@ Execution does not decide whether to trade.
 ## AI Layer
 
 AI is an advisory subsystem.
+
+Milestone 6 validates a disabled-by-default, provider-neutral AI Analyst. Only
+deterministically sanitized structured records may cross its provider boundary.
+Structured responses are policy-validated and appended without changing source
+history. Provider failure is isolated from every deterministic workflow.
 
 AI may:
 

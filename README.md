@@ -72,6 +72,7 @@ src/trading_desk/
     signal_engine.py        mandatory long-only signal gates
   risk/                     deterministic approval, sizing, exposure, and decision records
   portfolio/                local-only paper positions, fills, accounting, and event replay
+  ai/                       disabled-by-default sanitized advisory analysis and research
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
@@ -105,6 +106,31 @@ and UTC timestamps. Every portfolio command prints `Mode: PAPER`,
 `Execution: SIMULATED ONLY`, `Broker connectivity: DISABLED`, and
 `Live trading: DISABLED`. SQLite persistence and all real execution remain
 unavailable.
+
+## AI Analyst
+
+Milestone 6 adds a provider-neutral advisory analysis layer. It explains
+deterministic signals and risk decisions, reviews paper trades and portfolio
+summaries, interprets precomputed historical evidence, and creates append-only
+structured analysis records for human review.
+
+AI analysis and network providers are disabled by default. The implementation
+contains a protocol and deterministic fake provider only; it does not call the
+OpenAI API or require an API key. Strict sanitization rejects credentials,
+authorization data, raw broker responses, local paths, unsafe questions,
+oversized requests, and future historical records before provider invocation.
+
+```powershell
+python -m trading_desk.cli ai explain-signal --record-id <record-id>
+python -m trading_desk.cli ai explain-risk --decision-id <decision-id>
+python -m trading_desk.cli ai review-trade --trade-id <trade-id>
+python -m trading_desk.cli ai daily-review --date YYYY-MM-DD
+```
+
+The default commands return `DISABLED` without loading broker configuration.
+Every response is structured, fingerprinted, source-linked, and carries the
+mandatory advisory statement. AI cannot approve, size, execute, mutate, or
+override deterministic systems, and provider failure cannot block them.
 
 ## Strategy Framework
 
