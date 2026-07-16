@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6 (Deployment planned for Milestone 12)
+current_validated_milestone: 7 (Deployment planned for Milestone 12)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -25,7 +25,8 @@ validated.
 # Current State
 
 Validated: - Local development environment. - Demo-only broker
-integration. - Read-only broker operations.
+integration. - Read-only broker operations. - Disabled-by-default controlled
+Demo opening with explicit operator confirmation and no unattended scheduling.
 
 Planned: - Dedicated 24/7 machine. - Docker deployment. - Monitoring. -
 Automated restart. - Backup strategy. - Secure remote administration.
@@ -34,6 +35,12 @@ The Milestone 5 paper ledger currently uses deterministic in-memory storage and
 explicit JSON event exports for local CLI workflows. SQLite, migrations,
 automatic restart recovery, and unattended operation remain planned. Paper
 commands do not load broker credentials or connect to IG.
+
+Milestone 7 does not create a daemon or deployment service. A real Demo order
+requires an operator-invoked CLI command, controlled mode, explicit enablement,
+fresh typed inputs, and local credentials. The automated suite uses mock
+transport only; the separately authorized manual Demo smoke test remains
+pending. Production deployment and live-host configuration are prohibited.
 
 # Deployment Principles
 

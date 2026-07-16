@@ -24,6 +24,7 @@ class OperatingMode(StrEnum):
     """Runtime operating modes."""
 
     READ_ONLY = "READ_ONLY"
+    CONTROLLED_EXECUTION = "CONTROLLED_EXECUTION"
 
 
 class BrokerSettings(BaseModel):

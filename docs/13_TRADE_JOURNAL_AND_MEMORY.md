@@ -13,7 +13,7 @@ depends_on:
   - 06_BACKTESTING.md
   - 07_RISK_ENGINE.md
   - 08_AI_ARCHITECTURE.md
-current_validated_milestone: "6"
+current_validated_milestone: "7"
 implementation_status: Advisory analysis records validated; durable journal storage remains planned
 review_required_after_every_milestone: true
 ---
@@ -414,9 +414,17 @@ advisory mode, uses structured retrieval first, and appends immutable analysis
 records. It cannot modify source history. Raw provider responses are not stored,
 and durable journal/database integration remains planned.
 
-## Milestone 7+
+## Milestone 7
 
-Demo and future live execution use the same journal interfaces.
+Validated: controlled Demo execution emits append-only request, preflight,
+operator-confirmation, submission-attempt, broker-response, confirmation,
+failure, and reconciliation records. Every record links the signal, candidate,
+risk decision, approved intent, execution request, and safe broker references
+where available. Payloads are represented by fingerprints; credentials, OAuth
+values, authorization headers, and raw broker messages are never journaled.
+
+Paper simulation and Demo execution records remain separate. Durable SQLite
+storage and the broader Trade Journal milestone remain planned.
 
 # Acceptance Criteria
 

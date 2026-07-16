@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -35,7 +35,7 @@ roadmap reflects the new validated state.
   M4 Risk Engine                 ✅ Complete
   M5 Paper Portfolio             Complete
   M6 AI Analyst                  Complete
-  M7 Demo Execution              ⏳ Planned
+  M7 Demo Execution              Complete
   M8 Trade Journal               ⏳ Planned
   M9 Dashboard                   ⏳ Planned
   M10 Knowledge & Memory         ⏳ Planned
@@ -90,7 +90,17 @@ default to disabled. Requests, prompts, responses, and append-only analysis
 records are strict and fingerprinted. AI cannot approve, size, execute, mutate,
 or override, and provider failure cannot block deterministic workflows.
 
+# Validated Milestone 7
+
+Controlled IG Demo execution is implemented behind a dedicated mutation port.
+It opens only one explicitly enabled, operator-confirmed long market position,
+revalidates the Risk Engine against fresh state, never increases quantity,
+attempts submission once, requires broker confirmation, reconciles read-only
+positions, and writes linked append-only records. Automated validation uses
+mock transport; the separately authorized real Demo smoke test remains pending.
+
 # Next Active Milestone
 
-Milestone 7, controlled IG Demo execution, remains planned. No order or broker
-mutation capability is implemented by Milestone 6.
+Milestone 8, durable Trade Journal integration, remains planned. Live trading,
+automatic unattended execution, closure, amendment, working orders, account
+switching, and AI execution authority remain unavailable.

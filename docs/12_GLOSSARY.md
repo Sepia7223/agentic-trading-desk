@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -160,6 +160,37 @@ Rejecting invalid or uncertain conditions rather than proceeding.
 ## Demo Environment
 
 The IG.com simulation environment used before live trading.
+
+## Controlled Execution
+
+An explicitly enabled, operator-confirmed IG Demo workflow that consumes an
+intact approved intent and permits one long market-position opening.
+
+## Execution Preflight
+
+The deterministic gate set that validates approval integrity, fresh state,
+risk revalidation, quantity, drift, confirmation, counts, and idempotency before
+transport.
+
+## Operator Confirmation
+
+An expiring fingerprinted authorization tied to one exact execution request. It
+cannot authorize a different quantity, instrument, direction, or request.
+
+## Ambiguous Submission
+
+A submission whose broker outcome is not safely known. It is treated as
+potentially executed, is not retried, and requires reconciliation.
+
+## Position Reconciliation
+
+The read-only comparison of a confirmed broker deal with the resulting Demo
+position, including instrument, direction, quantity, entry, stop, and target.
+
+## Execution Idempotency
+
+Replay protection ensuring an approved intent and execution request can be
+submitted at most once, including across restored persisted state.
 
 ## Production
 

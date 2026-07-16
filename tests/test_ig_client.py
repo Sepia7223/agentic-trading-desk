@@ -1144,9 +1144,12 @@ def test_client_refuses_unsafe_runtime_boundaries(
 
 def test_source_contains_no_execution_endpoints_or_order_operation_methods() -> None:
     source_root = REPO_ROOT / "src"
-    source = "\n".join(
-        path.read_text(encoding="utf-8") for path in sorted(source_root.rglob("*.py"))
-    ).lower()
+    read_only_files = (
+        source_root / "trading_desk" / "ig" / "client.py",
+        source_root / "trading_desk" / "ig" / "policy.py",
+        source_root / "trading_desk" / "ports" / "broker.py",
+    )
+    source = "\n".join(path.read_text(encoding="utf-8") for path in read_only_files).lower()
     forbidden_endpoints = (
         "/positions/otc",
         "/working-orders/otc",

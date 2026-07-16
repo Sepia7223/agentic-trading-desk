@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -26,7 +26,7 @@ specification.
 
 # Current Validated State
 
-Validated through Milestones 1--3:
+Validated through Milestone 7:
 
 -   `POST /session` OAuth authentication, API version 3
 -   Exact Demo gateway: `https://demo-api.ig.com/gateway/deal`
@@ -40,14 +40,19 @@ Validated through Milestones 1--3:
 -   Session cleanup
 -   Secret redaction
 -   Read-only CLI
+-   Separate controlled Demo execution adapter
+-   `POST /positions/otc`, version 2, for one long market-position opening
+-   `GET /confirms/{dealReference}`, version 1, for bounded confirmation
+-   One-attempt submission, idempotency, and read-only position reconciliation
 
 Not yet implemented:
 
--   Order execution
 -   Working orders
 -   Position modification
+-   Position closure
 -   Live account support
--   Automated execution
+-   Automatic unattended execution
+-   Account switching
 
 # Design Goals
 
@@ -97,8 +102,11 @@ Validated allowlist:
 -   `GET /markets/{epic}`, version 3 -- market details
 -   `GET /prices/{epic}`, version 3 -- one historical-price page
 
-Execution endpoints are prohibited until the approved execution
-milestone.
+The read-only allowlist remains unchanged. A separate execution allowlist permits
+only `POST /positions/otc` version 2 and `GET /confirms/{dealReference}` version 1.
+Deletion, closure, amendment, working-order, account-switching, unsupported
+version, absolute URL, redirect, traversal, and production-host operations fail
+closed before an unsupported transport call.
 
 All other methods, versions, paths, absolute URLs, alternate hosts,
 production hosts, and path-traversal attempts fail before HTTP transport.

@@ -9,15 +9,36 @@ runtime analysis provider and must not receive broker credentials.
 - Default broker environment is always `DEMO`.
 - Default operating mode is always `READ_ONLY`.
 - Live trading is technically disabled.
-- Automatic execution is technically disabled.
+- Automatic unattended execution is technically disabled.
 - Unknown broker, position, market, or risk state must result in no trade.
 - The language model must never control position size or bypass hard-coded risk limits.
 - Never use an IG production host. The only broker base URL is
   `https://demo-api.ig.com/gateway/deal`.
 - Do not add real credentials or secrets.
-- Do not implement order execution unless a separately reviewed milestone explicitly
-  authorizes it; the current application remains strictly read-only.
+- Do not expand the separately reviewed controlled Demo execution surface.
 - Do not allow any AI provider to access IG credentials.
+
+## Controlled Execution Boundary
+
+- Milestone 7 permits only one explicitly confirmed long IG Demo market-position
+  opening through the dedicated execution port. The read-only broker port and
+  read-only endpoint allowlist remain mutation-free.
+- Execution defaults to disabled and requires `CONTROLLED_EXECUTION`, canonical
+  Demo gateway validation, explicit enablement, current Risk Engine revalidation,
+  and a request-bound unexpired operator confirmation.
+- The exact execution allowlist is `POST /positions/otc` version 2 and
+  `GET /confirms/{dealReference}` version 1. No other mutation path is permitted.
+- Never increase approved quantity, remove or loosen the approved stop, alter
+  direction, invent missing fields, or submit an unapproved or consumed intent.
+- Attempt submission once. Ambiguous outcomes consume the idempotency key and
+  require reconciliation; never retry them automatically.
+- Broker acceptance requires confirmation evidence. Final completion requires
+  reconciliation against read-only positions. Mismatches are recorded and are
+  never amended automatically.
+- Strategy, Risk, AI, Paper Portfolio, and journal packages must not import the
+  mutation adapter. AI cannot create, confirm, retry, or reconcile execution.
+- Live hosts, position closure/amendment, working orders, account switching, and
+  unattended automatic execution remain prohibited.
 
 ## Development Rules
 

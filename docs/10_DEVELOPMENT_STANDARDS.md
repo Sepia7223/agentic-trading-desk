@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -46,6 +46,11 @@ The goal is consistency, maintainability, safety, and reproducibility.
 -   Strict structured AI responses with source links, advisory acknowledgment,
     canonical fingerprints, and operational-language policy validation.
 -   Provider failures must be isolated from deterministic workflows.
+-   Broker mutation must use the dedicated execution port and exact Demo allowlist.
+-   Reserve immutable idempotency state before one submission attempt.
+-   Re-run deterministic risk against fresh state immediately before submission.
+-   Treat ambiguous submission as potentially executed and never retry automatically.
+-   Require confirmation before acceptance and reconciliation before completion.
 
 # Testing Standards
 

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -66,6 +66,9 @@ AI must never:
 -   Modify historical records.
 -   Skip validation gates.
 -   Approve trades independently.
+-   Create or confirm execution requests.
+-   Trigger or retry broker submission.
+-   Resolve reconciliation or mutate Demo positions.
 
 # Interaction Model
 
@@ -74,6 +77,10 @@ The AI receives outputs from validated subsystems:
 Market Data → Strategy Engine → Risk Engine → Monitoring → AI Analysis
 
 AI does not alter upstream decisions.
+
+Milestone 7 execution records may be explained after the deterministic workflow
+finishes. The AI package does not import the execution adapter and cannot access
+credentials, confirmation controls, idempotency state, or mutation methods.
 
 # Validated AI Roles
 

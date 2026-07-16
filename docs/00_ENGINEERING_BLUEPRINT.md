@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 6
+current_validated_milestone: 7
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -311,7 +311,10 @@ AI analyst.
 
 ## M7
 
-Demo execution.
+Controlled IG Demo execution. The validated implementation is disabled by
+default, long-only, operator-confirmed, risk-revalidated, one-attempt, and
+reconciled. It does not include live trading, closure, amendments, working
+orders, account switching, unattended execution, or AI authority.
 
 ## M8
 
