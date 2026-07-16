@@ -3,5 +3,17 @@
 from trading_desk.context.classifier import MarketContextEngine
 from trading_desk.context.config import MarketContextConfiguration
 from trading_desk.context.models import MarketContextSnapshot
+from trading_desk.context.provider import (
+    CandidateContextProvider,
+    DeterministicContextProvider,
+    MarketContextInputs,
+)
 
-__all__ = ["MarketContextConfiguration", "MarketContextEngine", "MarketContextSnapshot"]
+__all__ = [
+    "CandidateContextProvider",
+    "DeterministicContextProvider",
+    "MarketContextConfiguration",
+    "MarketContextEngine",
+    "MarketContextInputs",
+    "MarketContextSnapshot",
+]

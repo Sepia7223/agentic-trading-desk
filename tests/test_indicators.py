@@ -24,6 +24,13 @@ def test_rsi_wilder_returns_100_for_monotonic_gain() -> None:
     assert result[-1] == 100
 
 
+def test_rsi_wilder_returns_50_for_flat_window() -> None:
+    result = indicators.rsi_wilder([100.0] * 30, 14)
+
+    assert result[13] is None
+    assert result[14:] == [50.0] * 16
+
+
 def test_macd_line_is_fast_ema_minus_slow_ema() -> None:
     close = [float(i) for i in range(1, 80)]
     fast = indicators.ema_series(close, 12)

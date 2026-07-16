@@ -17,6 +17,11 @@ from trading_desk.journal.sqlite import SQLiteJournalRepository
 from trading_desk.journal.writer import DurableJournalWriter, JournalSource
 
 
+def _disable_record_guards(repository: SQLiteJournalRepository) -> None:
+    repository.connection.execute("DROP TRIGGER journal_records_no_update")
+    repository.connection.execute("DROP TRIGGER journal_records_no_delete")
+
+
 def test_append_and_deterministic_readback(tmp_path: Path) -> None:
     with SQLiteJournalRepository(configuration(tmp_path / "journal.db")) as repository:
         written = append_record(repository, "signal-1")
@@ -183,6 +188,7 @@ def test_broken_chain_is_reported_as_invalid(tmp_path: Path) -> None:
         configuration(tmp_path / "journal.db", verify_integrity_on_startup=False)
     ) as repository:
         record = append_record(repository, "signal-1")
+        _disable_record_guards(repository)
         repository.connection.execute(
             "UPDATE journal_records SET previous_record_fingerprint = ? "
             "WHERE journal_record_id = ?",
@@ -198,6 +204,7 @@ def test_altered_payload_and_source_fingerprint_are_reported(tmp_path: Path) -> 
         configuration(tmp_path / "journal.db", verify_integrity_on_startup=False)
     ) as repository:
         record = append_record(repository, "signal-1")
+        _disable_record_guards(repository)
         repository.connection.execute(
             "UPDATE journal_records SET payload_json = ? WHERE journal_record_id = ?",
             ('{"action":"WATCH"}', record.journal_record_id),
@@ -221,6 +228,7 @@ def test_incomplete_atomic_group_is_reported(tmp_path: Path) -> None:
                 for index in range(2)
             )
         )
+        _disable_record_guards(repository)
         repository.connection.execute(
             "DELETE FROM journal_records WHERE journal_record_id = ?",
             (records[1].journal_record_id,),
@@ -241,6 +249,7 @@ def test_startup_integrity_failure_enters_recovery_read_only_mode(tmp_path: Path
         configuration(path, verify_integrity_on_startup=False)
     ) as repository:
         record = append_record(repository, "signal-1")
+        _disable_record_guards(repository)
         repository.connection.execute(
             "UPDATE journal_records SET payload_json = ? WHERE journal_record_id = ?",
             ('{"action":"ALTERED"}', record.journal_record_id),
@@ -252,6 +261,48 @@ def test_startup_integrity_failure_enters_recovery_read_only_mode(tmp_path: Path
             append_record(recovered, "signal-2")
     finally:
         recovered.close()
+
+
+def test_sqlite_guards_reject_record_updates_and_deletes(tmp_path: Path) -> None:
+    with SQLiteJournalRepository(configuration(tmp_path / "journal.db")) as repository:
+        record = append_record(repository, "signal-1")
+        with pytest.raises(Exception, match="append-only"):
+            repository.connection.execute(
+                "UPDATE journal_records SET payload_json = '{}' WHERE journal_record_id = ?",
+                (record.journal_record_id,),
+            )
+        with pytest.raises(Exception, match="append-only"):
+            repository.connection.execute(
+                "DELETE FROM journal_records WHERE journal_record_id = ?",
+                (record.journal_record_id,),
+            )
+
+
+def test_tail_truncation_is_detected_by_chain_anchor(tmp_path: Path) -> None:
+    with SQLiteJournalRepository(
+        configuration(tmp_path / "journal.db", verify_integrity_on_startup=False)
+    ) as repository:
+        append_record(repository, "signal-1")
+        second = append_record(repository, "signal-2")
+        _disable_record_guards(repository)
+        repository.connection.execute(
+            "DELETE FROM journal_records WHERE journal_record_id = ?",
+            (second.journal_record_id,),
+        )
+        codes = {finding.code for finding in repository.verify().findings}
+        assert "RECORD_COUNT_ANCHOR_MISMATCH" in codes
+        assert "CHAIN_HEAD_ANCHOR_MISMATCH" in codes
+
+
+def test_non_mapping_source_uses_wrapped_payload_fingerprint(tmp_path: Path) -> None:
+    with SQLiteJournalRepository(configuration(tmp_path / "journal.db")) as repository:
+        DurableJournalWriter(repository).append_source(
+            record_type=JournalRecordType.STRATEGY_SIGNAL,
+            source_record_id="primitive-1",
+            source="NO_TRADE",
+            created_at=NOW,
+        )
+        assert repository.verify().status is IntegrityStatus.VALID
 
 
 def test_utc_timestamps_are_required(tmp_path: Path) -> None:

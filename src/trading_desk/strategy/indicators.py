@@ -71,6 +71,8 @@ def rsi_wilder(close: list[float], period: int = 14) -> list[float | None]:
     avg_loss = sum(losses[:period]) / period
 
     def rsi_val(ag: float, al: float) -> float:
+        if ag == 0 and al == 0:
+            return 50.0
         if al == 0:
             return 100.0
         rs = ag / al

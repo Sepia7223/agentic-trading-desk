@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
+import time as system_time
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -9,6 +12,20 @@ import pytest
 from pydantic import ValidationError
 from tests.test_risk_integration_security import _strategy_candidate
 
+from trading_desk.context.fingerprints import fingerprint
+from trading_desk.context.models import (
+    ContextQuality,
+    EconomicEvent,
+    EventCategory,
+    EventImportance,
+    LiquidityState,
+    MarketContextSnapshot,
+    VolatilityState,
+)
+from trading_desk.context.provider import (
+    DeterministicContextProvider,
+    MarketContextInputs,
+)
 from trading_desk.execution.automated import (
     AutomatedCycleStatus,
     AutomatedDemoRunner,
@@ -212,6 +229,25 @@ class AutomatedBroker:
         )
 
 
+class RecordingCheckpoint:
+    def __init__(self) -> None:
+        self.saved = []
+
+    def save(self, state, idempotency, records):  # type: ignore[no-untyped-def]
+        self.saved.append((state, idempotency, records))
+
+
+class SimulatedCrash(BaseException):
+    pass
+
+
+class CrashAfterSubmissionBroker(AutomatedBroker):
+    async def submit_market_position(self, request: BrokerOrderRequest) -> BrokerSubmission:
+        self.submission_calls += 1
+        self.order = request
+        raise SimulatedCrash
+
+
 def _configuration() -> ExecutionConfiguration:
     return ExecutionConfiguration(
         execution_enabled=True,
@@ -227,7 +263,31 @@ def _runner(broker: AutomatedBroker) -> AutomatedDemoRunner:
         execution_configuration=_configuration(),
         policy=AutomatedDemoExecutionPolicy(enabled=True),
         state=create_initial_state(_account(), NOW),
+        context_provider=ValidContextProvider(),
+        checkpoint=RecordingCheckpoint(),
     )
+
+
+class ValidContextProvider(DeterministicContextProvider):
+    def __init__(self) -> None:
+        super().__init__(MarketContextInputs(authoritative=True))
+
+    def build_context(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+        result = super().build_context(*args, **kwargs)
+        assert result is not None
+        fields = result.model_dump(mode="python", exclude={"context_id", "context_fingerprint"})
+        fields.update(
+            {
+                "liquidity_state": LiquidityState.NORMAL,
+                "volatility_state": VolatilityState.NORMAL,
+                "context_quality": ContextQuality.VALID,
+                "reason_codes": (),
+            }
+        )
+        identity = fingerprint(fields)
+        return MarketContextSnapshot.model_validate(
+            {**fields, "context_id": identity, "context_fingerprint": identity}
+        )
 
 
 def test_automated_policy_is_disabled_immutable_and_fingerprinted() -> None:
@@ -340,6 +400,48 @@ def test_ambiguous_submission_is_not_retried_and_latches_halt(
     assert broker.submission_calls == 1
 
 
+def test_submission_reservation_is_persisted_before_broker_call(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(
+        RegimeAwareStrategyPipeline,
+        "analyze_latest",
+        lambda *args, **kwargs: _strategy_candidate(),
+    )
+    broker = CrashAfterSubmissionBroker()
+    store = AutomatedDemoStateStore(tmp_path / "state.json")
+    runner = AutomatedDemoRunner(
+        broker,
+        execution_configuration=_configuration(),
+        policy=AutomatedDemoExecutionPolicy(enabled=True),
+        state=create_initial_state(_account(), NOW),
+        context_provider=ValidContextProvider(),
+        checkpoint=store,
+    )
+    with pytest.raises(SimulatedCrash):
+        asyncio.run(runner.run_cycle(EPIC, NOW))
+
+    persisted = store.load()
+    assert persisted.state.halted is True
+    assert persisted.state.unresolved_execution is True
+    assert persisted.state.halt_reason is AutomatedHaltReason.RECONCILIATION_REQUIRED
+    assert persisted.idempotency.request_fingerprints
+
+    restarted = AutomatedDemoRunner(
+        broker,
+        execution_configuration=_configuration(),
+        policy=AutomatedDemoExecutionPolicy(enabled=True),
+        state=persisted.state,
+        context_provider=ValidContextProvider(),
+        checkpoint=store,
+        idempotency=ExecutionIdempotencyStore(persisted.idempotency),
+        journal=InMemoryExecutionJournal(persisted.journal_records),
+    )
+    result = asyncio.run(restarted.run_cycle(EPIC, NOW + timedelta(hours=2)))
+    assert result.status is AutomatedCycleStatus.HALTED
+    assert broker.submission_calls == 1
+
+
 def test_broker_rejection_latches_halt(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         RegimeAwareStrategyPipeline,
@@ -400,6 +502,18 @@ def test_state_store_rejects_concurrent_runner(tmp_path: Path) -> None:
         store.release_lock(descriptor)
 
 
+def test_state_store_reclaims_lock_owned_by_absent_process(tmp_path: Path) -> None:
+    store = AutomatedDemoStateStore(tmp_path / "state.json")
+    lock_path = store.path.with_suffix(".json.lock")
+    lock_path.write_text(
+        json.dumps({"pid": os.getpid() + 1_000_000, "created_at": system_time.time()}),
+        encoding="utf-8",
+    )
+    descriptor = store.acquire_lock()
+    store.release_lock(descriptor)
+    assert not lock_path.exists()
+
+
 def test_no_signal_is_safe_and_does_not_submit(monkeypatch: pytest.MonkeyPatch) -> None:
     candidate = _strategy_candidate().model_copy(update={"action": StrategyAction.NO_TRADE})
     monkeypatch.setattr(
@@ -423,7 +537,10 @@ def test_daily_order_limit_and_cooldown_block_before_submission() -> None:
         state=state,
     )
     result = asyncio.run(runner.run_cycle(EPIC, NOW))
-    assert result.state.halt_reason is AutomatedHaltReason.MAX_ORDERS_PER_DAY_REACHED
+    assert result.status is AutomatedCycleStatus.BLOCKED
+    assert result.state.halted is False
+    assert result.state.halt_reason is None
+    assert AutomatedHaltReason.MAX_ORDERS_PER_DAY_REACHED.value in result.reason_codes
     assert broker.submission_calls == 0
 
     cooldown_state = update_state(
@@ -438,6 +555,62 @@ def test_daily_order_limit_and_cooldown_block_before_submission() -> None:
     cooldown = asyncio.run(cooldown_runner.run_cycle(EPIC, NOW))
     assert cooldown.status is AutomatedCycleStatus.BLOCKED
     assert "ORDER_COOLDOWN_ACTIVE" in cooldown.reason_codes
+
+
+def test_long_candidate_without_authoritative_context_is_blocked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        RegimeAwareStrategyPipeline,
+        "analyze_latest",
+        lambda *args, **kwargs: _strategy_candidate(),
+    )
+    broker = AutomatedBroker()
+    runner = AutomatedDemoRunner(
+        broker,
+        execution_configuration=_configuration(),
+        policy=AutomatedDemoExecutionPolicy(enabled=True),
+        state=create_initial_state(_account(), NOW),
+    )
+    result = asyncio.run(runner.run_cycle(EPIC, NOW))
+    assert result.status is AutomatedCycleStatus.BLOCKED
+    assert result.strategy_action == "NO_TRADE"
+    assert "MARKET_CONTEXT_UNAVAILABLE" in result.reason_codes
+    assert broker.submission_calls == 0
+
+
+def test_high_impact_pre_event_context_suppresses_candidate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        RegimeAwareStrategyPipeline,
+        "analyze_latest",
+        lambda *args, **kwargs: _strategy_candidate(),
+    )
+    event = EconomicEvent(
+        event_id="fixture-high-impact",
+        currency="USD",
+        country="United States",
+        category=EventCategory.EMPLOYMENT,
+        importance=EventImportance.HIGH,
+        scheduled_timestamp=NOW + timedelta(minutes=3),
+        source="fixture",
+    )
+    broker = AutomatedBroker()
+    runner = AutomatedDemoRunner(
+        broker,
+        execution_configuration=_configuration(),
+        policy=AutomatedDemoExecutionPolicy(enabled=True),
+        state=create_initial_state(_account(), NOW),
+        context_provider=DeterministicContextProvider(
+            MarketContextInputs(events=(event,), authoritative=True)
+        ),
+    )
+    result = asyncio.run(runner.run_cycle(EPIC, NOW))
+    assert result.status is AutomatedCycleStatus.BLOCKED
+    assert result.strategy_action == "NO_TRADE"
+    assert "PRE_HIGH_IMPACT_EVENT" in result.reason_codes
+    assert broker.submission_calls == 0
 
 
 def test_daily_loss_drawdown_and_consecutive_losses_halt() -> None:

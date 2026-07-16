@@ -210,7 +210,7 @@ def create_journal_record(
     if not isinstance(primitive, dict):
         primitive = {"value": primitive}
     payload: dict[str, object] = primitive
-    source_fingerprint = fingerprint(source)
+    source_fingerprint = fingerprint(payload)
     payload_fingerprint = fingerprint(payload)
     fields: dict[str, object] = {
         "sequence_number": sequence_number,

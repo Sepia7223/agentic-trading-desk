@@ -8,6 +8,7 @@ import pytest
 from portfolio_helpers import approval, configured_portfolio, later
 from risk_helpers import EPIC, NOW
 from trading_desk.portfolio import EndOfDataPolicy, IntrabarPolicy, MarketBar, MarketQuote
+from trading_desk.portfolio.engine import _marked_portfolio_equity
 from trading_desk.portfolio.errors import PortfolioStateError
 from trading_desk.portfolio.models import FillReason, PositionStatus
 
@@ -44,6 +45,19 @@ def test_bid_side_mark_reconciles_unrealized_equity_exposure_mfe_and_mae() -> No
     loss_state = portfolio.mark(quote_at("90", 2), later(2))
     marked = next(item for item in loss_state.positions if item.status is PositionStatus.OPEN)
     assert marked.maximum_adverse_excursion > Decimal("0")
+
+
+def test_peak_equity_helper_includes_every_open_position() -> None:
+    _, position, _ = open_portfolio()
+    first = position.model_copy(update={"net_unrealized_pnl": Decimal("25")})
+    second = position.model_copy(
+        update={
+            "position_id": "second-position",
+            "epic": "CS.D.SECOND.CFD.IP",
+            "net_unrealized_pnl": Decimal("40"),
+        }
+    )
+    assert _marked_portfolio_equity(Decimal("100000"), (first, second)) == Decimal("100065")
 
 
 @pytest.mark.parametrize(

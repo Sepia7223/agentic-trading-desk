@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Self
 
@@ -37,6 +38,8 @@ class AutomatedDemoSnapshot(BaseModel):
 
 
 class AutomatedDemoStateStore:
+    _MAX_LOCK_AGE_SECONDS = 24 * 60 * 60
+
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
 
@@ -46,10 +49,29 @@ class AutomatedDemoStateStore:
     def acquire_lock(self) -> int:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         lock_path = self.path.with_suffix(self.path.suffix + ".lock")
+        for attempt in range(2):
+            try:
+                descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                metadata = json.dumps({"pid": os.getpid(), "created_at": time.time()})
+                os.write(descriptor, metadata.encode("utf-8"))
+                os.fsync(descriptor)
+                return descriptor
+            except FileExistsError:
+                if attempt or not self._lock_is_reclaimable(lock_path):
+                    raise RuntimeError(
+                        "automated Demo state is locked; refusing concurrent run"
+                    ) from None
+                lock_path.unlink(missing_ok=True)
+        raise RuntimeError("automated Demo state lock could not be acquired")
+
+    def _lock_is_reclaimable(self, lock_path: Path) -> bool:
         try:
-            return os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-        except FileExistsError:
-            raise RuntimeError("automated Demo state is locked; refusing concurrent run") from None
+            metadata = json.loads(lock_path.read_text(encoding="utf-8"))
+            pid = int(metadata["pid"])
+            created_at = float(metadata["created_at"])
+        except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+            return True
+        return (time.time() - created_at) > self._MAX_LOCK_AGE_SECONDS or not _pid_exists(pid)
 
     def release_lock(self, descriptor: int) -> None:
         lock_path = self.path.with_suffix(self.path.suffix + ".lock")
@@ -80,3 +102,19 @@ class AutomatedDemoStateStore:
         )
         temporary.replace(self.path)
         return snapshot
+
+
+def _pid_exists(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    if pid == os.getpid():
+        return True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True

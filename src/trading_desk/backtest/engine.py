@@ -275,6 +275,19 @@ class BacktestEngine:
                         entry_costs=portfolio.position.entry_cost,
                     )
                 )
+                entry_index = portfolio.position.entry_fill.fill_index
+                equity = [
+                    point.model_copy(
+                        update={
+                            "equity": point.cash,
+                            "unrealized_pnl": 0.0,
+                            "gross_exposure": 0.0,
+                        }
+                    )
+                    if point.index >= entry_index
+                    else point
+                    for point in equity
+                ]
 
         equity_tuple = tuple(equity)
         trade_tuple = tuple(trades)

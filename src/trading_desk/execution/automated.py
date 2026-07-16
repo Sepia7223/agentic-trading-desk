@@ -9,6 +9,8 @@ from typing import Protocol, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from trading_desk.context.models import ContextTimeframe
+from trading_desk.context.provider import CandidateContextProvider
 from trading_desk.execution.config import (
     AutomatedDemoExecutionPolicy,
     ExecutionConfiguration,
@@ -47,6 +49,7 @@ from trading_desk.risk.models import (
     RiskDecisionStatus,
     RiskMarketStatus,
 )
+from trading_desk.router.engine import StrategyRouter
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
 from trading_desk.strategy.models import (
@@ -76,6 +79,10 @@ class AutomatedDemoBroker(Protocol):
     async def submit_market_position(self, request): ...  # type: ignore[no-untyped-def]
 
     async def get_deal_confirmation(self, deal_reference: str): ...  # type: ignore[no-untyped-def]
+
+
+class AutomatedDemoCheckpoint(Protocol):
+    def save(self, state, idempotency, records): ...  # type: ignore[no-untyped-def]
 
 
 class AutomatedCycleStatus(StrEnum):
@@ -183,6 +190,8 @@ class AutomatedDemoRunner:
         execution_configuration: ExecutionConfiguration,
         policy: AutomatedDemoExecutionPolicy,
         state: AutomatedDemoState,
+        context_provider: CandidateContextProvider | None = None,
+        checkpoint: AutomatedDemoCheckpoint | None = None,
         idempotency: ExecutionIdempotencyStore | None = None,
         journal: InMemoryExecutionJournal | None = None,
     ) -> None:
@@ -200,6 +209,8 @@ class AutomatedDemoRunner:
         self.execution_configuration = execution_configuration
         self.policy = policy
         self.state = state
+        self.context_provider = context_provider
+        self.checkpoint = checkpoint
         self.idempotency = idempotency or ExecutionIdempotencyStore()
         self.journal = journal or InMemoryExecutionJournal()
 
@@ -219,11 +230,10 @@ class AutomatedDemoRunner:
             self.state.trading_day == evaluated_at.date()
             and self.state.orders_today >= self.policy.maximum_orders_per_day
         ):
-            self.state = halt_state(self.state, AutomatedHaltReason.MAX_ORDERS_PER_DAY_REACHED)
             return self._result(
                 evaluated_at,
                 epic,
-                AutomatedCycleStatus.HALTED,
+                AutomatedCycleStatus.BLOCKED,
                 "NOT_EVALUATED",
                 AutomatedHaltReason.MAX_ORDERS_PER_DAY_REACHED.value,
             )
@@ -376,6 +386,38 @@ class AutomatedDemoRunner:
                 strategy.action.value,
                 *strategy.rejection_reasons,
             )
+        if self.context_provider is None:
+            return self._result(
+                evaluated_at,
+                epic,
+                AutomatedCycleStatus.BLOCKED,
+                "NO_TRADE",
+                "MARKET_CONTEXT_UNAVAILABLE",
+            )
+        market_context = self.context_provider.build_context(
+            build.data,
+            strategy,
+            evaluation_timestamp=evaluated_at,
+            timeframe=ContextTimeframe.DAY,
+        )
+        if market_context is None:
+            return self._result(
+                evaluated_at,
+                epic,
+                AutomatedCycleStatus.BLOCKED,
+                "NO_TRADE",
+                "MARKET_CONTEXT_UNAVAILABLE",
+            )
+        routed = StrategyRouter().route_candidate(market_context, build.data, strategy)
+        if routed.candidate is None:
+            return self._result(
+                evaluated_at,
+                epic,
+                AutomatedCycleStatus.BLOCKED,
+                "NO_TRADE",
+                *(item.value for item in routed.decision.reason_codes),
+            )
+        strategy = routed.candidate
 
         stop_distance = _protective_stop_distance(details, build.data, self.policy)
         stop_reference = details.offer - stop_distance
@@ -460,12 +502,37 @@ class AutomatedDemoRunner:
             configuration=execution_configuration,
             expiry=details.expiry or "-",
         )
+        checkpoint = self.checkpoint
+        if checkpoint is None:
+            return self._result(
+                evaluated_at,
+                epic,
+                AutomatedCycleStatus.BLOCKED,
+                "NO_TRADE",
+                "WRITE_AHEAD_PERSISTENCE_UNAVAILABLE",
+                candidate_id=candidate_id,
+                risk_decision_id=decision.decision_id,
+            )
+
+        def persist_submission_pending() -> None:
+            self.state = halt_state(
+                self.state,
+                AutomatedHaltReason.RECONCILIATION_REQUIRED,
+                unresolved=True,
+            )
+            checkpoint.save(
+                self.state,
+                self.idempotency.snapshot(),
+                self.journal.records(),
+            )
+
         engine = ExecutionEngine(
             self.broker,
             configuration=execution_configuration,
             risk_engine=risk_engine,
             idempotency=self.idempotency,
             journal=self.journal,
+            before_submission=persist_submission_pending,
         )
         outcome = await engine.execute(
             request=request,
@@ -480,21 +547,27 @@ class AutomatedDemoRunner:
             automatic=True,
         )
         submitted = outcome.result.submitted_at is not None
+        reconciled = (
+            outcome.result.status is ExecutionStatus.ACCEPTED
+            and outcome.reconciliation is not None
+            and outcome.reconciliation.status is ReconciliationStatus.RECONCILED
+        )
         if submitted:
             self.state = update_state(
                 self.state,
                 orders_today=self.state.orders_today + 1,
                 last_order_at=evaluated_at,
                 peak_equity=max(self.state.peak_equity, account.balance.balance),
+                halted=False if reconciled else self.state.halted,
+                halt_reason=None if reconciled else self.state.halt_reason,
+                unresolved_execution=False if reconciled else self.state.unresolved_execution,
             )
         halt_reason = _outcome_halt_reason(outcome)
         if halt_reason is not None:
             self.state = halt_state(self.state, halt_reason, unresolved=True)
         status = (
             AutomatedCycleStatus.ACCEPTED
-            if outcome.result.status is ExecutionStatus.ACCEPTED
-            and outcome.reconciliation is not None
-            and outcome.reconciliation.status is ReconciliationStatus.RECONCILED
+            if reconciled
             else AutomatedCycleStatus.HALTED
             if self.state.halted
             else AutomatedCycleStatus.BLOCKED

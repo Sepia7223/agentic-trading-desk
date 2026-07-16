@@ -178,6 +178,30 @@ def test_confirmation_not_found_maps_to_pending() -> None:
     asyncio.run(scenario())
 
 
+def test_non_buy_confirmation_has_explicit_policy_error() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/session"):
+            return _login_response()
+        return httpx.Response(
+            200,
+            json={
+                "dealReference": "deal-ref-1",
+                "dealStatus": "ACCEPTED",
+                "direction": "SELL",
+            },
+        )
+
+    async def scenario() -> None:
+        adapter = IGDemoExecutionAdapter(_settings(), transport=httpx.MockTransport(handler))
+        await adapter.login()
+        with pytest.raises(ExecutionBrokerError) as captured:
+            await adapter.get_deal_confirmation("deal-ref-1")
+        assert captured.value.error_code == "DIRECTION_MISMATCH"
+        await adapter.aclose()
+
+    asyncio.run(scenario())
+
+
 def test_invalid_path_is_blocked_before_transport() -> None:
     calls = 0
 

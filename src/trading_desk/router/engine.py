@@ -16,7 +16,7 @@ from trading_desk.router.models import (
 from trading_desk.router.registry import StrategyRegistry
 from trading_desk.router.research import evaluate_research_strategy
 from trading_desk.router.selection import select_strategy
-from trading_desk.strategy.models import StrategyContext, StrategyMarketData
+from trading_desk.strategy.models import StrategyContext, StrategyMarketData, TradeCandidate
 from trading_desk.strategy.pipeline import RegimeAwareStrategyPipeline
 
 
@@ -126,6 +126,34 @@ class StrategyRouter:
         return RoutedStrategyResult(
             decision=decision,
             candidate=candidate,
+            research_results=research_results,
+        )
+
+    def route_candidate(
+        self,
+        context_snapshot: MarketContextSnapshot,
+        market_data: StrategyMarketData,
+        candidate: TradeCandidate,
+        *,
+        integrity_ok: bool = True,
+        execution_halted: bool = False,
+    ) -> RoutedStrategyResult:
+        if candidate.epic != context_snapshot.epic or candidate.epic != market_data.epic:
+            raise ValueError("candidate and context instrument mismatch")
+        decision = self.route(
+            context_snapshot,
+            history_size=len(market_data.timestamps),
+            integrity_ok=integrity_ok,
+            execution_halted=execution_halted,
+        )
+        routed_candidate = candidate if decision.selected_strategy_id == "trend-regime-v1" else None
+        research_results = tuple(
+            evaluate_research_strategy(identifier, context_snapshot, market_data)
+            for identifier in decision.research_only_strategies
+        )
+        return RoutedStrategyResult(
+            decision=decision,
+            candidate=routed_candidate,
             research_results=research_results,
         )
 

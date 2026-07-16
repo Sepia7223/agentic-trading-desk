@@ -66,7 +66,7 @@ The current platform includes:
 - deterministic structured historical retrieval with explicit time cutoffs;
 - daily, weekly, monthly, signal, risk, trade, portfolio, anomaly, comparison,
   and research-hypothesis advisory modes.
-- durable SQLite persistence with an explicit database path, schema version 1,
+- durable SQLite persistence with an explicit database path, schema version 2,
   migrations, transactions, foreign keys, WAL, and restart-safe readback;
 - immutable sequence-ordered journal envelopes with source and parent IDs,
   deterministic Decimal-safe payloads, and SHA-256 fingerprint chaining;
@@ -331,9 +331,15 @@ Journal records must be:
 - versioned;
 - linked by immutable IDs;
 - reproducible from stored fingerprints;
-- protected from silent editing.
+- protected from accidental or direct row editing by a fingerprint chain,
+  persisted count/head anchors, and SQLite update/delete guards.
 
 Corrections must create an amendment record rather than silently replacing historical facts.
+
+These local controls are tamper-evident, not adversary-proof. A party able to rewrite
+the database, schema, triggers, and anchors can forge a new internally consistent
+history. Keyed signatures and an independently controlled WORM anchor remain future
+requirements before treating the journal as hostile-party audit evidence.
 
 # Storage Architecture
 
@@ -442,7 +448,7 @@ Paper simulation and Demo execution records remain separate.
 
 ## Milestone 8
 
-Validated: explicit-path SQLite schema version 1, migrations, transactional
+Validated: explicit-path SQLite schema version 2, migrations, transactional
 append, source-parent linkage, fingerprint chains, restart integrity checks,
 recovery-read-only mode, amendments, deterministic reviews, structured queries,
 lineage, normalized-distance similarity, checksummed backups, sanitized exports,

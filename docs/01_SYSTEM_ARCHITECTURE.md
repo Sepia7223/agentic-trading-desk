@@ -48,10 +48,12 @@ After every completed milestone:
 -   Milestone 5 -- Paper Portfolio
 -   Milestone 6 -- AI Analyst
 -   Milestone 7 -- Controlled IG Demo Execution
+-   Milestone 7.5 -- Market Context Engine and Strategy Router
+-   Milestone 8 -- Durable Trade Journal
 
 ## Planned
 
--   Milestone 8 -- Durable Trade Journal
+-   Milestone 9 and later capabilities remain future work.
 
 ------------------------------------------------------------------------
 

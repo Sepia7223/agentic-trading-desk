@@ -46,6 +46,13 @@ def verify_connection(connection: sqlite3.Connection, supported_schema: int) -> 
         rows = connection.execute(
             "SELECT * FROM journal_records ORDER BY sequence_number"
         ).fetchall()
+        metadata = {
+            str(row[0]): str(row[1])
+            for row in connection.execute(
+                "SELECT key, value FROM journal_metadata "
+                "WHERE key IN ('record_count', 'chain_head')"
+            )
+        }
     except sqlite3.DatabaseError:
         return IntegrityReport(
             status=IntegrityStatus.RECOVERY_REQUIRED,
@@ -94,6 +101,22 @@ def verify_connection(connection: sqlite3.Connection, supported_schema: int) -> 
             findings.append(_finding("DUPLICATE_JOURNAL_ID", "journal ID is duplicated", record_id))
         journal_ids.add(record_id)
         previous = str(row["journal_record_fingerprint"])
+    expected_count = metadata.get("record_count")
+    expected_head = metadata.get("chain_head")
+    if expected_count != str(len(rows)):
+        findings.append(
+            IntegrityFinding(
+                code="RECORD_COUNT_ANCHOR_MISMATCH",
+                message="stored journal record count does not match",
+            )
+        )
+    if expected_head != (previous or ""):
+        findings.append(
+            IntegrityFinding(
+                code="CHAIN_HEAD_ANCHOR_MISMATCH",
+                message="stored journal chain head does not match",
+            )
+        )
     known_sources = {record.source_record_id for record in records}
     atomic_groups: dict[str, list[JournalRecord]] = {}
     for record in records:

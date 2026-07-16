@@ -135,6 +135,9 @@ runtime analysis provider and must not receive broker credentials.
   reversion, volatility breakout, and post-news continuation remain research only.
 - Capital preservation is an explicit valid route. The router never forces a trade,
   changes strategy parameters, approves risk, calculates quantity, or submits.
+- Operational candidate and automated Demo paths require an authoritative context
+  provider. Missing or non-authoritative context must suppress candidates before Risk
+  or execution.
 - AI cannot classify strategy eligibility, select a strategy, promote research,
   override event policy, or weaken capital-preservation reasons.
 - Scheduler identity comes from completed UTC bar boundaries, not sleep timing.

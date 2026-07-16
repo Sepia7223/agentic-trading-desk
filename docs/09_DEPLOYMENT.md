@@ -128,7 +128,7 @@ provided.
 
 SQLite journal, backup, and export paths are always operator supplied; the
 application does not create implicit home or working-directory storage. Startup
-enforces schema version 1, allowed migrations, foreign keys, WAL where
+enforces schema version 2, allowed migrations, foreign keys, WAL where
 appropriate, and integrity verification. Invalid evidence enters
 recovery-read-only mode and is not silently repaired. Backups use SQLite's
 consistent backup API, explicit existing destinations, checksums, verification,

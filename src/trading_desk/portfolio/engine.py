@@ -278,8 +278,9 @@ class PaperPortfolio:
             updated if item.position_id == position.position_id else item
             for item in state.positions
         )
+        marked_equity = _marked_portfolio_equity(state.cash, positions)
         daily = state.daily.model_copy(
-            update={"peak_equity": max(state.daily.peak_equity, state.cash + gross)}
+            update={"peak_equity": max(state.daily.peak_equity, marked_equity)}
         )
         marked_state, events = self._events_with_snapshot(
             state,
@@ -809,6 +810,13 @@ def _valid_bid_ask(bid: Decimal | None, ask: Decimal | None) -> bool:
         and ask.is_finite()
         and bid > ZERO
         and ask >= bid
+    )
+
+
+def _marked_portfolio_equity(cash: Decimal, positions: tuple[PaperPosition, ...]) -> Decimal:
+    return cash + sum(
+        (item.net_unrealized_pnl for item in positions if item.status is PositionStatus.OPEN),
+        ZERO,
     )
 
 

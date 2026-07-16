@@ -193,6 +193,47 @@ def test_machine_path_is_rejected_from_historical_payload(tmp_path: Path) -> Non
         append_record(repository, "unsafe", payload={"output_path": tmp_path / "local.json"})
 
 
+@pytest.mark.parametrize(
+    "value",
+    (
+        "diagnostic loaded from /etc/trading/config.json",
+        "Authorization: Bearer redacted-example",
+    ),
+)
+def test_unsafe_embedded_values_are_rejected_before_storage(tmp_path: Path, value: str) -> None:
+    with (
+        SQLiteJournalRepository(configuration(tmp_path / "journal.db")) as repository,
+        pytest.raises(ValueError, match="prohibited"),
+    ):
+        append_record(repository, "unsafe", payload={"diagnostic": value})
+
+
+def test_csv_and_markdown_exports_neutralize_active_cells(tmp_path: Path) -> None:
+    config = configuration(tmp_path / "journal.db")
+    with SQLiteJournalRepository(config) as repository:
+        append_record(repository, "=FORMULA|next\nrow")
+        csv_path = tmp_path / "journal.csv"
+        export_records(
+            repository,
+            config,
+            JournalQuery(),
+            output_path=csv_path,
+            export_format=ExportFormat.CSV,
+        )
+        assert "'=FORMULA|next" in csv_path.read_text(encoding="utf-8")
+
+        markdown_path = tmp_path / "journal.md"
+        export_records(
+            repository,
+            config,
+            JournalQuery(),
+            output_path=markdown_path,
+            export_format=ExportFormat.MARKDOWN,
+        )
+        markdown = markdown_path.read_text(encoding="utf-8")
+        assert "=FORMULA\\|next row" in markdown
+
+
 def test_raw_provider_response_is_rejected_by_default(tmp_path: Path) -> None:
     with (
         SQLiteJournalRepository(configuration(tmp_path / "journal.db")) as repository,

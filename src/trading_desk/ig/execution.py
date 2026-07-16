@@ -108,6 +108,14 @@ class IGDemoExecutionAdapter(IGDemoClient):
                 "REJECTED": BrokerConfirmationStatus.REJECTED,
             }.get(raw_status, BrokerConfirmationStatus.UNKNOWN)
             direction = data.get("direction")
+            if direction != "BUY":
+                raise ExecutionBrokerError(
+                    "IG confirmation direction violated the long-only policy",
+                    operation=ExecutionOperation.DEAL_CONFIRMATION.value,
+                    http_status=response.status_code,
+                    error_code="DIRECTION_MISMATCH",
+                    request_id=_request_id(response),
+                )
             return BrokerConfirmation(
                 deal_reference=returned_reference,
                 deal_id=_optional_text(data.get("dealId")),
@@ -115,13 +123,15 @@ class IGDemoExecutionAdapter(IGDemoClient):
                 broker_status=_optional_text(data.get("status")),
                 broker_reason=_optional_text(data.get("reason")),
                 epic=_optional_text(data.get("epic")),
-                direction=(ExecutionDirection.BUY if direction == "BUY" else None),
+                direction=ExecutionDirection.BUY,
                 executed_level=_optional_decimal(data.get("level")),
                 executed_size=_optional_decimal(data.get("size")),
                 stop_level=_optional_decimal(data.get("stopLevel")),
                 limit_level=_optional_decimal(data.get("limitLevel")),
                 confirmed_at=datetime.now(UTC),
             )
+        except ExecutionBrokerError:
+            raise
         except (ValidationError, TypeError, ValueError):
             raise ExecutionBrokerError(
                 "IG confirmation response was malformed",

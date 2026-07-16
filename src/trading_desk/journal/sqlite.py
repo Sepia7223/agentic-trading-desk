@@ -150,6 +150,7 @@ class SQLiteJournalRepository:
             for record in items:
                 self._insert_record(record, available_sources)
             self._resolve_deferred_links()
+            self._update_chain_anchor(items[-1])
             self._connection.commit()
         except sqlite3.IntegrityError as exc:
             self._connection.rollback()
@@ -161,6 +162,15 @@ class SQLiteJournalRepository:
             self._connection.rollback()
             raise
         return items
+
+    def _update_chain_anchor(self, latest: JournalRecord) -> None:
+        self._connection.executemany(
+            "UPDATE journal_metadata SET value = ? WHERE key = ?",
+            (
+                (str(latest.sequence_number), "record_count"),
+                (latest.journal_record_fingerprint, "chain_head"),
+            ),
+        )
 
     def _validate_batch_chain(self, records: tuple[JournalRecord, ...]) -> None:
         sequence = self.next_sequence()

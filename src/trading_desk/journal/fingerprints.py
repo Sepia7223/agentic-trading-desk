@@ -35,12 +35,22 @@ _RAW_DATA_KEYS = frozenset(
     }
 )
 _IDENTIFIER_KEYS = frozenset({"account_id", "preferred_account_id", "active_account_id"})
+_SECRET_VALUE = re.compile(
+    r"(?i)(?:\bbearer\s+\S+|\b(?:cst|x-security-token|api[_ -]?key|password|"
+    r"access[_ -]?token|refresh[_ -]?token)\s*[:=]\s*\S+)"
+)
+_MACHINE_PATH = re.compile(
+    r"(?:\b[A-Za-z]:[\\/]|\\\\[^\\\s]+[\\/][^\s]+|(?:^|\s)~[\\/]|"
+    r"(?:^|\s)/(?:Users|home|etc|var|tmp)(?:/|\b))"
+)
 
 
 def reject_secret_fields(value: object, path: str = "payload") -> None:
     """Reject secret objects and keys before persistence or export."""
     if isinstance(value, (SecretStr, SecretBytes)):
         raise ValueError(f"secret value is prohibited at {path}")
+    if isinstance(value, str) and _SECRET_VALUE.search(value):
+        raise ValueError(f"secret-like value is prohibited at {path}")
     if isinstance(value, BaseModel):
         reject_secret_fields(value.model_dump(mode="python"), path)
         return
@@ -62,9 +72,7 @@ def reject_machine_paths(value: object, path: str = "payload") -> None:
     """Keep local filesystem paths out of historical evidence."""
     if isinstance(value, Path):
         raise ValueError(f"filesystem path is prohibited at {path}")
-    if isinstance(value, str) and (
-        re.match(r"^[A-Za-z]:[\\/]", value) or value.startswith(("/home/", "/Users/"))
-    ):
+    if isinstance(value, str) and _MACHINE_PATH.search(value):
         raise ValueError(f"filesystem path is prohibited at {path}")
     if isinstance(value, BaseModel):
         reject_machine_paths(value.model_dump(mode="python"), path)
@@ -136,6 +144,24 @@ def canonical_json(value: object) -> str:
 
 def fingerprint(value: object) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def sanitize_export_value(value: object) -> Any:
+    """Redact unsafe historical values as a second boundary before export."""
+    primitive = to_primitive(value)
+    return _sanitize_export_primitive(primitive)
+
+
+def _sanitize_export_primitive(value: Any) -> Any:
+    if isinstance(value, str):
+        if _SECRET_VALUE.search(value) or _MACHINE_PATH.search(value):
+            return "[REDACTED]"
+        return value
+    if isinstance(value, list):
+        return [_sanitize_export_primitive(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _sanitize_export_primitive(item) for key, item in value.items()}
+    return value
 
 
 def decode_primitive(value: Any) -> Any:

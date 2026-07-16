@@ -98,6 +98,7 @@ from trading_desk.risk.models import TradeCandidate as RiskTradeCandidate
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
 from trading_desk.strategy.models import (
+    StrategyAction,
     StrategyBarResolution,
     StrategyContext,
     StrategyVariant,
@@ -690,6 +691,7 @@ async def _run_automated_demo_command(args: argparse.Namespace) -> int:
                     execution_configuration=execution_configuration,
                     policy=policy,
                     state=snapshot.state,
+                    checkpoint=store,
                     idempotency=idempotency,
                     journal=journal,
                 )
@@ -1208,7 +1210,11 @@ async def _run_strategy_command(settings: AppSettings, args: argparse.Namespace)
             context,
             inherited_findings=build.findings,
         )
-        _print_strategy_candidate(candidate)
+        if candidate.action is StrategyAction.LONG_CANDIDATE:
+            print("Action: NO_TRADE")
+            print("- rejection: MARKET_CONTEXT_UNAVAILABLE")
+        else:
+            _print_strategy_candidate(candidate)
     elif args.strategy_command == "walk-forward":
         candidates = pipeline.walk_forward(
             build.data,
@@ -1218,10 +1224,17 @@ async def _run_strategy_command(settings: AppSettings, args: argparse.Namespace)
         )
         print(f"Walk-forward evaluations: {len(candidates)}")
         for candidate in candidates:
+            action = (
+                StrategyAction.NO_TRADE
+                if candidate.action is StrategyAction.LONG_CANDIDATE
+                else candidate.action
+            )
             print(
-                f"- {candidate.evaluation_timestamp.isoformat()} | {candidate.action.value}"
+                f"- {candidate.evaluation_timestamp.isoformat()} | {action.value}"
                 f" | {candidate.current_regime.value}"
             )
+        if any(item.action is StrategyAction.LONG_CANDIDATE for item in candidates):
+            print("Candidate actions suppressed: MARKET_CONTEXT_UNAVAILABLE")
     else:
         raise ValueError("unsupported strategy command")
     return 0

@@ -199,6 +199,11 @@ queries, normalized-distance comparisons, backups, and exports are deterministic
 and cutoff bounded. Raw provider responses, credentials, OAuth values,
 authorization headers, and broker access are prohibited.
 
+Schema version 2 also stores a record-count and chain-head anchor and installs
+SQLite guards that reject direct record updates and deletes. These controls detect
+local corruption and straightforward mutation; they are not a substitute for a
+future keyed signature and independently controlled WORM anchor.
+
 ```powershell
 python -m trading_desk.cli journal init --database journal.db
 python -m trading_desk.cli journal status --database journal.db
@@ -232,6 +237,11 @@ post-news continuation are `RESEARCH_ONLY`; the router can evaluate and journal
 them but cannot send them to Risk or execution. AI has no strategy-selection
 authority. A missing, stale, conflicting, illiquid, event-blocked, or otherwise
 invalid context routes to capital preservation.
+
+Operational strategy and automated Demo paths require an authoritative
+`CandidateContextProvider`. When none is configured, candidate actions are
+suppressed with `MARKET_CONTEXT_UNAVAILABLE`; the system does not infer missing
+events, liquidity, news, or holiday state.
 
 Context classification uses only observations available through the explicit
 cutoff. Session windows use IANA time zones for London, New York, and Tokyo;
@@ -523,5 +533,5 @@ live strategy.**
 ## Attribution
 
 The original Claude-specific skill has been preserved at
-`docs/original-claude-skill.md` for attribution and reference. The MIT license
-and original attribution remain in `LICENSE`.
+`docs/original-claude-skill.md` for upstream attribution and reference. The MIT
+license remains in `LICENSE`.

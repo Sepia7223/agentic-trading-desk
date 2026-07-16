@@ -43,6 +43,7 @@ class ExecutionEngine:
         risk_engine: RiskEngine | None = None,
         idempotency: ExecutionIdempotencyStore | None = None,
         journal: ExecutionJournal | None = None,
+        before_submission: Callable[[], None] | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     ) -> None:
         self.broker = broker
@@ -50,6 +51,7 @@ class ExecutionEngine:
         self.risk_engine = risk_engine or RiskEngine()
         self.idempotency = idempotency or ExecutionIdempotencyStore()
         self.journal = journal or InMemoryExecutionJournal()
+        self.before_submission = before_submission
         self._sleep = sleep
         self._orders_this_run = 0
 
@@ -133,6 +135,8 @@ class ExecutionEngine:
             order,
             request,
         )
+        if self.before_submission is not None:
+            self.before_submission()
         try:
             submission = await self.broker.submit_market_position(order)
         except ExecutionBrokerError as error:

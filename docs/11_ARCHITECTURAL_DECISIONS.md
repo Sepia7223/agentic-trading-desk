@@ -459,7 +459,7 @@ hard-delete operation.
 
 **Status:** Accepted
 
-SQLite schema version 1 provides local transactions, foreign keys, WAL,
+SQLite schema version 2 provides local transactions, foreign keys, WAL,
 consistent backup, migration support, and restart-safe operation. Cloud and
 distributed persistence remain future.
 
