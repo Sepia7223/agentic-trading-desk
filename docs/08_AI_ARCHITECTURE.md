@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -157,3 +157,13 @@ No AI provider participates in automated Demo evaluation, candidate mapping,
 risk approval, request creation, submission, confirmation, reconciliation, halt
 management, or state recovery. AI may review sanitized immutable records only
 after the deterministic lifecycle completes.
+
+## Milestone 8 Journal Access
+
+AI may receive the validated `ReadOnlyJournal` facade for sanitized,
+cutoff-bounded records, lineage, deterministic summaries, and historical
+comparisons. It has no append, amendment, update, delete, backup, broker, or
+execution method through that facade. A separately authorized writer may append
+a new immutable `AI_ANALYSIS` record, but AI cannot rewrite source evidence.
+Raw provider responses remain prohibited. Embeddings, semantic vector search,
+autonomous learning, and AI-deployed strategy or risk changes remain future.

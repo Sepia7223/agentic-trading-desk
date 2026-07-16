@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -146,16 +146,12 @@ Never expose:
 -   Live support must be explicitly enabled in a future milestone.
 -   Strategy modules may not import broker authentication classes.
 
-# Future Execution
+# Future Broker Scope
 
-Future milestones may introduce:
-
--   Demo order placement
--   Order confirmation
--   Position management
--   Controlled live trading
-
-These features require updates to this document before implementation.
+Controlled Demo opening and confirmation are validated only within the narrow
+Milestone 7 execution boundary documented below. Position closure, amendment,
+working orders, account switching, shorts, and live trading remain future and
+require separate design and review.
 
 # Documentation Governance
 
@@ -180,3 +176,12 @@ Market-details v3 normalizes contract size, lot size, pip value, scaling factor,
 currency, minimum size, and stop rules. Missing economics or dealing rules halt
 before submission. Redirects, absolute mutation URLs, production hosts, closure,
 amendment, working orders, and account switching remain rejected.
+
+## Milestone 8 Journal Separation
+
+The durable journal stores only sanitized typed evidence supplied by upstream
+systems. It does not import the IG client or execution adapter, call any IG
+endpoint, open `.env`, or persist API keys, passwords, OAuth values,
+authorization headers, raw login bodies, or provider responses. Broker facts
+are preserved as separate immutable source records; corrections require linked
+amendments and evidence. No broker capability changed in Milestone 8.

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 7
+current_validated_milestone: 8
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -203,3 +203,12 @@ and day, and a one-hour cooldown. Quantity is capped at broker minimum unless a
 smaller explicit policy cap applies and can never exceed current or original
 Risk approval. Unknown account economics, contract value, market rules, or
 position state halt submission.
+
+## Milestone 8 Risk Evidence
+
+Risk Decisions and Approved Trade Intents remain immutable Risk Engine outputs.
+The durable journal may wrap and link them, aggregate rejection reason codes,
+and expose read-only review evidence, but cannot approve, expire, resize,
+replace, or otherwise alter them. The Risk Engine does not persist directly to
+SQLite and receives no journal-derived limit changes. Autonomous risk tuning
+remains future and prohibited.

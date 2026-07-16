@@ -63,6 +63,21 @@ from trading_desk.ig.models import (
     MarketSearchResult,
     OpenPosition,
 )
+from trading_desk.journal.backups import create_backup
+from trading_desk.journal.config import JournalConfiguration
+from trading_desk.journal.errors import JournalError
+from trading_desk.journal.exports import export_records
+from trading_desk.journal.models import (
+    ExportFormat,
+    JournalQuery,
+    JournalRecordType,
+    PostTradeReviewInput,
+)
+from trading_desk.journal.reviews import generate_post_trade_review
+from trading_desk.journal.sqlite import SQLiteJournalRepository
+from trading_desk.journal.summaries import daily_review as generate_daily_review
+from trading_desk.journal.summaries import monthly_review as generate_monthly_review
+from trading_desk.journal.summaries import weekly_review as generate_weekly_review
 from trading_desk.portfolio import (
     InMemoryPortfolioRepository,
     MarketQuote,
@@ -253,6 +268,43 @@ def build_parser() -> argparse.ArgumentParser:
     soak.add_argument("--enable-execution", action="store_true")
     soak.add_argument("--enable-automatic-demo-execution", action="store_true")
     soak.add_argument("--state-file", default=".trading-desk/automated-demo-state.json")
+
+    journal_parser = subcommands.add_parser("journal", help="Local append-only evidence journal")
+    journal_commands = journal_parser.add_subparsers(dest="journal_command", required=True)
+    for name in ("init", "status", "verify"):
+        command = journal_commands.add_parser(name)
+        command.add_argument("--database", required=True)
+    query = journal_commands.add_parser("query")
+    query.add_argument("--database", required=True)
+    query.add_argument("--record-type", choices=[item.value for item in JournalRecordType])
+    query.add_argument("--limit", type=int, default=100)
+    query.add_argument("--offset", type=int, default=0)
+    lineage = journal_commands.add_parser("lineage")
+    lineage.add_argument("--database", required=True)
+    lineage.add_argument("--source-id", required=True)
+    journal_trade_review = journal_commands.add_parser("review-trade")
+    journal_trade_review.add_argument("--database", required=True)
+    journal_trade_review.add_argument("--trade-id", required=True)
+    journal_daily = journal_commands.add_parser("daily-review")
+    journal_daily.add_argument("--database", required=True)
+    journal_daily.add_argument("--date", required=True)
+    journal_weekly = journal_commands.add_parser("weekly-review")
+    journal_weekly.add_argument("--database", required=True)
+    journal_weekly.add_argument("--week", required=True)
+    journal_monthly = journal_commands.add_parser("monthly-review")
+    journal_monthly.add_argument("--database", required=True)
+    journal_monthly.add_argument("--month", required=True)
+    backup = journal_commands.add_parser("backup")
+    backup.add_argument("--database", required=True)
+    backup.add_argument("--destination", required=True)
+    journal_export = journal_commands.add_parser("export")
+    journal_export.add_argument("--database", required=True)
+    journal_export.add_argument(
+        "--format", choices=[item.value for item in ExportFormat], required=True
+    )
+    journal_export.add_argument("--output", required=True)
+    journal_export.add_argument("--record-type", choices=[item.value for item in JournalRecordType])
+    journal_export.add_argument("--limit", type=int, default=1000)
     return parser
 
 
@@ -289,6 +341,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             ValueError,
         ) as error:
             print(f"Execution error: {error}", file=sys.stderr)
+            return 2
+    if args.command == "journal":
+        _print_journal_header()
+        try:
+            return _run_journal_command(args)
+        except (JournalError, OSError, ValidationError, ValueError) as error:
+            print(f"Journal error: {error}", file=sys.stderr)
             return 2
     try:
         settings = AppSettings.from_environment()
@@ -348,6 +407,141 @@ def _print_execution_header(args: argparse.Namespace) -> None:
     print("Live trading: DISABLED")
     print(f"Automatic execution: {'EXPLICIT DEMO MODE' if automated else 'DISABLED'}")
     print(f"Operator confirmation: {'POLICY BOUND' if automated else 'REQUIRED'}")
+
+
+def _print_journal_header() -> None:
+    print("Mode: JOURNAL")
+    print("Trading authority: NONE")
+    print("Broker access: DISABLED")
+    print("Mutation of source records: DISABLED")
+    print("Live trading: DISABLED")
+
+
+def _run_journal_command(args: argparse.Namespace) -> int:
+    configuration = JournalConfiguration(database_path=Path(args.database))
+    with SQLiteJournalRepository(configuration) as repository:
+        if args.journal_command == "init":
+            print(f"Schema version: {repository.schema_version}")
+            print("Journal initialized: yes")
+            return 0
+        if args.journal_command in {"status", "verify"}:
+            report = repository.verify()
+            print(f"Schema version: {report.schema_version}")
+            print(f"Integrity: {report.status.value}")
+            print(f"Records checked: {report.records_checked}")
+            if args.journal_command == "status":
+                print(f"Recovery read-only: {'yes' if repository.recovery_read_only else 'no'}")
+            for finding in report.findings:
+                print(f"Finding: {finding.code}")
+            return 0 if report.status.value in {"VALID", "WARNINGS"} else 2
+        if args.journal_command == "query":
+            record_type = JournalRecordType(args.record_type) if args.record_type else None
+            result = repository.query(
+                JournalQuery(
+                    record_type=record_type,
+                    limit=args.limit,
+                    offset=args.offset,
+                    cutoff_at=datetime.now(UTC),
+                )
+            )
+            print(f"Records: {len(result.records)}")
+            print(f"Total matches: {result.total_matches}")
+            for record in result.records:
+                print(
+                    f"{record.sequence_number}: {record.record_type.value} "
+                    f"source={_redact_reference(record.source_record_id)}"
+                )
+            return 0
+        if args.journal_command == "lineage":
+            lineage = repository.lineage(args.source_id)
+            print(f"Linked records: {len(lineage.records)}")
+            print(f"Missing parents: {len(lineage.missing_parent_ids)}")
+            for record in lineage.records:
+                print(f"{record.sequence_number}: {record.record_type.value}")
+            return 0
+        if args.journal_command == "review-trade":
+            result = repository.query(JournalQuery(trade_id=args.trade_id, limit=100))
+            source = next(
+                (
+                    record
+                    for record in result.records
+                    if record.record_type is JournalRecordType.PAPER_CLOSED_TRADE
+                ),
+                None,
+            )
+            if source is None:
+                raise ValueError("closed trade was not found")
+            post_review = generate_post_trade_review(_review_input(source.payload))
+            print(f"Process: {post_review.process_classification.value}")
+            print(f"Outcome: {post_review.financial_outcome.value}")
+            print(
+                "Net P&L: "
+                f"{post_review.net_pnl if post_review.net_pnl is not None else 'unavailable'}"
+            )
+            return 0
+        if args.journal_command == "daily-review":
+            periodic_review = generate_daily_review(
+                repository, datetime.strptime(args.date, "%Y-%m-%d").date()
+            )
+        elif args.journal_command == "weekly-review":
+            parsed = datetime.strptime(args.week + "-1", "%G-W%V-%u")
+            periodic_review = generate_weekly_review(
+                repository, parsed.isocalendar().year, parsed.isocalendar().week
+            )
+        elif args.journal_command == "monthly-review":
+            parsed = datetime.strptime(args.month, "%Y-%m")
+            periodic_review = generate_monthly_review(repository, parsed.year, parsed.month)
+        else:
+            periodic_review = None
+        if periodic_review is not None:
+            print(f"Period: {periodic_review.period_type}")
+            print(f"Records: {periodic_review.sample_size}")
+            print(f"Insufficient sample: {'yes' if periodic_review.insufficient_sample else 'no'}")
+            return 0
+        if args.journal_command == "backup":
+            backup = create_backup(repository, Path(args.destination))
+            print(f"Backup: {backup.path.name}")
+            print(f"Verified: {'yes' if backup.verified else 'no'}")
+            print(f"Checksum: {backup.checksum}")
+            return 0
+        if args.journal_command == "export":
+            record_type = JournalRecordType(args.record_type) if args.record_type else None
+            exported = export_records(
+                repository,
+                configuration,
+                JournalQuery(
+                    record_type=record_type, limit=args.limit, cutoff_at=datetime.now(UTC)
+                ),
+                output_path=Path(args.output),
+                export_format=ExportFormat(args.format),
+            )
+            print(f"Exported records: {exported.source_record_count}")
+            print(f"Checksum: {exported.checksum}")
+            return 0
+    raise ValueError("unsupported journal command")
+
+
+def _review_input(payload: dict[str, object]) -> PostTradeReviewInput:
+    return PostTradeReviewInput.model_validate(
+        {
+            "trade_id": payload["trade_id"],
+            "instrument": payload["instrument"],
+            "epic": payload.get("epic", payload["instrument"]),
+            "strategy_variant": payload.get("strategy_variant"),
+            "entry_timestamp": payload["entry_timestamp"],
+            "exit_timestamp": payload.get("exit_timestamp"),
+            "quantity": payload["quantity"],
+            "entry_price": payload["entry_price"],
+            "exit_price": payload.get("exit_price"),
+            "gross_pnl": payload.get("gross_pnl"),
+            "commission": Decimal(str(payload.get("entry_commission", 0)))
+            + Decimal(str(payload.get("exit_commission", 0))),
+            "funding": payload.get("funding", 0),
+            "slippage_cost": payload.get("slippage_cost", 0),
+            "maximum_favorable_excursion": payload.get("maximum_favorable_excursion"),
+            "maximum_adverse_excursion": payload.get("maximum_adverse_excursion"),
+        }
+    )
 
 
 async def _run_execution_command(args: argparse.Namespace) -> int:

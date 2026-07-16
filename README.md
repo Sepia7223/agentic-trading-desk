@@ -73,6 +73,7 @@ src/trading_desk/
   portfolio/                local-only paper positions, fills, accounting, and event replay
   ai/                       disabled-by-default sanitized advisory analysis and research
   execution/                controlled preflight, confirmation, idempotency, and reconciliation
+  journal/                  append-only SQLite evidence, reviews, retrieval, backup, and export
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
@@ -181,6 +182,41 @@ Every execution command prints `Environment: IG DEMO`,
 `Mode: CONTROLLED EXECUTION`, and `Live trading: DISABLED`. Manual commands
 also print `Automatic execution: DISABLED` and `Operator confirmation:
 REQUIRED`; automated commands identify the explicit Demo policy boundary.
+
+## Durable Trade Journal
+
+Milestone 8 adds a local SQLite evidence store around the existing immutable
+Strategy, Risk, Paper Portfolio, Demo Execution, and AI records. The journal is
+append-only: records are sequence ordered and SHA-256 fingerprint chained,
+source parents are linked, batches are transactional, and corrections create
+new amendment records while preserving originals. There is no update or hard
+delete operation.
+
+The database path is always explicit. Startup applies the supported schema
+migration, enables foreign keys and WAL, verifies the chain and payloads, and
+enters recovery-read-only mode after unrecoverable integrity findings. Reviews,
+queries, normalized-distance comparisons, backups, and exports are deterministic
+and cutoff bounded. Raw provider responses, credentials, OAuth values,
+authorization headers, and broker access are prohibited.
+
+```powershell
+python -m trading_desk.cli journal init --database journal.db
+python -m trading_desk.cli journal status --database journal.db
+python -m trading_desk.cli journal verify --database journal.db
+python -m trading_desk.cli journal query --database journal.db --record-type RISK_DECISION
+python -m trading_desk.cli journal lineage --database journal.db --source-id <source-id>
+python -m trading_desk.cli journal daily-review --database journal.db --date 2026-07-16
+python -m trading_desk.cli journal backup --database journal.db --destination backups
+python -m trading_desk.cli journal export --database journal.db --format jsonl --output export.jsonl
+```
+
+Every command prints `Mode: JOURNAL`, `Trading authority: NONE`,
+`Broker access: DISABLED`, `Mutation of source records: DISABLED`, and
+`Live trading: DISABLED`. JSONL, selected-field CSV, and Markdown exports carry
+schema, configuration, query, count, timestamp, and checksum metadata.
+Similarity is deterministic structured comparison, not machine learning.
+Semantic vector search, autonomous learning, cloud persistence, and journal-led
+strategy, risk, portfolio, or execution changes remain future and prohibited.
 
 ## Strategy Framework
 

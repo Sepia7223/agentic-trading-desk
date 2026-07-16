@@ -1,27 +1,36 @@
-"""Trade journal protocol."""
+"""Storage-neutral ports for append-only journal evidence."""
 
 from __future__ import annotations
 
-from datetime import datetime
-from decimal import Decimal
-from typing import Protocol, TypedDict
+from collections.abc import Sequence
+from typing import Protocol
+
+from trading_desk.journal.models import (
+    IntegrityReport,
+    JournalLineage,
+    JournalQuery,
+    JournalQueryResult,
+    JournalRecord,
+)
 
 
-class JournalEntry(TypedDict):
-    timestamp: datetime
-    symbol: str
-    action: str
-    deterministic_decision: str
-    model_summary: str | None
-    risk_accepted: bool
-    notional: Decimal | None
+class JournalWriter(Protocol):
+    def append(self, record: JournalRecord) -> JournalRecord: ...
+
+    def append_batch(self, records: Sequence[JournalRecord]) -> tuple[JournalRecord, ...]: ...
 
 
-class TradeJournal(Protocol):
-    """Persistent journal boundary."""
+class JournalReader(Protocol):
+    def get(self, journal_record_id: str) -> JournalRecord | None: ...
 
-    async def record(self, entry: JournalEntry) -> None:
-        """Persist an analysis or trading decision record."""
+    def query(self, query: JournalQuery) -> JournalQueryResult: ...
 
-    async def list_recent(self, limit: int = 50) -> list[JournalEntry]:
-        """Return recent journal entries."""
+    def lineage(self, source_record_id: str) -> JournalLineage: ...
+
+
+class JournalIntegrityVerifier(Protocol):
+    def verify(self) -> IntegrityReport: ...
+
+
+class TradeJournal(JournalWriter, JournalReader, JournalIntegrityVerifier, Protocol):
+    """Combined compatibility boundary for a durable journal repository."""
