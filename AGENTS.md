@@ -119,6 +119,40 @@ runtime analysis provider and must not receive broker credentials.
 - Semantic embeddings, autonomous parameter changes, cloud storage, distributed
   queues, multi-user mutation, and any journal-to-execution flow remain future.
 
+## Market Context And Router Boundary
+
+- Build every context snapshot at an explicit UTC cutoff. No session, event,
+  volatility, spread percentile, model output, or historical summary may use a
+  record after that cutoff.
+- Session classification uses configured IANA time zones and must preserve London
+  and New York DST behavior. Unknown time zones or malformed times fail closed.
+- Structured scheduled events are authoritative. Event actuals and revisions are
+  invisible until their release timestamps. Unscheduled news can only add caution.
+- The registry status is authoritative. Only `VALIDATED` strategies can be
+  selected for candidate generation. `RESEARCH_ONLY`, `DISABLED`, and `REJECTED`
+  strategies cannot reach Risk or execution.
+- The existing trend/regime strategy is the only validated strategy. Range mean
+  reversion, volatility breakout, and post-news continuation remain research only.
+- Capital preservation is an explicit valid route. The router never forces a trade,
+  changes strategy parameters, approves risk, calculates quantity, or submits.
+- Operational candidate and automated Demo paths require an authoritative context
+  provider. Missing or non-authoritative context must suppress candidates before Risk
+  or execution.
+- Operational economic and holiday calendars must be explicit, structured, UTC-aware,
+  fresh, and cover the evaluation timestamp. Never interpret an absent or implicit
+  empty source as a normal day.
+- Select completed bars before strategy evaluation. Current or future bars, stale
+  quotes, missing bid/ask, and invalid chronology must preserve capital.
+- Operational context may consume only typed read-only IG observations. It must not
+  import the mutation adapter, load `.env`, approve Risk, or use AI for direction.
+- AI cannot classify strategy eligibility, select a strategy, promote research,
+  override event policy, or weaken capital-preservation reasons.
+- Scheduler identity comes from completed UTC bar boundaries, not sleep timing.
+  Duplicate actions and unfinished bars must not be evaluated after restart.
+- Promotion requires frozen rules, configuration fingerprints, leakage-controlled
+  validation, walk-forward evidence, costs, sufficient context samples, an
+  untouched test, documentation, and a separate review.
+
 ## IG Read-Only Boundary
 
 Every IG request must pass through the central allowlist. The complete allowed

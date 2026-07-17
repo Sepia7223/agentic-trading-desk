@@ -66,7 +66,7 @@ The current platform includes:
 - deterministic structured historical retrieval with explicit time cutoffs;
 - daily, weekly, monthly, signal, risk, trade, portfolio, anomaly, comparison,
   and research-hypothesis advisory modes.
-- durable SQLite persistence with an explicit database path, schema version 1,
+- durable SQLite persistence with an explicit database path, schema version 2,
   migrations, transactions, foreign keys, WAL, and restart-safe readback;
 - immutable sequence-ordered journal envelopes with source and parent IDs,
   deterministic Decimal-safe payloads, and SHA-256 fingerprint chaining;
@@ -331,9 +331,15 @@ Journal records must be:
 - versioned;
 - linked by immutable IDs;
 - reproducible from stored fingerprints;
-- protected from silent editing.
+- protected from accidental or direct row editing by a fingerprint chain,
+  persisted count/head anchors, and SQLite update/delete guards.
 
 Corrections must create an amendment record rather than silently replacing historical facts.
+
+These local controls are tamper-evident, not adversary-proof. A party able to rewrite
+the database, schema, triggers, and anchors can forge a new internally consistent
+history. Keyed signatures and an independently controlled WORM anchor remain future
+requirements before treating the journal as hostile-party audit evidence.
 
 # Storage Architecture
 
@@ -442,7 +448,7 @@ Paper simulation and Demo execution records remain separate.
 
 ## Milestone 8
 
-Validated: explicit-path SQLite schema version 1, migrations, transactional
+Validated: explicit-path SQLite schema version 2, migrations, transactional
 append, source-parent linkage, fingerprint chains, restart integrity checks,
 recovery-read-only mode, amendments, deterministic reviews, structured queries,
 lineage, normalized-distance similarity, checksummed backups, sanitized exports,
@@ -508,3 +514,17 @@ hash-linked execution journal and idempotency keys. Ambiguous submission,
 broker error, integrity failure, and reconciliation mismatch produce a durable
 halt record. Credentials, OAuth values, headers, raw responses, and full account
 identifiers are never journal fields.
+# Milestone 7.5 Evidence Records
+
+The completed Milestone 8 journal taxonomy now includes `SCHEDULER_CYCLE`,
+`MARKET_CONTEXT`, `SESSION_CLASSIFICATION`, `EVENT_CONTEXT`, `ROUTER_DECISION`,
+`STRATEGY_ELIGIBILITY`, `RESEARCH_STRATEGY_RESULT`, and
+`CAPITAL_PRESERVATION_DECISION`. These are append-only evidence without trading
+authority. Historical expectancy is cutoff-bounded deterministic memory and cannot
+change strategy status, thresholds, Risk decisions, or execution policy.
+
+Operational context source evidence consists of identifiers, UTC source timestamps,
+and deterministic fingerprints for historical prices, current quote, economic
+calendar, and holiday calendar. It contains no credentials or raw HTTP data. A later
+journal integration may persist the resulting immutable snapshot and router decision;
+the context provider itself has no journal-led trading authority.

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from trading_desk.journal.config import JournalConfiguration
 from trading_desk.journal.errors import JournalExportError
-from trading_desk.journal.fingerprints import to_primitive
+from trading_desk.journal.fingerprints import sanitize_export_value
 from trading_desk.journal.models import ExportFormat, ExportResult, JournalQuery, JournalRecord
 
 if TYPE_CHECKING:
@@ -63,7 +63,7 @@ def export_records(
 def _jsonl(path: Path, metadata: dict[str, object], records: tuple[JournalRecord, ...]) -> None:
     lines = [json.dumps({"metadata": metadata}, sort_keys=True)]
     lines.extend(
-        json.dumps(to_primitive(record), sort_keys=True, separators=(",", ":"))
+        json.dumps(sanitize_export_value(record), sort_keys=True, separators=(",", ":"))
         for record in records
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -92,14 +92,14 @@ def _csv(path: Path, metadata: dict[str, object], records: tuple[JournalRecord, 
             writer.writerow(
                 {
                     **{key: metadata[key] for key in fields[:5]},
-                    "journal_record_id": record.journal_record_id,
-                    "record_type": record.record_type.value,
-                    "source_record_id": record.source_record_id,
-                    "effective_at": record.effective_at.isoformat(),
-                    "instrument": record.instrument,
-                    "epic": record.epic,
-                    "environment": record.environment,
-                    "payload_fingerprint": record.payload_fingerprint,
+                    "journal_record_id": _csv_cell(record.journal_record_id),
+                    "record_type": _csv_cell(record.record_type.value),
+                    "source_record_id": _csv_cell(record.source_record_id),
+                    "effective_at": _csv_cell(record.effective_at.isoformat()),
+                    "instrument": _csv_cell(record.instrument),
+                    "epic": _csv_cell(record.epic),
+                    "environment": _csv_cell(record.environment),
+                    "payload_fingerprint": _csv_cell(record.payload_fingerprint),
                 }
             )
 
@@ -114,9 +114,22 @@ def _markdown(path: Path, metadata: dict[str, object], records: tuple[JournalRec
         "|---:|---|---|---|---|",
     ]
     lines.extend(
-        f"| {record.sequence_number} | {record.record_type.value} | "
-        f"{record.source_record_id} | {record.effective_at.isoformat()} | "
-        f"{record.instrument or ''} |"
+        f"| {record.sequence_number} | {_markdown_cell(record.record_type.value)} | "
+        f"{_markdown_cell(record.source_record_id)} | "
+        f"{_markdown_cell(record.effective_at.isoformat())} | "
+        f"{_markdown_cell(record.instrument)} |"
         for record in records
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _csv_cell(value: object) -> object:
+    safe = sanitize_export_value(value)
+    if isinstance(safe, str) and safe.startswith(("=", "+", "-", "@")):
+        return f"'{safe}"
+    return safe
+
+
+def _markdown_cell(value: object) -> str:
+    safe = str(sanitize_export_value(value or ""))
+    return safe.replace("\r", " ").replace("\n", " ").replace("|", "\\|").replace("`", "\\`")

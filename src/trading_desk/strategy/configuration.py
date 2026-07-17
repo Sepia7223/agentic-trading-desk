@@ -19,7 +19,7 @@ class StrategyConfiguration(BaseModel):
 
     strategy_schema_version: Literal["strategy-schema-v2"] = "strategy-schema-v2"
     variant: StrategyVariant = StrategyVariant.BASELINE_KALMAN_HMM
-    minimum_bars_required: int = Field(default=220, ge=140, le=5000)
+    minimum_bars_required: int = Field(default=220, ge=210, le=5000)
     kalman_minimum_observations: int = Field(default=30, ge=3)
     kalman_process_level_noise: float = Field(default=1e-3, gt=0)
     kalman_process_slope_noise: float = Field(default=1e-5, gt=0)

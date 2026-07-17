@@ -72,7 +72,7 @@ def _context(
         {"kalman_observation_noise": -1},
         {"minimum_regime_probability": 1.1},
         {"maximum_regime_uncertainty": -0.1},
-        {"minimum_bars_required": 100},
+        {"minimum_bars_required": 209},
         {"long_only": False},
         {"allow_transitional_regime_entries": True},
         {"maximum_spread_bps": math.inf},

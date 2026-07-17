@@ -1,6 +1,6 @@
 """Versioned SQLite schema for append-only journal evidence."""
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS journal_metadata (
@@ -67,4 +67,31 @@ CREATE INDEX IF NOT EXISTS idx_journal_records_atomic_group
     ON journal_records(atomic_group_id, atomic_group_index);
 CREATE INDEX IF NOT EXISTS idx_journal_parent_source
     ON journal_parent_links(parent_source_record_id);
+"""
+
+SCHEMA_V2 = """
+INSERT OR IGNORE INTO journal_metadata(key, value)
+VALUES ('record_count', (SELECT CAST(COUNT(*) AS TEXT) FROM journal_records));
+
+INSERT OR IGNORE INTO journal_metadata(key, value)
+VALUES (
+    'chain_head',
+    COALESCE(
+        (SELECT journal_record_fingerprint FROM journal_records
+         ORDER BY sequence_number DESC LIMIT 1),
+        ''
+    )
+);
+
+CREATE TRIGGER IF NOT EXISTS journal_records_no_update
+BEFORE UPDATE ON journal_records
+BEGIN
+    SELECT RAISE(ABORT, 'journal records are append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS journal_records_no_delete
+BEFORE DELETE ON journal_records
+BEGIN
+    SELECT RAISE(ABORT, 'journal records are append-only');
+END;
 """

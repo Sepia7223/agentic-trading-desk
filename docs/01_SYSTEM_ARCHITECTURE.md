@@ -48,10 +48,12 @@ After every completed milestone:
 -   Milestone 5 -- Paper Portfolio
 -   Milestone 6 -- AI Analyst
 -   Milestone 7 -- Controlled IG Demo Execution
+-   Milestone 7.5 -- Market Context Engine and Strategy Router
+-   Milestone 8 -- Durable Trade Journal
 
 ## Planned
 
--   Milestone 8 -- Durable Trade Journal
+-   Milestone 9 and later capabilities remain future work.
 
 ------------------------------------------------------------------------
 
@@ -349,3 +351,20 @@ query, lineage, integrity, review, similarity, backup, and export services sit
 downstream. AI receives only a read-only facade. No reverse path from journal to
 Strategy, Risk, Portfolio, Broker, or Execution exists. Cloud storage, event
 streaming, multi-user writes, and semantic retrieval remain future.
+# Milestone 7.5 Context Flow
+
+The validated flow is Scheduler -> completed market data -> session/liquidity ->
+structured events -> volatility and existing Kalman/HMM interpretation -> immutable
+context snapshot -> deterministic router. Only a selected `VALIDATED` strategy may
+produce a candidate for the existing Risk boundary. Research routes terminate at
+journaling; capital preservation produces no candidate. AI and broker adapters are
+outside the context and router packages.
+
+## Operational Context Boundary
+
+The bounded automated Demo runner now injects an operational context provider. The
+runner supplies typed IG Demo read-only market details and completed historical bars;
+the provider adds current-quote validation, DST-aware sessions, causal liquidity and
+volatility, existing Kalman/HMM outputs, and explicit local economic and holiday
+snapshots. Missing, stale, future, unfinished, or out-of-coverage input routes to
+capital preservation before Risk. The provider has no broker mutation dependency.

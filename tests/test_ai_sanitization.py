@@ -33,6 +33,14 @@ from trading_desk.ai.sanitization import (
             {"instrument": "C:\\Users\\person\\data.json"},
             SanitizationReasonCode.UNSUPPORTED_CONTEXT,
         ),
+        (
+            {"historical_summary": "loaded from /etc/trading/config.json yesterday"},
+            SanitizationReasonCode.UNSUPPORTED_CONTEXT,
+        ),
+        (
+            {"historical_summary": "stored on \\\\server\\share\\report.json"},
+            SanitizationReasonCode.UNSUPPORTED_CONTEXT,
+        ),
         ({"net_pnl": Decimal("NaN")}, SanitizationReasonCode.INVALID_DECIMAL),
         ({"net_pnl": 1.2}, SanitizationReasonCode.INVALID_DECIMAL),
     ],

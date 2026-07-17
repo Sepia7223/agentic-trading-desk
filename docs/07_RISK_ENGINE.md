@@ -212,3 +212,9 @@ and expose read-only review evidence, but cannot approve, expire, resize,
 replace, or otherwise alter them. The Risk Engine does not persist directly to
 SQLite and receives no journal-derived limit changes. Autonomous risk tuning
 remains future and prohibited.
+# Milestone 7.5 Router-To-Risk Boundary
+
+The router does not approve quantity, risk, stops, targets, or submission. It may
+pass only a candidate from a `VALIDATED` selected strategy into the existing Risk
+Engine. Research results and capital-preservation decisions terminate before Risk.
+Risk remains authoritative and may reject every routed candidate.

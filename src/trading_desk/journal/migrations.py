@@ -7,9 +7,9 @@ from datetime import UTC, datetime
 
 from trading_desk.journal.errors import JournalSchemaError, UnsupportedSchemaError
 from trading_desk.journal.fingerprints import fingerprint
-from trading_desk.journal.schema import SCHEMA_V1, SCHEMA_VERSION
+from trading_desk.journal.schema import SCHEMA_V1, SCHEMA_V2, SCHEMA_VERSION
 
-MIGRATIONS = {1: SCHEMA_V1}
+MIGRATIONS = {1: SCHEMA_V1, 2: SCHEMA_V2}
 
 
 def database_version(connection: sqlite3.Connection) -> int:
@@ -49,4 +49,13 @@ def migrate(connection: sqlite3.Connection, target_version: int = SCHEMA_VERSION
 
 
 def _statements(script: str) -> tuple[str, ...]:
-    return tuple(statement.strip() for statement in script.split(";") if statement.strip())
+    statements: list[str] = []
+    pending = ""
+    for line in script.splitlines():
+        pending = f"{pending}\n{line}".strip()
+        if pending and sqlite3.complete_statement(pending):
+            statements.append(pending.rstrip(";").strip())
+            pending = ""
+    if pending:
+        raise JournalSchemaError("journal migration contains an incomplete statement")
+    return tuple(statements)

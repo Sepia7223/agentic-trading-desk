@@ -138,3 +138,16 @@ After every milestone affecting strategy behavior:
 
 A strategy milestone is not complete until this document matches the
 validated implementation.
+# Milestone 7.5 Strategy Registry
+
+The existing trend/regime implementation is registered unchanged as the sole
+`VALIDATED` strategy. Range mean reversion, volatility breakout, and post-news
+continuation have metadata and deterministic eligibility for research reporting but
+are `RESEARCH_ONLY`. Registry status, context freshness, history, spread, event,
+integrity, and execution-halt gates are mandatory. Capital preservation is selected
+when no validated strategy is eligible; AI does not participate in selection.
+
+Operational analysis removes the unfinished current UTC bar before invoking the
+strategy pipeline. The resulting candidate is not altered by context; it is either
+retained by the validated trend/regime route or suppressed. Appending observations
+after an evaluation cutoff cannot change the completed input at that cutoff.

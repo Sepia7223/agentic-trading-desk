@@ -24,6 +24,14 @@ class JournalModel(BaseModel):
 
 
 class JournalRecordType(StrEnum):
+    SCHEDULER_CYCLE = "SCHEDULER_CYCLE"
+    MARKET_CONTEXT = "MARKET_CONTEXT"
+    SESSION_CLASSIFICATION = "SESSION_CLASSIFICATION"
+    EVENT_CONTEXT = "EVENT_CONTEXT"
+    ROUTER_DECISION = "ROUTER_DECISION"
+    STRATEGY_ELIGIBILITY = "STRATEGY_ELIGIBILITY"
+    RESEARCH_STRATEGY_RESULT = "RESEARCH_STRATEGY_RESULT"
+    CAPITAL_PRESERVATION_DECISION = "CAPITAL_PRESERVATION_DECISION"
     STRATEGY_SIGNAL = "STRATEGY_SIGNAL"
     STRATEGY_REJECTION = "STRATEGY_REJECTION"
     RISK_DECISION = "RISK_DECISION"
@@ -202,7 +210,7 @@ def create_journal_record(
     if not isinstance(primitive, dict):
         primitive = {"value": primitive}
     payload: dict[str, object] = primitive
-    source_fingerprint = fingerprint(source)
+    source_fingerprint = fingerprint(payload)
     payload_fingerprint = fingerprint(payload)
     fields: dict[str, object] = {
         "sequence_number": sequence_number,

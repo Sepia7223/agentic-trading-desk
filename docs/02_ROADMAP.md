@@ -36,7 +36,8 @@ roadmap reflects the new validated state.
   M5 Paper Portfolio             Complete
   M6 AI Analyst                  Complete
   M7 Demo Execution              Complete
-  M8 Trade Journal               ⏳ Planned
+  M7.5 Context & Router          Complete
+  M8 Trade Journal               Complete
   M9 Dashboard                   ⏳ Planned
   M10 Knowledge & Memory         ⏳ Planned
   M11 Multi-Agent Architecture   ⏳ Planned
@@ -45,7 +46,9 @@ roadmap reflects the new validated state.
 
 # Guiding Rules
 
--   Milestones are sequential.
+-   Safety dependencies are sequential. A fractional milestone may land later in
+    repository history when it is based on every completed dependency and the
+    ordering is documented explicitly.
 -   No milestone bypasses earlier safety requirements.
 -   Documentation must be reviewed after every completed milestone.
 -   Completed work moves from Planned to Validated.
@@ -103,6 +106,16 @@ drawdown, exposure and quantity limits, persistent halt/idempotency state, and
 no-retry reconciliation. Real operational validation remains pending until a
 naturally eligible signal completes the Demo lifecycle.
 
+# Validated Milestone 7.5
+
+Milestone 7.5 was implemented on top of the completed Milestone 8 lineage. This
+repository-history ordering does not bypass a safety dependency. Validated:
+completed-bar scheduling, UTC/DST sessions, observable liquidity, causal volatility,
+structured event windows, deterministic registry/router, explicit capital
+preservation, research isolation, and context-aware historical reporting. Research
+only: range mean reversion, volatility breakout, and post-news continuation. Any
+promotion remains future work and requires separate review.
+
 # Validated Milestone 8
 
 The durable local Trade Journal wraps validated immutable source records in a
@@ -120,3 +133,8 @@ Milestone 9 is not defined by this change. Semantic vector search, autonomous
 learning or parameter changes, cloud persistence, live trading, unbounded
 automation, closure, working orders, account switching, short execution, and AI
 execution authority remain future and unavailable.
+
+Operational context wiring for Milestone 7.5 is software-validated with deterministic
+and mocked read-only inputs. Real IG Demo execution validation remains incomplete until
+a naturally eligible order is submitted once, accepted, and reconciled; no forced
+candidate is permitted to close that validation item.

@@ -85,3 +85,11 @@ def test_engine_records_unresolved_position_without_realized_pnl(
     assert first.metrics.realized_net_pnl == 0
     assert first.metrics.net_return == 0
     assert first.metrics.unresolved_position_count == 1
+    unresolved_start = first.unresolved_positions[0].entry_fill.fill_index
+    unresolved_equity = tuple(
+        point for point in first.equity_curve if point.index >= unresolved_start
+    )
+    assert unresolved_equity
+    assert all(point.unrealized_pnl == 0 for point in unresolved_equity)
+    assert all(point.gross_exposure == 0 for point in unresolved_equity)
+    assert all(point.equity == point.cash for point in unresolved_equity)

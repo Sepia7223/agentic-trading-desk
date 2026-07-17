@@ -35,7 +35,10 @@ _SECRET_KEYS = {
 }
 _AUTH_KEYS = {"authorization", "headers", "http_headers", "oauth", "session"}
 _BROKER_RAW_KEYS = {"raw_response", "broker_response", "http_response", "request_headers"}
-_LOCAL_PATH = re.compile(r"^(?:[A-Za-z]:[\\/]|/(?:Users|home|var|tmp)/)")
+_LOCAL_PATH = re.compile(
+    r"(?:\b[A-Za-z]:[\\/]|\\\\[^\\\s]+[\\/][^\s]+|(?:^|\s)~[\\/]|"
+    r"(?:^|\s)/(?:Users|home|etc|var|tmp)(?:/|\b))"
+)
 _BEARER = re.compile(r"(?i)\bbearer\s+[A-Za-z0-9._~+/=-]+")
 _UNSAFE_QUESTIONS = (
     "approve trade",
@@ -224,7 +227,7 @@ def _validate_structure(value: object, *, key: str | None = None) -> None:
             SanitizationReasonCode.INVALID_DECIMAL, "non-finite Decimal is prohibited"
         )
     elif isinstance(value, str):
-        if _LOCAL_PATH.match(value):
+        if _LOCAL_PATH.search(value):
             raise SanitizationFailure(
                 SanitizationReasonCode.UNSUPPORTED_CONTEXT,
                 "absolute local paths are prohibited",

@@ -50,3 +50,21 @@ def test_automated_demo_command_requires_both_switches_before_env_or_network(
     assert "Automatic execution: EXPLICIT DEMO MODE" in captured.out
     assert "Operator confirmation: POLICY BOUND" in captured.out
     assert "both explicit enable switches" in captured.err
+
+
+def test_automated_demo_requires_authoritative_context_sources_before_network(
+    capsys,
+) -> None:  # type: ignore[no-untyped-def]
+    exit_code = main(
+        [
+            "execution",
+            "automated-demo-smoke",
+            "--epic",
+            "CS.D.EURUSD.CFD.IP",
+            "--enable-execution",
+            "--enable-automatic-demo-execution",
+        ]
+    )
+    captured = capsys.readouterr()
+    assert exit_code == 2
+    assert "economic calendar source is unavailable" in captured.err

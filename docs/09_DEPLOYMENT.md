@@ -128,9 +128,21 @@ provided.
 
 SQLite journal, backup, and export paths are always operator supplied; the
 application does not create implicit home or working-directory storage. Startup
-enforces schema version 1, allowed migrations, foreign keys, WAL where
+enforces schema version 2, allowed migrations, foreign keys, WAL where
 appropriate, and integrity verification. Invalid evidence enters
 recovery-read-only mode and is not silently repaired. Backups use SQLite's
 consistent backup API, explicit existing destinations, checksums, verification,
 and bounded retention. Cloud persistence, automatic scheduling, remote backup,
 multi-user operation, and distributed streaming remain future.
+# Milestone 7.5 Scheduler Operations
+
+The scheduler is a bounded planner with explicit local state. It derives action and
+completed-bar identities from UTC timestamps, deduplicates persisted action IDs, and
+does not treat sleep timing as market identity. Runtime storage paths remain explicit.
+Deployment must preserve one-writer state ownership, journal integrity, Demo-only
+configuration, and fail-closed execution halts.
+
+Automated Demo deployment must mount operator-maintained economic and holiday JSON
+files outside tracked source and pass both paths explicitly. Each file must have a
+source ID, UTC snapshot time, and coverage interval. Missing, malformed, stale, or
+out-of-coverage files prevent command startup before credentials or network access.

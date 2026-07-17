@@ -459,7 +459,7 @@ hard-delete operation.
 
 **Status:** Accepted
 
-SQLite schema version 1 provides local transactions, foreign keys, WAL,
+SQLite schema version 2 provides local transactions, foreign keys, WAL,
 consistent backup, migration support, and restart-safe operation. Cloud and
 distributed persistence remain future.
 
@@ -557,3 +557,23 @@ Review this document after every milestone.
 
 Record all accepted architectural decisions before marking the milestone
 complete.
+# Milestone 7.5 Decisions
+
+- **Accepted:** route by validated context instead of weakening one universal strategy.
+- **Accepted:** capital preservation is an explicit successful routing outcome.
+- **Accepted:** structured timestamped events precede any AI news interpretation.
+- **Accepted:** research-only status is technically blocked from Risk and execution.
+- **Accepted:** sessions use UTC plus IANA zones for DST correctness.
+- **Accepted:** scheduling is keyed by completed-bar boundaries, not sleep cadence.
+- **Accepted:** promotion is a fingerprinted, leakage-controlled, separately reviewed act.
+- **Rejected:** AI strategy selection, raw-news execution, forced trades, and online retuning.
+
+## ADR: Explicit Operational Calendar Sources
+
+- **Accepted:** automated Demo commands require explicit structured economic and
+  holiday files with freshness and coverage metadata.
+- **Accepted:** the runner owns read-only IG retrieval; the provider consumes typed
+  observations and never constructs a hidden client.
+- **Accepted:** source identifiers, timestamps, and fingerprints are part of context identity.
+- **Rejected:** implicit empty calendars, web scraping in execution, AI event authority,
+  unfinished bars, and default-normal context.

@@ -153,3 +153,10 @@ Whenever a milestone changes the mathematical models:
 
 No mathematical milestone is complete until this document reflects the
 validated implementation.
+# Milestone 7.5 Context Statistics
+
+At cutoff `t`, true range is `max(H-L, |H-C_prev|, |L-C_prev|)`, ATR is its configured
+rolling mean, and realized volatility is the population standard deviation of causal
+simple returns. Percentile ranks use only values observed through `t`. Trend labels
+interpret, but do not alter, the existing Kalman slope and HMM semantic regime.
+Context and configuration identities are SHA-256 hashes of canonical sorted data.

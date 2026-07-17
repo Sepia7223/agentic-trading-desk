@@ -167,3 +167,13 @@ execution method through that facade. A separately authorized writer may append
 a new immutable `AI_ANALYSIS` record, but AI cannot rewrite source evidence.
 Raw provider responses remain prohibited. Embeddings, semantic vector search,
 autonomous learning, and AI-deployed strategy or risk changes remain future.
+# Milestone 7.5 AI Prohibition
+
+AI cannot classify deterministic eligibility, select among strategies, assign trade
+direction from news, alter context thresholds, promote a research strategy, or
+override event and capital-preservation policy. A future AI provider may summarize
+already sanitized structured news for human review only.
+
+Economic-event eligibility is sourced from validated structured local records, not
+from AI classification or sentiment. AI cannot fill missing calendar coverage,
+declare a normal holiday state, or convert unavailable context into an eligible route.

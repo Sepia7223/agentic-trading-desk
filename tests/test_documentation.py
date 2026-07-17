@@ -73,3 +73,16 @@ def test_milestone_8_documentation_preserves_authority_boundaries() -> None:
     assert "semantic vector search" in corpus
     assert "journal cannot call a broker" in corpus or "broker access: disabled" in corpus
     assert "autonomous strategy" in corpus
+
+
+def test_milestone_7_5_is_documented_with_research_isolation() -> None:
+    for relative_path in DOCS:
+        content = (ROOT / relative_path).read_text(encoding="utf-8").lower()
+        assert "milestone 7.5" in content, relative_path
+    corpus = "\n".join(
+        (ROOT / path).read_text(encoding="utf-8").lower()
+        for path in (*DOCS, "README.md", "AGENTS.md")
+    )
+    assert "research_only" in corpus or "research only" in corpus
+    assert "capital preservation" in corpus
+    assert "ai strategy selection" in corpus or "ai-selected strategies" in corpus

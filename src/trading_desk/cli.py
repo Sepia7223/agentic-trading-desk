@@ -27,6 +27,13 @@ from trading_desk.backtest.data import load_dataset
 from trading_desk.backtest.engine import BacktestEngine
 from trading_desk.backtest.reports import export_json, export_markdown, export_trades_csv
 from trading_desk.config import AppSettings, OperatingMode, SafetySettings
+from trading_desk.context.models import ContextTimeframe
+from trading_desk.context.operational import (
+    LocalJSONEconomicCalendar,
+    LocalJSONHolidayCalendar,
+    OperationalCandidateContextProvider,
+    OperationalContextConfiguration,
+)
 from trading_desk.execution.automated import (
     AutomatedCycleStatus,
     AutomatedDemoRunner,
@@ -98,6 +105,7 @@ from trading_desk.risk.models import TradeCandidate as RiskTradeCandidate
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
 from trading_desk.strategy.models import (
+    StrategyAction,
     StrategyBarResolution,
     StrategyContext,
     StrategyVariant,
@@ -268,6 +276,15 @@ def build_parser() -> argparse.ArgumentParser:
     soak.add_argument("--enable-execution", action="store_true")
     soak.add_argument("--enable-automatic-demo-execution", action="store_true")
     soak.add_argument("--state-file", default=".trading-desk/automated-demo-state.json")
+    for command in (smoke, soak):
+        command.add_argument("--economic-calendar")
+        command.add_argument("--holiday-calendar")
+        command.add_argument(
+            "--context-timeframe",
+            choices=(ContextTimeframe.DAY.value,),
+            default=ContextTimeframe.DAY.value,
+        )
+        command.add_argument("--context-max-age-seconds", type=int, default=345600)
 
     journal_parser = subcommands.add_parser("journal", help="Local append-only evidence journal")
     journal_commands = journal_parser.add_subparsers(dest="journal_command", required=True)
@@ -632,6 +649,18 @@ async def _run_automated_demo_command(args: argparse.Namespace) -> int:
         raise ValueError("automated Demo mode requires both explicit enable switches")
     if args.execution_command == "automated-demo-run" and args.interval_seconds < 3600:
         raise ValueError("automated Demo interval must be at least 3600 seconds")
+    if not args.economic_calendar:
+        raise ValueError("authoritative economic calendar source is unavailable")
+    if not args.holiday_calendar:
+        raise ValueError("authoritative holiday calendar source is unavailable")
+    context_configuration = OperationalContextConfiguration(
+        maximum_completed_bar_age_seconds=args.context_max_age_seconds
+    )
+    context_provider = OperationalCandidateContextProvider(
+        LocalJSONEconomicCalendar(Path(args.economic_calendar)),
+        LocalJSONHolidayCalendar(Path(args.holiday_calendar)),
+        context_configuration,
+    )
     settings = AppSettings.from_environment()
     settings = settings.model_copy(
         update={
@@ -690,6 +719,9 @@ async def _run_automated_demo_command(args: argparse.Namespace) -> int:
                     execution_configuration=execution_configuration,
                     policy=policy,
                     state=snapshot.state,
+                    checkpoint=store,
+                    context_provider=context_provider,
+                    context_timeframe=ContextTimeframe(args.context_timeframe),
                     idempotency=idempotency,
                     journal=journal,
                 )
@@ -1208,7 +1240,11 @@ async def _run_strategy_command(settings: AppSettings, args: argparse.Namespace)
             context,
             inherited_findings=build.findings,
         )
-        _print_strategy_candidate(candidate)
+        if candidate.action is StrategyAction.LONG_CANDIDATE:
+            print("Action: NO_TRADE")
+            print("- rejection: MARKET_CONTEXT_UNAVAILABLE")
+        else:
+            _print_strategy_candidate(candidate)
     elif args.strategy_command == "walk-forward":
         candidates = pipeline.walk_forward(
             build.data,
@@ -1218,10 +1254,17 @@ async def _run_strategy_command(settings: AppSettings, args: argparse.Namespace)
         )
         print(f"Walk-forward evaluations: {len(candidates)}")
         for candidate in candidates:
+            action = (
+                StrategyAction.NO_TRADE
+                if candidate.action is StrategyAction.LONG_CANDIDATE
+                else candidate.action
+            )
             print(
-                f"- {candidate.evaluation_timestamp.isoformat()} | {candidate.action.value}"
+                f"- {candidate.evaluation_timestamp.isoformat()} | {action.value}"
                 f" | {candidate.current_regime.value}"
             )
+        if any(item.action is StrategyAction.LONG_CANDIDATE for item in candidates):
+            print("Candidate actions suppressed: MARKET_CONTEXT_UNAVAILABLE")
     else:
         raise ValueError("unsupported strategy command")
     return 0

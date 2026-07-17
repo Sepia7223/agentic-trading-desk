@@ -199,6 +199,11 @@ queries, normalized-distance comparisons, backups, and exports are deterministic
 and cutoff bounded. Raw provider responses, credentials, OAuth values,
 authorization headers, and broker access are prohibited.
 
+Schema version 2 also stores a record-count and chain-head anchor and installs
+SQLite guards that reject direct record updates and deletes. These controls detect
+local corruption and straightforward mutation; they are not a substitute for a
+future keyed signature and independently controlled WORM anchor.
+
 ```powershell
 python -m trading_desk.cli journal init --database journal.db
 python -m trading_desk.cli journal status --database journal.db
@@ -217,6 +222,67 @@ schema, configuration, query, count, timestamp, and checksum metadata.
 Similarity is deterministic structured comparison, not machine learning.
 Semantic vector search, autonomous learning, cloud persistence, and journal-led
 strategy, risk, portfolio, or execution changes remain future and prohibited.
+
+## Market Context And Strategy Routing
+
+Milestone 7.5 was applied after Milestone 8 in repository history. It adds a
+deterministic, cutoff-safe Market Context Engine, validated-strategy registry,
+capital-preservation route, UTC/DST-aware session classifier, structured event
+windows, and completed-bar scheduler. New context and router evidence uses the
+existing durable append-only journal record taxonomy.
+
+Validated capability is deliberately narrow: the existing trend/regime strategy
+is the only executable strategy. Range mean reversion, volatility breakout, and
+post-news continuation are `RESEARCH_ONLY`; the router can evaluate and journal
+them but cannot send them to Risk or execution. AI has no strategy-selection
+authority. A missing, stale, conflicting, illiquid, event-blocked, or otherwise
+invalid context routes to capital preservation.
+
+Operational strategy and automated Demo paths require an authoritative
+`CandidateContextProvider`. When none is configured, candidate actions are
+suppressed with `MARKET_CONTEXT_UNAVAILABLE`; the system does not infer missing
+events, liquidity, news, or holiday state.
+
+Context classification uses only observations available through the explicit
+cutoff. Session windows use IANA time zones for London, New York, and Tokyo;
+completed-bar identities derive from UTC boundaries rather than process sleep
+timing. Context-aware historical expectancy is grouped by strategy, session,
+overlap, liquidity, volatility, trend, event state, weekday, spread bucket,
+instrument, and timeframe, with sample-size flags and no automatic promotion.
+
+Still prohibited are forced trades, AI-selected strategies, research-strategy
+execution, live trading, online learning, and automatic parameter changes.
+
+### Authoritative Operational Context
+
+Automated Demo commands require explicit local JSON economic and holiday calendars.
+They are parsed before credentials or network access. Missing, malformed, stale, or
+out-of-coverage sources fail closed; an empty implicit calendar is never treated as
+`NO_EVENT`. The economic file contains `source_identifier`, UTC `as_of`, UTC
+`coverage_start`, UTC `coverage_end`, and strict `EconomicEvent` entries. The holiday
+file contains `source_identifier`, UTC `as_of`, date coverage, and entries with
+`date`, `name`, `currencies`, `financial_centres`, and `HOLIDAY` or `THIN` impact.
+
+```powershell
+python -m trading_desk.cli execution automated-demo-smoke `
+  --epic CS.D.EURUSD.CFD.IP `
+  --economic-calendar C:\secure-local-data\economic-calendar.json `
+  --holiday-calendar C:\secure-local-data\holiday-calendar.json `
+  --context-timeframe DAY `
+  --context-max-age-seconds 345600 `
+  --max-orders 1 `
+  --enable-execution `
+  --enable-automatic-demo-execution `
+  --initialize-state
+```
+
+The runner discards the unfinished current bar before strategy analysis. The context
+then combines the current read-only IG quote, completed history, causal volatility,
+existing Kalman/HMM output, DST-aware sessions, and authoritative calendar snapshots.
+Every source contributes an identifier, UTC timestamp, and fingerprint. The provider
+has no mutation adapter, Risk approval, AI direction authority, or forced-trade path.
+Real operational validation remains pending until a natural order is submitted,
+confirmed, and reconciled in IG Demo.
 
 ## Strategy Framework
 
@@ -498,5 +564,5 @@ live strategy.**
 ## Attribution
 
 The original Claude-specific skill has been preserved at
-`docs/original-claude-skill.md` for attribution and reference. The MIT license
-and original attribution remain in `LICENSE`.
+`docs/original-claude-skill.md` for upstream attribution and reference. The MIT
+license remains in `LICENSE`.
