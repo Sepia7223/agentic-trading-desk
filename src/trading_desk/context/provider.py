@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from pydantic import BaseModel, ConfigDict
 
@@ -20,6 +20,9 @@ from trading_desk.strategy.models import (
     StrategyMarketData,
     TradeCandidate,
 )
+
+if TYPE_CHECKING:
+    from trading_desk.context.operational import ObservableMarketQuote
 
 
 class MarketContextInputs(BaseModel):
@@ -39,6 +42,7 @@ class CandidateContextProvider(Protocol):
         *,
         evaluation_timestamp: datetime,
         timeframe: ContextTimeframe,
+        quote: ObservableMarketQuote | None = None,
     ) -> MarketContextSnapshot | None: ...
 
 
@@ -60,6 +64,7 @@ class DeterministicContextProvider:
         *,
         evaluation_timestamp: datetime,
         timeframe: ContextTimeframe,
+        quote: ObservableMarketQuote | None = None,
     ) -> MarketContextSnapshot | None:
         if not self.inputs.authoritative:
             return None

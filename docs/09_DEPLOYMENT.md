@@ -141,3 +141,8 @@ completed-bar identities from UTC timestamps, deduplicates persisted action IDs,
 does not treat sleep timing as market identity. Runtime storage paths remain explicit.
 Deployment must preserve one-writer state ownership, journal integrity, Demo-only
 configuration, and fail-closed execution halts.
+
+Automated Demo deployment must mount operator-maintained economic and holiday JSON
+files outside tracked source and pass both paths explicitly. Each file must have a
+source ID, UTC snapshot time, and coverage interval. Missing, malformed, stale, or
+out-of-coverage files prevent command startup before credentials or network access.

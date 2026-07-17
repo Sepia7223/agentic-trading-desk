@@ -267,3 +267,11 @@ candidate delivery to Risk and execution.
 
 **Completed-Bar Identity:** UTC timeframe boundary used to prevent unfinished or
 duplicate evaluations independently of runner wake-up timing.
+
+**Operational Context Provider:** deterministic read-only component combining a
+current IG Demo quote, completed bars, model output, session policy, and explicit
+authoritative calendar snapshots before routing.
+
+**Authoritative Calendar Snapshot:** locally supplied structured dataset with an
+identifier, UTC `as_of` timestamp, declared coverage, strict entries, and fingerprint.
+Absence or stale coverage is not equivalent to no event or a normal day.

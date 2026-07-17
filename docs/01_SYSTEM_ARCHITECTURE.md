@@ -359,3 +359,12 @@ context snapshot -> deterministic router. Only a selected `VALIDATED` strategy m
 produce a candidate for the existing Risk boundary. Research routes terminate at
 journaling; capital preservation produces no candidate. AI and broker adapters are
 outside the context and router packages.
+
+## Operational Context Boundary
+
+The bounded automated Demo runner now injects an operational context provider. The
+runner supplies typed IG Demo read-only market details and completed historical bars;
+the provider adds current-quote validation, DST-aware sessions, causal liquidity and
+volatility, existing Kalman/HMM outputs, and explicit local economic and holiday
+snapshots. Missing, stale, future, unfinished, or out-of-coverage input routes to
+capital preservation before Risk. The provider has no broker mutation dependency.

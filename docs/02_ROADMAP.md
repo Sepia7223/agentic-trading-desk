@@ -133,3 +133,8 @@ Milestone 9 is not defined by this change. Semantic vector search, autonomous
 learning or parameter changes, cloud persistence, live trading, unbounded
 automation, closure, working orders, account switching, short execution, and AI
 execution authority remain future and unavailable.
+
+Operational context wiring for Milestone 7.5 is software-validated with deterministic
+and mocked read-only inputs. Real IG Demo execution validation remains incomplete until
+a naturally eligible order is submitted once, accepted, and reconciled; no forced
+candidate is permitted to close that validation item.

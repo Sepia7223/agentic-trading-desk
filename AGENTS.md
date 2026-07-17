@@ -138,6 +138,13 @@ runtime analysis provider and must not receive broker credentials.
 - Operational candidate and automated Demo paths require an authoritative context
   provider. Missing or non-authoritative context must suppress candidates before Risk
   or execution.
+- Operational economic and holiday calendars must be explicit, structured, UTC-aware,
+  fresh, and cover the evaluation timestamp. Never interpret an absent or implicit
+  empty source as a normal day.
+- Select completed bars before strategy evaluation. Current or future bars, stale
+  quotes, missing bid/ask, and invalid chronology must preserve capital.
+- Operational context may consume only typed read-only IG observations. It must not
+  import the mutation adapter, load `.env`, approve Risk, or use AI for direction.
 - AI cannot classify strategy eligibility, select a strategy, promote research,
   override event policy, or weaken capital-preservation reasons.
 - Scheduler identity comes from completed UTC bar boundaries, not sleep timing.

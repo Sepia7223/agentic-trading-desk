@@ -155,3 +155,8 @@ cutoff-safe. Test DST transition weeks, event release/revision visibility, dupli
 bar suppression, restart behavior, metadata fingerprints, research isolation, and
 capital preservation. No context package may import broker mutation, credentials,
 AI authority, Risk approval, or execution submission code.
+
+Operational provider tests must cover completed-boundary edges, future invariance,
+quote validity/freshness, calendar freshness/coverage, holidays, event windows, source
+fingerprints, router suppression, and runner behavior before Risk and submission.
+Tests use local fixtures and mocked read-only transports only.

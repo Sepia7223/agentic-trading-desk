@@ -149,6 +149,24 @@ class ContextReasonCode(StrEnum):
     UNSCHEDULED_NEWS = "UNSCHEDULED_NEWS"
     CONFLICTING_CONTEXT = "CONFLICTING_CONTEXT"
     MODEL_NOT_READY = "MODEL_NOT_READY"
+    EVENT_CONTEXT_UNAVAILABLE = "EVENT_CONTEXT_UNAVAILABLE"
+    HOLIDAY_CONTEXT_UNAVAILABLE = "HOLIDAY_CONTEXT_UNAVAILABLE"
+    STALE_QUOTE = "STALE_QUOTE"
+    INCOMPLETE_QUOTE = "INCOMPLETE_QUOTE"
+    UNFINISHED_BAR = "UNFINISHED_BAR"
+
+
+class ContextSourceEvidence(ContextModel):
+    source_identifier: str = Field(min_length=1, max_length=128)
+    source_timestamp: datetime
+    source_fingerprint: str = Field(min_length=64, max_length=64)
+
+    @field_validator("source_timestamp")
+    @classmethod
+    def utc_source_time(cls, value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() != UTC.utcoffset(value):
+            raise ValueError("context source timestamp must be timezone-aware UTC")
+        return value.astimezone(UTC)
 
 
 class SessionClassification(ContextModel):
@@ -256,6 +274,7 @@ class MarketContextSnapshot(ContextModel):
     context_quality: ContextQuality
     reason_codes: tuple[ContextReasonCode, ...]
     configuration_fingerprint: str = Field(min_length=64, max_length=64)
+    source_evidence: tuple[ContextSourceEvidence, ...] = ()
     context_fingerprint: str = Field(min_length=64, max_length=64)
 
     @field_validator("evaluation_timestamp", "data_cutoff_timestamp")

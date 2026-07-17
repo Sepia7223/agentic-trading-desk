@@ -10,6 +10,7 @@ from typing import Protocol, Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from trading_desk.context.models import ContextTimeframe
+from trading_desk.context.operational import ObservableMarketQuote, completed_market_data
 from trading_desk.context.provider import CandidateContextProvider
 from trading_desk.execution.config import (
     AutomatedDemoExecutionPolicy,
@@ -192,6 +193,7 @@ class AutomatedDemoRunner:
         state: AutomatedDemoState,
         context_provider: CandidateContextProvider | None = None,
         checkpoint: AutomatedDemoCheckpoint | None = None,
+        context_timeframe: ContextTimeframe = ContextTimeframe.DAY,
         idempotency: ExecutionIdempotencyStore | None = None,
         journal: InMemoryExecutionJournal | None = None,
     ) -> None:
@@ -211,6 +213,7 @@ class AutomatedDemoRunner:
         self.state = state
         self.context_provider = context_provider
         self.checkpoint = checkpoint
+        self.context_timeframe = context_timeframe
         self.idempotency = idempotency or ExecutionIdempotencyStore()
         self.journal = journal or InMemoryExecutionJournal()
 
@@ -354,6 +357,16 @@ class AutomatedDemoRunner:
                 "NO_TRADE",
                 *(item.code.value for item in build.findings),
             )
+        try:
+            completed_data = completed_market_data(build.data, evaluated_at, self.context_timeframe)
+        except ValueError:
+            return self._result(
+                evaluated_at,
+                epic,
+                AutomatedCycleStatus.BLOCKED,
+                "NO_TRADE",
+                "COMPLETED_MARKET_DATA_UNAVAILABLE",
+            )
         if details.bid is None or details.offer is None or details.offer <= details.bid:
             self.state = halt_state(self.state, AutomatedHaltReason.MARKET_STATE_UNKNOWN)
             return self._result(
@@ -376,7 +389,7 @@ class AutomatedDemoRunner:
             account_exposure_summary="verified flat Demo account",
         )
         strategy = RegimeAwareStrategyPipeline().analyze_latest(
-            build.data, context, inherited_findings=build.findings
+            completed_data, context, inherited_findings=build.findings
         )
         if strategy.action is not StrategyAction.LONG_CANDIDATE:
             return self._result(
@@ -395,10 +408,17 @@ class AutomatedDemoRunner:
                 "MARKET_CONTEXT_UNAVAILABLE",
             )
         market_context = self.context_provider.build_context(
-            build.data,
+            completed_data,
             strategy,
             evaluation_timestamp=evaluated_at,
-            timeframe=ContextTimeframe.DAY,
+            timeframe=self.context_timeframe,
+            quote=ObservableMarketQuote(
+                epic=details.epic,
+                bid=details.bid,
+                ask=details.offer,
+                market_status=details.market_status.value,
+                observed_at=evaluated_at,
+            ),
         )
         if market_context is None:
             return self._result(
@@ -408,7 +428,7 @@ class AutomatedDemoRunner:
                 "NO_TRADE",
                 "MARKET_CONTEXT_UNAVAILABLE",
             )
-        routed = StrategyRouter().route_candidate(market_context, build.data, strategy)
+        routed = StrategyRouter().route_candidate(market_context, completed_data, strategy)
         if routed.candidate is None:
             return self._result(
                 evaluated_at,
@@ -419,7 +439,7 @@ class AutomatedDemoRunner:
             )
         strategy = routed.candidate
 
-        stop_distance = _protective_stop_distance(details, build.data, self.policy)
+        stop_distance = _protective_stop_distance(details, completed_data, self.policy)
         stop_reference = details.offer - stop_distance
         if stop_reference <= 0:
             self.state = halt_state(self.state, AutomatedHaltReason.MARKET_STATE_UNKNOWN)

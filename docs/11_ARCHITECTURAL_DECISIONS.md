@@ -567,3 +567,13 @@ complete.
 - **Accepted:** scheduling is keyed by completed-bar boundaries, not sleep cadence.
 - **Accepted:** promotion is a fingerprinted, leakage-controlled, separately reviewed act.
 - **Rejected:** AI strategy selection, raw-news execution, forced trades, and online retuning.
+
+## ADR: Explicit Operational Calendar Sources
+
+- **Accepted:** automated Demo commands require explicit structured economic and
+  holiday files with freshness and coverage metadata.
+- **Accepted:** the runner owns read-only IG retrieval; the provider consumes typed
+  observations and never constructs a hidden client.
+- **Accepted:** source identifiers, timestamps, and fingerprints are part of context identity.
+- **Rejected:** implicit empty calendars, web scraping in execution, AI event authority,
+  unfinished bars, and default-normal context.

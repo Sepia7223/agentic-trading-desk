@@ -253,6 +253,37 @@ instrument, and timeframe, with sample-size flags and no automatic promotion.
 Still prohibited are forced trades, AI-selected strategies, research-strategy
 execution, live trading, online learning, and automatic parameter changes.
 
+### Authoritative Operational Context
+
+Automated Demo commands require explicit local JSON economic and holiday calendars.
+They are parsed before credentials or network access. Missing, malformed, stale, or
+out-of-coverage sources fail closed; an empty implicit calendar is never treated as
+`NO_EVENT`. The economic file contains `source_identifier`, UTC `as_of`, UTC
+`coverage_start`, UTC `coverage_end`, and strict `EconomicEvent` entries. The holiday
+file contains `source_identifier`, UTC `as_of`, date coverage, and entries with
+`date`, `name`, `currencies`, `financial_centres`, and `HOLIDAY` or `THIN` impact.
+
+```powershell
+python -m trading_desk.cli execution automated-demo-smoke `
+  --epic CS.D.EURUSD.CFD.IP `
+  --economic-calendar C:\secure-local-data\economic-calendar.json `
+  --holiday-calendar C:\secure-local-data\holiday-calendar.json `
+  --context-timeframe DAY `
+  --context-max-age-seconds 345600 `
+  --max-orders 1 `
+  --enable-execution `
+  --enable-automatic-demo-execution `
+  --initialize-state
+```
+
+The runner discards the unfinished current bar before strategy analysis. The context
+then combines the current read-only IG quote, completed history, causal volatility,
+existing Kalman/HMM output, DST-aware sessions, and authoritative calendar snapshots.
+Every source contributes an identifier, UTC timestamp, and fingerprint. The provider
+has no mutation adapter, Risk approval, AI direction authority, or forced-trade path.
+Real operational validation remains pending until a natural order is submitted,
+confirmed, and reconciled in IG Demo.
+
 ## Strategy Framework
 
 The deterministic strategy layer preserves the original three-pillar framework:

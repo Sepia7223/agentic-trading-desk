@@ -173,3 +173,7 @@ AI cannot classify deterministic eligibility, select among strategies, assign tr
 direction from news, alter context thresholds, promote a research strategy, or
 override event and capital-preservation policy. A future AI provider may summarize
 already sanitized structured news for human review only.
+
+Economic-event eligibility is sourced from validated structured local records, not
+from AI classification or sentiment. AI cannot fill missing calendar coverage,
+declare a normal holiday state, or convert unavailable context into an eligible route.

@@ -171,6 +171,15 @@ def _capital_reasons(
         ContextReasonCode.INSUFFICIENT_HISTORY: CapitalPreservationReason.INSUFFICIENT_HISTORY,
         ContextReasonCode.STALE_DATA: CapitalPreservationReason.STALE_CONTEXT,
         ContextReasonCode.MARKET_CLOSED: CapitalPreservationReason.MARKET_CLOSED,
+        ContextReasonCode.EVENT_CONTEXT_UNAVAILABLE: (
+            CapitalPreservationReason.EVENT_CONTEXT_UNAVAILABLE
+        ),
+        ContextReasonCode.HOLIDAY_CONTEXT_UNAVAILABLE: (
+            CapitalPreservationReason.HOLIDAY_CONTEXT_UNAVAILABLE
+        ),
+        ContextReasonCode.STALE_QUOTE: CapitalPreservationReason.QUOTE_UNAVAILABLE,
+        ContextReasonCode.INCOMPLETE_QUOTE: CapitalPreservationReason.QUOTE_UNAVAILABLE,
+        ContextReasonCode.UNFINISHED_BAR: CapitalPreservationReason.UNFINISHED_BAR,
     }
     values = [mapping[item] for item in context.reason_codes if item in mapping]
     if not integrity_ok:

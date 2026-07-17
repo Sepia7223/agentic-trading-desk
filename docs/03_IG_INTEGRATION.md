@@ -192,3 +192,9 @@ existing IG Demo boundary. It does not add broker endpoints, credentials, hosts,
 HTTP authority. The router cannot call the Demo mutation adapter; any later selected
 candidate must still pass the unchanged Risk and controlled Demo execution systems.
 Research-only routes never reach either system. Live trading remains prohibited.
+
+The operational provider receives only normalized historical data and an observable
+market quote produced by the existing read-only client. It adds no endpoint and cannot
+import `IGDemoExecutionAdapter`. Quote timestamps, bid/ask validity, market status, and
+the completed-bar cutoff are fingerprinted. Calendar files are loaded locally before
+IG authentication, and their contents never enter request headers or broker calls.

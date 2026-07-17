@@ -13,6 +13,7 @@ from trading_desk.context.models import (
     BreakoutState,
     ContextQuality,
     ContextReasonCode,
+    ContextSourceEvidence,
     ContextTimeframe,
     EconomicEvent,
     LiquidityState,
@@ -53,6 +54,8 @@ class MarketContextEngine:
         events: tuple[EconomicEvent, ...] = (),
         news: tuple[NewsItem, ...] = (),
         holiday: bool = False,
+        source_evidence: tuple[ContextSourceEvidence, ...] = (),
+        inherited_reasons: tuple[ContextReasonCode, ...] = (),
     ) -> MarketContextSnapshot:
         evaluation = _utc(evaluation_timestamp)
         if not data.timestamps:
@@ -60,7 +63,7 @@ class MarketContextEngine:
         cutoff = _utc(data.timestamps[-1])
         visible_events = tuple(event_visible_at(item, evaluation) for item in events)
         session = classify_session(evaluation, self.config, holiday=holiday)
-        reasons: list[ContextReasonCode] = []
+        reasons: list[ContextReasonCode] = list(inherited_reasons)
         age = max(0, int((evaluation - cutoff).total_seconds()))
         if cutoff > evaluation:
             reasons.append(ContextReasonCode.FUTURE_DATA)
@@ -122,6 +125,11 @@ class MarketContextEngine:
             ContextReasonCode.INITIAL_NEWS_REACTION,
             ContextReasonCode.UNSCHEDULED_NEWS,
             ContextReasonCode.MODEL_NOT_READY,
+            ContextReasonCode.EVENT_CONTEXT_UNAVAILABLE,
+            ContextReasonCode.HOLIDAY_CONTEXT_UNAVAILABLE,
+            ContextReasonCode.STALE_QUOTE,
+            ContextReasonCode.INCOMPLETE_QUOTE,
+            ContextReasonCode.UNFINISHED_BAR,
         }
         quality = (
             ContextQuality.INVALID
@@ -172,6 +180,7 @@ class MarketContextEngine:
             "context_quality": quality,
             "reason_codes": tuple(dict.fromkeys(reasons)),
             "configuration_fingerprint": self.config.configuration_fingerprint,
+            "source_evidence": source_evidence,
         }
         identity = fingerprint(fields)
         return MarketContextSnapshot.model_validate(

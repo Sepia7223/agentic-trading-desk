@@ -522,3 +522,9 @@ The completed Milestone 8 journal taxonomy now includes `SCHEDULER_CYCLE`,
 `CAPITAL_PRESERVATION_DECISION`. These are append-only evidence without trading
 authority. Historical expectancy is cutoff-bounded deterministic memory and cannot
 change strategy status, thresholds, Risk decisions, or execution policy.
+
+Operational context source evidence consists of identifiers, UTC source timestamps,
+and deterministic fingerprints for historical prices, current quote, economic
+calendar, and holiday calendar. It contains no credentials or raw HTTP data. A later
+journal integration may persist the resulting immutable snapshot and router decision;
+the context provider itself has no journal-led trading authority.

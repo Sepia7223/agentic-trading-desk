@@ -4,7 +4,7 @@ import asyncio
 import json
 import os
 import time as system_time
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -21,6 +21,11 @@ from trading_desk.context.models import (
     LiquidityState,
     MarketContextSnapshot,
     VolatilityState,
+)
+from trading_desk.context.operational import (
+    EconomicCalendarSnapshot,
+    HolidayCalendarSnapshot,
+    OperationalCandidateContextProvider,
 )
 from trading_desk.context.provider import (
     DeterministicContextProvider,
@@ -610,6 +615,60 @@ def test_high_impact_pre_event_context_suppresses_candidate(
     assert result.status is AutomatedCycleStatus.BLOCKED
     assert result.strategy_action == "NO_TRADE"
     assert "PRE_HIGH_IMPACT_EVENT" in result.reason_codes
+    assert broker.submission_calls == 0
+
+
+def test_operational_provider_wiring_blocks_pre_event_before_risk_or_submission(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        RegimeAwareStrategyPipeline,
+        "analyze_latest",
+        lambda *args, **kwargs: _strategy_candidate(),
+    )
+    event = EconomicEvent(
+        event_id="operational-high-impact",
+        currency="USD",
+        country="United States",
+        category=EventCategory.EMPLOYMENT,
+        importance=EventImportance.HIGH,
+        scheduled_timestamp=NOW + timedelta(minutes=3),
+        source="operator-calendar",
+    )
+
+    class Events:
+        def snapshot(self) -> EconomicCalendarSnapshot:
+            return EconomicCalendarSnapshot(
+                source_identifier="events-v1",
+                as_of=NOW,
+                coverage_start=NOW - timedelta(days=1),
+                coverage_end=NOW + timedelta(days=1),
+                events=(event,),
+            )
+
+    class Holidays:
+        def snapshot(self) -> HolidayCalendarSnapshot:
+            return HolidayCalendarSnapshot(
+                source_identifier="holidays-v1",
+                as_of=NOW,
+                coverage_start=date(2026, 1, 1),
+                coverage_end=date(2026, 12, 31),
+                entries=(),
+            )
+
+    broker = AutomatedBroker()
+    runner = AutomatedDemoRunner(
+        broker,
+        execution_configuration=_configuration(),
+        policy=AutomatedDemoExecutionPolicy(enabled=True),
+        state=create_initial_state(_account(), NOW),
+        context_provider=OperationalCandidateContextProvider(Events(), Holidays()),
+        checkpoint=RecordingCheckpoint(),
+    )
+    result = asyncio.run(runner.run_cycle(EPIC, NOW))
+    assert result.status is AutomatedCycleStatus.BLOCKED
+    assert "PRE_HIGH_IMPACT_EVENT" in result.reason_codes
+    assert result.risk_decision_id is None
     assert broker.submission_calls == 0
 
 
