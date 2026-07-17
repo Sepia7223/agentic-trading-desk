@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -38,7 +38,7 @@ roadmap reflects the new validated state.
   M7 Demo Execution              Complete
   M7.5 Context & Router          Complete
   M8 Trade Journal               Complete
-  M9 Dashboard                   ⏳ Planned
+  M9 Dashboard                   Complete
   M10 Knowledge & Memory         ⏳ Planned
   M11 Multi-Agent Architecture   ⏳ Planned
   M12 Production Deployment      ⏳ Planned
@@ -127,9 +127,22 @@ mode, deterministic post-trade and UTC periodic reviews, cutoff-aware queries,
 normalized-distance comparison, consistent backups, and sanitized JSONL, CSV,
 and Markdown exports are validated. AI access is read-only.
 
+# Validated Milestone 9
+
+The loopback-only Operations Center provides a GET-only FastAPI API, sanitized
+WebSocket events, and a React/TypeScript dashboard over immutable journal and
+typed runtime projections. System, context, router, deterministic why-no-trade,
+risk, execution, position, trade, performance, alert, journal, replay, search,
+and redacted configuration views are validated. WebSocket events refresh
+authoritative REST projections; execution stages and no-trade decisions are
+joined through immutable lineage; open Paper and Demo positions use current or
+reconciled evidence; performance includes drawdown, costs, exposure, turnover,
+and available context breakdowns; and bounded sanitized exports return JSONL,
+CSV, or Markdown attachments. It has no operational authority.
+
 # Next Active Milestone
 
-Milestone 9 is not defined by this change. Semantic vector search, autonomous
+Milestone 10 remains planned. Semantic vector search, autonomous
 learning or parameter changes, cloud persistence, live trading, unbounded
 automation, closure, working orders, account switching, short execution, and AI
 execution authority remain future and unavailable.

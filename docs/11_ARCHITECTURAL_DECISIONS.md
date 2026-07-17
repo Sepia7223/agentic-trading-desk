@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -527,6 +527,62 @@ may append a separate analysis only through an authorized boundary. It cannot
 amend, rewrite, delete, or mutate upstream systems.
 
 **Affected Milestones:** 8 and later evidence/review work.
+
+## ADR-050 --- Operations Center Is a Read-Only Projection
+
+**Status:** Accepted
+
+The dashboard consumes immutable sanitized records through query-only ports. No
+control-plane or mutation dependency is reachable from API or frontend code.
+
+## ADR-051 --- Journal-First Monitoring
+
+**Status:** Accepted
+
+Durable journal evidence is authoritative for historical views. Ephemeral health
+may enter only through typed read-only ports and remains `UNKNOWN` when absent.
+
+## ADR-052 --- Loopback-Only Deployment
+
+**Status:** Accepted
+
+The disabled-by-default server binds to loopback only. Remote unauthenticated
+access is rejected until a separately reviewed authentication and TLS milestone.
+
+## ADR-053 --- Typed Sanitized WebSocket Events
+
+**Status:** Accepted
+
+WebSockets are server-to-client notifications containing immutable projections.
+They are not a command bus and never carry raw broker responses or secrets.
+
+## ADR-054 --- Replay Is Separate from Operations
+
+**Status:** Accepted
+
+Replay uses explicit UTC cutoffs and stable journal order. It cannot call live
+state or operational code and is visibly marked as having no authority.
+
+## ADR-055 --- Deterministic Why-No-Trade Reconstruction
+
+**Status:** Accepted
+
+Reasons and gate states come from source records. Optional AI summaries are
+separate and advisory.
+
+## ADR-056 --- Frontend Does Not Recalculate Authority
+
+**Status:** Accepted
+
+Risk, quantity, exposure, P&L, and costs are computed by backend deterministic
+services. The frontend formats and visualizes those values only.
+
+## ADR-057 --- No Milestone 9 Control Plane
+
+**Status:** Accepted
+
+Milestone 9 adds no order submission, close/amend, risk/strategy/portfolio
+mutation, halt clearing, journal rewriting, AI action, live host, or live trading.
 
 # Adding Future ADRs
 

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -13,6 +13,14 @@ version: 1.0.0
 ---
 
 # Purpose
+
+## Milestone 9 Operations Visibility
+
+The dashboard may display sanitized IG Demo connectivity, confirmation, and
+reconciliation evidence already present in typed records. It does not receive
+IG credentials, OAuth tokens, raw headers, login responses, or an IG adapter.
+The canonical Demo gateway remains the only broker host; no production host or
+new mutation endpoint was added by Milestone 9.
 
 This document defines every architectural rule governing integration
 with IG.com.

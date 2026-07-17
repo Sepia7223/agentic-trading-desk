@@ -80,11 +80,15 @@ from trading_desk.journal.models import (
     JournalRecordType,
     PostTradeReviewInput,
 )
+from trading_desk.journal.reader import ReadOnlyJournal
 from trading_desk.journal.reviews import generate_post_trade_review
 from trading_desk.journal.sqlite import SQLiteJournalRepository
 from trading_desk.journal.summaries import daily_review as generate_daily_review
 from trading_desk.journal.summaries import monthly_review as generate_monthly_review
 from trading_desk.journal.summaries import weekly_review as generate_weekly_review
+from trading_desk.operations.config import OperationsConfiguration
+from trading_desk.operations.health import StartupJournalHealth
+from trading_desk.operations.service import OperationsService
 from trading_desk.portfolio import (
     InMemoryPortfolioRepository,
     MarketQuote,
@@ -322,6 +326,16 @@ def build_parser() -> argparse.ArgumentParser:
     journal_export.add_argument("--output", required=True)
     journal_export.add_argument("--record-type", choices=[item.value for item in JournalRecordType])
     journal_export.add_argument("--limit", type=int, default=1000)
+
+    operations_parser = subcommands.add_parser(
+        "operations", help="Local read-only Operations Center"
+    )
+    operations_commands = operations_parser.add_subparsers(dest="operations_command", required=True)
+    operations_run = operations_commands.add_parser("run")
+    operations_run.add_argument("--host", default="127.0.0.1")
+    operations_run.add_argument("--port", type=int, default=8000)
+    operations_run.add_argument("--journal", required=True)
+    operations_run.add_argument("--frontend")
     return parser
 
 
@@ -365,6 +379,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _run_journal_command(args)
         except (JournalError, OSError, ValidationError, ValueError) as error:
             print(f"Journal error: {error}", file=sys.stderr)
+            return 2
+    if args.command == "operations":
+        _print_operations_header()
+        try:
+            return _run_operations_command(args)
+        except (JournalError, OSError, ValidationError, ValueError) as error:
+            print(f"Operations Center error: {error}", file=sys.stderr)
             return 2
     try:
         settings = AppSettings.from_environment()
@@ -432,6 +453,47 @@ def _print_journal_header() -> None:
     print("Broker access: DISABLED")
     print("Mutation of source records: DISABLED")
     print("Live trading: DISABLED")
+
+
+def _print_operations_header() -> None:
+    print("Mode: OPERATIONS CENTER")
+    print("Environment: IG DEMO")
+    print("Authority: READ ONLY")
+    print("Broker mutation: DISABLED")
+    print("Risk mutation: DISABLED")
+    print("Portfolio mutation: DISABLED")
+    print("Live trading: DISABLED")
+
+
+def _run_operations_command(args: argparse.Namespace) -> int:
+    if args.operations_command != "run":
+        raise ValueError("unsupported Operations Center command")
+    import uvicorn
+
+    from trading_desk.api import create_operations_app
+
+    frontend = (
+        Path(args.frontend)
+        if args.frontend
+        else Path(__file__).resolve().parents[2] / "frontend" / "dist"
+    )
+    operations = OperationsConfiguration(
+        enabled=True,
+        host=args.host,
+        port=args.port,
+        frontend_directory=frontend,
+    )
+    journal_configuration = JournalConfiguration(database_path=Path(args.journal))
+    with SQLiteJournalRepository(journal_configuration) as repository:
+        integrity = repository.verify()
+        service = OperationsService(
+            ReadOnlyJournal(repository),
+            operations,
+            journal_health_reader=StartupJournalHealth.from_integrity_report(integrity),
+        )
+        application = create_operations_app(service, operations)
+        uvicorn.run(application, host=operations.host, port=operations.port, log_level="info")
+    return 0
 
 
 def _run_journal_command(args: argparse.Namespace) -> int:

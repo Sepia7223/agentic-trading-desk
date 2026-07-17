@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -10,6 +10,17 @@ version: 1.0.0
 ---
 
 # 00_ENGINEERING_BLUEPRINT
+
+## Validated in Milestone 9
+
+The Operations Center is a local read-only projection tier after the durable
+journal. It observes sanitized immutable evidence and cannot call broker,
+strategy, risk, portfolio, execution, or journal mutation surfaces. FastAPI,
+WebSockets, and React provide supervision only; loopback binding is mandatory.
+
+Planned and future control-plane, remote-access, and production deployment work
+is not part of Milestone 9. Live trading and AI operational authority remain
+prohibited.
 
 Version: 1.0 (Draft)
 

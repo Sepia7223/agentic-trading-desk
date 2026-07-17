@@ -56,10 +56,21 @@ def test_documents_do_not_claim_current_execution_live_trading_or_ai_control() -
     assert all(re.search(pattern, corpus) is None for pattern in prohibited_claims)
 
 
-def test_governed_documents_identify_milestone_8_as_current() -> None:
+def test_governed_documents_identify_milestone_9_as_current() -> None:
     for relative_path in DOCS:
         content = (ROOT / relative_path).read_text(encoding="utf-8")
-        assert re.search(r'current_validated_milestone: ["\']?8', content), relative_path
+        assert re.search(r'current_validated_milestone: ["\']?9', content), relative_path
+
+
+def test_milestone_9_documents_read_only_operations_boundary() -> None:
+    corpus = "\n".join(
+        (ROOT / path).read_text(encoding="utf-8").lower()
+        for path in (*DOCS, "README.md", "AGENTS.md")
+    )
+    assert "operations center" in corpus
+    assert "loopback" in corpus
+    assert "dashboard authority: read only" in corpus
+    assert "replay mode - no operational authority" in corpus
 
 
 def test_milestone_8_documentation_preserves_authority_boundaries() -> None:

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8 (Deployment planned for Milestone 12)
+current_validated_milestone: 9 (Production deployment planned for Milestone 12)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -12,6 +12,19 @@ status: Living Document
 title: Deployment & Operations
 version: 1.0.0
 ---
+
+## Validated Local Operations Deployment
+
+Milestone 9 supports local-only startup:
+
+```powershell
+python -m trading_desk.cli operations run --host 127.0.0.1 --port 8000 --journal <path>
+```
+
+The feature is disabled by default and configuration rejects non-loopback
+hosts, including `0.0.0.0`. Remote authentication, TLS, cloud hosting,
+containers, production broker access, and general production deployment remain
+planned for later milestones.
 
 # Purpose
 

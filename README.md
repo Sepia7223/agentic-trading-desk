@@ -74,10 +74,58 @@ src/trading_desk/
   ai/                       disabled-by-default sanitized advisory analysis and research
   execution/                controlled preflight, confirmation, idempotency, and reconciliation
   journal/                  append-only SQLite evidence, reviews, retrieval, backup, and export
+  operations/               immutable monitoring projections, health, alerts, replay, and search
+  api/                      versioned GET-only FastAPI and sanitized WebSocket endpoints
+frontend/                   React/TypeScript local Operations Center
 scripts/                    backwards-compatible CLI wrappers
 tests/                      unit and regression tests
 docs/original-claude-skill.md
 ```
+
+## Trading Desk Operations Center
+
+Milestone 9 adds a disabled-by-default, local, journal-first supervision UI. It
+binds only to loopback, receives a `ReadOnlyJournal`, and exposes versioned GET
+endpoints plus a sanitized server-to-client WebSocket. It has no broker, risk,
+portfolio, execution, journal-write, halt-clearing, or AI operational authority.
+
+Build the frontend and start the server against an explicit local journal:
+
+```powershell
+Set-Location frontend
+npm ci
+npm run build
+Set-Location ..
+python -m trading_desk.cli operations run --host 127.0.0.1 --port 8000 --journal .trading-desk/journal.db
+```
+
+Open `http://127.0.0.1:8000`. Every page keeps these boundaries visible:
+
+```text
+Environment: IG DEMO
+Live trading: DISABLED
+Dashboard authority: READ ONLY
+```
+
+Validated views cover system health, market context, strategy routing,
+deterministic lineage-based why-no-trade reconstruction, risk gates, joined
+execution lifecycles, current Paper portfolio state, reconciled Demo positions,
+closed trades, backend-computed performance and costs, AI advisory records,
+alerts, journal state, cutoff-safe replay, bounded search, sanitized JSONL/CSV/
+Markdown downloads, and redacted configuration. Typed WebSocket events
+invalidate the displayed REST projections so live screens refresh without an
+operator page reload. Runtime sources that are not supplied are shown as
+`UNKNOWN`.
+
+The performance view includes realized and unrealized P&L, equity and drawdown,
+daily P&L, spread/slippage/commission/funding attribution, exposure, turnover,
+and deterministic breakdowns by available instrument, strategy, regime,
+session, volatility, event, and environment evidence. JavaScript displays these
+backend projections and does not recalculate trading results.
+
+Still prohibited are dashboard order submission, closure or amendment, risk or
+strategy changes, halt clearing, journal rewriting, AI control, live trading,
+production-host access, and remote unauthenticated access.
 
 ## Paper Portfolio
 

@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -13,6 +13,14 @@ version: 1.0.0
 ---
 
 # Purpose
+
+## Milestone 9 Operations Standards
+
+Monitoring domain logic remains independent from FastAPI and React. API routes
+are versioned, GET-only, bounded, sanitized, and tested for 405 mutation
+rejection. WebSocket events are typed immutable projections, never commands.
+Frontend gates require Prettier, ESLint, TypeScript, Vitest, build, and included
+Playwright tests in addition to all Python quality gates.
 
 This document defines the engineering standards for every human and AI
 contributor.

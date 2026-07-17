@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -12,6 +12,14 @@ status: Living Document
 title: Backtesting Methodology
 version: 1.0.0
 ---
+
+## Milestone 9 Historical Presentation
+
+The dashboard visualizes backend-authoritative historical and performance
+projections. JavaScript does not recalculate risk, fills, P&L, or costs. Replay
+uses explicit cutoffs and chronological journal evidence, preventing future
+records from appearing before the selected cutoff. New backtesting methodology
+or model selection is outside Milestone 9.
 
 # Purpose
 

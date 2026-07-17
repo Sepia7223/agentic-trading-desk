@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -12,6 +12,14 @@ status: Living Document
 title: Risk Engine Specification
 version: 1.0.0
 ---
+
+## Milestone 9 Risk Monitor
+
+Risk decisions, quantities, budgets, exposure, drawdown, gates, reason codes,
+expiry, and fingerprints may be displayed from immutable records. The dashboard
+does not receive a mutable Risk Engine and exposes no risk configuration,
+kill-switch, loss-state, or halt controls. Unknown risk state remains visible
+and cannot be converted into approval.
 
 # Purpose
 

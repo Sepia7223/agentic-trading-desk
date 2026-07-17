@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -12,6 +12,14 @@ status: Living Document
 title: AI Architecture & Governance
 version: 1.0.0
 ---
+
+## Milestone 9 AI Review Center
+
+Existing sanitized AI analysis records may be displayed read-only with the
+label `AI authority: ADVISORY ONLY`. The UI cannot send recommendations into
+strategy, risk, execution, or portfolio state. Provider configuration and
+credentials are not dashboard dependencies. AI-generated operational actions
+remain prohibited.
 
 # Purpose
 
