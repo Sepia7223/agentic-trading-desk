@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -13,6 +13,16 @@ version: 1.0.0
 ---
 
 # 1. Purpose
+
+## Milestone 9 Monitoring Tier
+
+Validated flow: typed runtime/journal records -> `ReadOnlyJournal` and health
+ports -> immutable operations projections -> GET-only FastAPI/WebSocket -> local
+React UI. Missing runtime providers remain explicitly `UNKNOWN`. Replay and
+search query evidence only and cannot invoke operational code.
+
+Forbidden reverse flows include dashboard-to-broker, execution, risk, strategy,
+portfolio, journal mutation, halt clearing, or configuration changes.
 
 This document defines the logical architecture of the Agentic Trading
 Desk and serves as the authoritative engineering reference for how every

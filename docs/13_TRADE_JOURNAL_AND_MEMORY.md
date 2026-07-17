@@ -13,10 +13,19 @@ depends_on:
   - 06_BACKTESTING.md
   - 07_RISK_ENGINE.md
   - 08_AI_ARCHITECTURE.md
-current_validated_milestone: "8"
+current_validated_milestone: "9"
 implementation_status: Durable append-only journal, deterministic review, retrieval, backup, and export validated
 review_required_after_every_milestone: true
 ---
+
+## Milestone 9 Journal-First Monitoring
+
+The Operations Center receives `ReadOnlyJournal`, never the writable repository.
+Views project append-only evidence into sanitized records, deterministic
+why-no-trade explanations, performance summaries, lineage, bounded search, and
+cutoff-safe replay. Replay, exports, and UI navigation cannot update, amend,
+delete, repair, or append journal records. Runtime health not stored in the
+journal is accepted only through typed read-only ports.
 
 # Purpose
 

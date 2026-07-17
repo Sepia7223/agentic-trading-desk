@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -12,6 +12,18 @@ version: 1.0.0
 ---
 
 # Purpose
+
+## Milestone 9 Terms
+
+- **Operations Center:** Local loopback-only read-only supervision application.
+- **Operations Snapshot:** Fingerprinted immutable aggregate of available health
+  and latest journal evidence.
+- **Why No Trade:** Deterministic reconstruction of passed gates, failed gates,
+  reason codes, and final no-order outcome.
+- **Replay Mode:** Cutoff-bounded chronological evidence view marked
+  `REPLAY MODE - NO OPERATIONAL AUTHORITY`.
+- **Operations Event:** Sanitized server-to-client notification with no command
+  or mutation semantics.
 
 This glossary defines the terminology used throughout the project to
 ensure humans and AI contributors use consistent language.

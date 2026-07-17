@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 8
+current_validated_milestone: 9
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -12,6 +12,14 @@ status: Living Document
 title: Strategy Engine Specification
 version: 1.0.0
 ---
+
+## Milestone 9 Strategy Visibility
+
+Validated Operations Center views display immutable context, router, strategy,
+gate, regime, and reason-code evidence. Research strategies are labeled
+`RESEARCH ONLY - EXECUTION PROHIBITED`. Deterministic why-no-trade reconstruction
+does not create candidates or modify strategy configuration. Strategy controls
+and AI-selected strategies remain prohibited.
 
 # Purpose
 
