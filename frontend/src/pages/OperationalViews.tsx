@@ -3,6 +3,7 @@ import { StatusPill } from "../components/StatusPill";
 import { useOperations } from "../hooks/useOperations";
 import type {
   ExecutionLifecycles,
+  LifecycleRecords,
   HealthState,
   OpenPosition,
   OpenPositions,
@@ -237,6 +238,74 @@ export function ExecutionMonitor() {
                   Discrepancies: {item.discrepancies.join(", ")}
                 </div>
               )}
+            </article>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
+}
+
+export function LifecycleMonitor() {
+  const state = useOperations<LifecycleRecords>("/api/v1/lifecycle");
+  if (state.loading)
+    return <div className="state">Loading position lifecycle evidence...</div>;
+  if (state.error || !state.data)
+    return (
+      <div className="state state-error">
+        Lifecycle evidence unavailable: {state.error}
+      </div>
+    );
+  return (
+    <Panel
+      title="Demo position lifecycle"
+      meta={`${state.data.total_matches} immutable records`}
+    >
+      <div className="notice">
+        Dashboard authority: READ ONLY - close submission is unavailable
+      </div>
+      {state.data.records.length === 0 ? (
+        <div className="empty">No position lifecycle evidence recorded.</div>
+      ) : (
+        <div className="lifecycle-list">
+          {state.data.records.map((record) => (
+            <article className="lifecycle" key={record.journal_record_id}>
+              <header>
+                <strong>{record.record_type.replaceAll("_", " ")}</strong>
+                <time>{utc(record.effective_at)}</time>
+              </header>
+              <div className="detail-grid">
+                <span>
+                  Position
+                  <b>{value(record.payload, "position_id")}</b>
+                </span>
+                <span>
+                  Decision
+                  <b>{value(record.payload, "status", "primary_reason")}</b>
+                </span>
+                <span>
+                  Reconciliation
+                  <b>{value(record.payload, "reconciliation_status")}</b>
+                </span>
+                <span>
+                  Remaining quantity
+                  <b>{value(record.payload, "remaining_quantity")}</b>
+                </span>
+                <span>
+                  Halt
+                  <b>
+                    {record.record_type === "POSITION_LIFECYCLE_HALTED"
+                      ? "ACTIVE"
+                      : "Not indicated"}
+                  </b>
+                </span>
+                <span>
+                  Exit reason
+                  <b>
+                    {value(record.payload, "exit_reason", "primary_reason")}
+                  </b>
+                </span>
+              </div>
             </article>
           ))}
         </div>

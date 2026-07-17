@@ -168,3 +168,11 @@ Operational provider tests must cover completed-boundary edges, future invarianc
 quote validity/freshness, calendar freshness/coverage, holidays, event windows, source
 fingerprints, router suppression, and runner behavior before Risk and submission.
 Tests use local fixtures and mocked read-only transports only.
+
+## Milestone 10 Verification Standard
+
+Lifecycle changes require configuration, snapshot, precedence, preflight, mapping,
+submission, confirmation, reconciliation, persistence, scheduler, journal, operations,
+security, and mocked end-to-end tests. Tests must prove one-attempt behavior, no close
+retry, persistent halt, full-close-only `SELL` mapping, GET-only dashboard authority,
+and absence of live, short, amendment, AI, or journal-to-broker paths.

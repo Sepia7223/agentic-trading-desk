@@ -378,3 +378,10 @@ the provider adds current-quote validation, DST-aware sessions, causal liquidity
 volatility, existing Kalman/HMM outputs, and explicit local economic and holiday
 snapshots. Missing, stale, future, unfinished, or out-of-coverage input routes to
 capital preservation before Risk. The provider has no broker mutation dependency.
+
+## Milestone 10 Lifecycle Flow
+
+`Confirmed Demo Position -> Monitor -> Deterministic Exit Evaluator -> Preflight ->
+Dedicated Demo Close Adapter -> Confirmation -> Reconciliation -> Durable Journal ->
+Operations Center -> Post-Trade Review`. No Strategy, Risk, AI, Paper, Journal, or
+dashboard component can skip the lifecycle engine and reach broker close mutation.

@@ -633,3 +633,16 @@ complete.
 - **Accepted:** source identifiers, timestamps, and fingerprints are part of context identity.
 - **Rejected:** implicit empty calendars, web scraping in execution, AI event authority,
   unfinished bars, and default-normal context.
+
+# Milestone 10 Decisions
+
+- **Accepted:** one dedicated lifecycle engine owns Demo position-close authority.
+- **Accepted:** exit precedence is deterministic and protective reasons dominate.
+- **Accepted:** long positions are evaluated and valued on the bid liquidation side.
+- **Accepted:** initial scope is full close only; partial close and amendments are absent.
+- **Accepted:** each close request has one submission attempt and stable idempotency.
+- **Accepted:** ambiguity is potentially executed and creates a persistent halt, never retry.
+- **Accepted:** confirmation plus read-only reconciliation precede recorded closure.
+- **Accepted:** Paper and Demo exits remain separate immutable evidence.
+- **Accepted:** AI and the dashboard may review but cannot trigger lifecycle mutation.
+- **Accepted:** real Demo close validation is separately authorized and never manufactured.

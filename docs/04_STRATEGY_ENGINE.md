@@ -159,3 +159,10 @@ Operational analysis removes the unfinished current UTC bar before invoking the
 strategy pipeline. The resulting candidate is not altered by context; it is either
 retained by the validated trend/regime route or suppressed. Appending observations
 after an evaluation cutoff cannot change the completed input at that cutoff.
+
+## Milestone 10 Exit Boundary
+
+The validated strategy may provide only the typed deterministic exit state `HOLD`,
+`EXIT`, or `UNKNOWN`. It cannot call the broker, choose close quantity, change stop or
+target, reorder exit precedence, or retry a close. `UNKNOWN` is not treated as a
+favorable strategy exit; defensive Risk policy remains separately authoritative.

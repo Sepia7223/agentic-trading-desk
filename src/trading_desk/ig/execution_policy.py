@@ -10,12 +10,14 @@ from urllib.parse import urlsplit
 from trading_desk.execution.errors import ExecutionPolicyViolation
 
 OPEN_POSITION_VERSION = 2
+CLOSE_POSITION_VERSION = 1
 DEAL_CONFIRMATION_VERSION = 1
 DEAL_REFERENCE_PATTERN = re.compile(r"[A-Za-z0-9_-]{1,30}\Z")
 
 
 class ExecutionOperation(StrEnum):
     OPEN_POSITION = "open_position"
+    CLOSE_POSITION = "close_position"
     DEAL_CONFIRMATION = "deal_confirmation"
 
 
@@ -29,6 +31,9 @@ class AllowedExecutionRequest:
 EXECUTION_ENDPOINT_ALLOWLIST = {
     ExecutionOperation.OPEN_POSITION: AllowedExecutionRequest(
         "POST", re.compile(r"/positions/otc\Z"), OPEN_POSITION_VERSION
+    ),
+    ExecutionOperation.CLOSE_POSITION: AllowedExecutionRequest(
+        "DELETE", re.compile(r"/positions/otc\Z"), CLOSE_POSITION_VERSION
     ),
     ExecutionOperation.DEAL_CONFIRMATION: AllowedExecutionRequest(
         "GET",

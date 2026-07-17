@@ -86,6 +86,19 @@ from trading_desk.journal.sqlite import SQLiteJournalRepository
 from trading_desk.journal.summaries import daily_review as generate_daily_review
 from trading_desk.journal.summaries import monthly_review as generate_monthly_review
 from trading_desk.journal.summaries import weekly_review as generate_weekly_review
+from trading_desk.journal.writer import DurableJournalWriter
+from trading_desk.lifecycle.config import LifecycleConfiguration
+from trading_desk.lifecycle.engine import DemoPositionLifecycleEngine
+from trading_desk.lifecycle.evaluator import evaluate_exit
+from trading_desk.lifecycle.idempotency import LifecycleIdempotencyStore
+from trading_desk.lifecycle.journal import DurableLifecycleJournal
+from trading_desk.lifecycle.models import (
+    DemoPositionSnapshot,
+    LifecycleRiskState,
+    StrategyExitState,
+)
+from trading_desk.lifecycle.runtime import create_demo_position_exit_adapter
+from trading_desk.lifecycle.state import LifecycleStateStore, update_state
 from trading_desk.operations.config import OperationsConfiguration
 from trading_desk.operations.health import StartupJournalHealth
 from trading_desk.operations.service import OperationsService
@@ -290,6 +303,41 @@ def build_parser() -> argparse.ArgumentParser:
         )
         command.add_argument("--context-max-age-seconds", type=int, default=345600)
 
+    lifecycle_parser = subcommands.add_parser(
+        "lifecycle", help="Controlled IG Demo position lifecycle"
+    )
+    lifecycle_commands = lifecycle_parser.add_subparsers(dest="lifecycle_command", required=True)
+    lifecycle_config = lifecycle_commands.add_parser("config-check")
+    lifecycle_config.set_defaults(lifecycle_command="config-check")
+    inspect_lifecycle = lifecycle_commands.add_parser("inspect")
+    inspect_lifecycle.add_argument("--snapshot", required=True)
+    evaluate_lifecycle = lifecycle_commands.add_parser("evaluate")
+    evaluate_lifecycle.add_argument("--snapshot", required=True)
+    evaluate_lifecycle.add_argument("--risk", required=True)
+    evaluate_lifecycle.add_argument(
+        "--strategy-exit",
+        choices=[item.value for item in StrategyExitState],
+        default=StrategyExitState.HOLD.value,
+    )
+    for name in ("close-demo-position", "automated-demo-monitor"):
+        command = lifecycle_commands.add_parser(name)
+        command.add_argument("--snapshot", required=True)
+        command.add_argument("--risk", required=True)
+        command.add_argument("--enable-lifecycle", action="store_true")
+        command.add_argument("--enable-automatic-demo-exit", action="store_true")
+        command.add_argument("--state-file", default=".trading-desk/demo-position-lifecycle.json")
+        command.add_argument("--journal", default=".trading-desk/trade-journal.sqlite3")
+        command.add_argument(
+            "--strategy-exit",
+            choices=[item.value for item in StrategyExitState],
+            default=StrategyExitState.HOLD.value,
+        )
+    lifecycle_monitor = lifecycle_commands.choices["automated-demo-monitor"]
+    lifecycle_monitor.add_argument("--cycles", type=int, choices=range(1, 61), default=1)
+    lifecycle_monitor.add_argument(
+        "--interval-seconds", type=int, choices=range(1, 3601), default=60
+    )
+
     journal_parser = subcommands.add_parser("journal", help="Local append-only evidence journal")
     journal_commands = journal_parser.add_subparsers(dest="journal_command", required=True)
     for name in ("init", "status", "verify"):
@@ -373,6 +421,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         ) as error:
             print(f"Execution error: {error}", file=sys.stderr)
             return 2
+    if args.command == "lifecycle":
+        _print_lifecycle_header()
+        try:
+            return asyncio.run(_run_lifecycle_command(args))
+        except (
+            ExecutionError,
+            IGError,
+            OSError,
+            RuntimeError,
+            ValidationError,
+            ValueError,
+        ) as error:
+            print(f"Lifecycle error: {error}", file=sys.stderr)
+            return 2
     if args.command == "journal":
         _print_journal_header()
         try:
@@ -445,6 +507,131 @@ def _print_execution_header(args: argparse.Namespace) -> None:
     print("Live trading: DISABLED")
     print(f"Automatic execution: {'EXPLICIT DEMO MODE' if automated else 'DISABLED'}")
     print(f"Operator confirmation: {'POLICY BOUND' if automated else 'REQUIRED'}")
+
+
+def _print_lifecycle_header() -> None:
+    print("Environment: IG DEMO")
+    print("Mode: POSITION LIFECYCLE")
+    print("Live trading: DISABLED")
+    print("Short trading: DISABLED")
+    print("Position amendment: DISABLED")
+    print("Automatic retry: DISABLED")
+
+
+async def _run_lifecycle_command(args: argparse.Namespace) -> int:
+    if args.lifecycle_command == "config-check":
+        config = LifecycleConfiguration()
+        print(f"Lifecycle enabled: {str(config.enabled).lower()}")
+        print(f"Automatic exit enabled: {str(config.automatic_exit_enabled).lower()}")
+        print(f"Configuration fingerprint: {config.configuration_fingerprint}")
+        return 0
+    snapshot = _read_model(args.snapshot, DemoPositionSnapshot)
+    if args.lifecycle_command == "inspect":
+        print(f"Position: {_redact_reference(snapshot.position_id)}")
+        print(f"Deal: {_redact_reference(snapshot.deal_id)}")
+        print(f"Instrument: {snapshot.instrument}")
+        print(f"Direction: {snapshot.direction.value}")
+        print(f"Quantity: {snapshot.quantity}")
+        print(f"Bid-side mark: {snapshot.current_mark}")
+        return 0
+    risk = _read_model(args.risk, LifecycleRiskState)
+    strategy_exit = StrategyExitState(args.strategy_exit)
+    config = LifecycleConfiguration()
+    if args.lifecycle_command == "evaluate":
+        decision = evaluate_exit(snapshot, risk, strategy_exit, datetime.now(UTC), config)
+        _print_lifecycle_decision(decision)
+        return 0
+    enabled = bool(args.enable_lifecycle)
+    automatic = bool(args.enable_automatic_demo_exit)
+    config = LifecycleConfiguration(
+        enabled=enabled,
+        automatic_exit_enabled=automatic,
+    )
+    if not enabled or not automatic:
+        raise ValueError("close commands require both lifecycle enable switches")
+    settings = AppSettings.from_environment()
+    cycles = args.cycles if args.lifecycle_command == "automated-demo-monitor" else 1
+    store = LifecycleStateStore(Path(args.state_file))
+    descriptor = store.acquire_lock()
+    repository: SQLiteJournalRepository | None = None
+    try:
+        state = store.load()
+        if state.automatic_lifecycle_halt:
+            raise ValueError("persistent lifecycle halt requires human review")
+        idempotency = LifecycleIdempotencyStore(state.idempotency)
+        repository = SQLiteJournalRepository(JournalConfiguration(database_path=Path(args.journal)))
+        journal = DurableLifecycleJournal(DurableJournalWriter(repository), state.journal_records)
+        async with create_demo_position_exit_adapter(settings) as broker:
+            engine = DemoPositionLifecycleEngine(
+                broker,
+                configuration=config,
+                idempotency=idempotency,
+                journal=journal,
+            )
+            outcome = None
+            for cycle in range(cycles):
+                evaluated_at = datetime.now(UTC)
+                positions = await broker.get_open_positions()
+                close_counts = dict(state.daily_close_counts)
+                outcome = await engine.evaluate_and_manage(
+                    snapshot=snapshot,
+                    risk=risk,
+                    strategy_exit=strategy_exit,
+                    positions=positions,
+                    evaluation_timestamp=evaluated_at,
+                    close_requests_today=close_counts.get(evaluated_at.date(), 0),
+                )
+                _print_lifecycle_decision(outcome.decision)
+                if outcome.result is not None:
+                    print(f"Close result: {outcome.result.status.value}")
+                if outcome.reconciliation is not None:
+                    print(f"Reconciliation: {outcome.reconciliation.status.value}")
+                submitted = bool(
+                    outcome.result is not None and outcome.result.submitted_at is not None
+                )
+                if submitted:
+                    close_counts[evaluated_at.date()] = close_counts.get(evaluated_at.date(), 0) + 1
+                halted = outcome.automatic_lifecycle_halted
+                store.save(
+                    update_state(
+                        state,
+                        idempotency=idempotency.snapshot(),
+                        journal_records=journal.records(),
+                        daily_close_counts=tuple(sorted(close_counts.items())),
+                        last_close_timestamp=(
+                            evaluated_at if submitted else state.last_close_timestamp
+                        ),
+                        unresolved_close_states=(
+                            (outcome.request.close_request_id,)
+                            if halted and outcome.request is not None
+                            else state.unresolved_close_states
+                        ),
+                        reconciliation_mismatches=(
+                            (outcome.reconciliation.reconciliation_id,)
+                            if halted and outcome.reconciliation is not None
+                            else state.reconciliation_mismatches
+                        ),
+                        automatic_lifecycle_halt=halted,
+                        halt_reason=("AMBIGUOUS_OR_MISMATCHED_CLOSE" if halted else None),
+                    )
+                )
+                state = store.load()
+                if halted or outcome.result is not None:
+                    break
+                if cycle + 1 < cycles:
+                    await asyncio.sleep(args.interval_seconds)
+    finally:
+        if repository is not None:
+            repository.close()
+        store.release_lock(descriptor)
+    return 0
+
+
+def _print_lifecycle_decision(decision) -> None:  # type: ignore[no-untyped-def]
+    print(f"Exit decision: {decision.status.value}")
+    print(f"Primary reason: {decision.primary_reason.value}")
+    print(f"Requested quantity: {decision.requested_quantity}")
+    print(f"Close side: {decision.expected_close_side.value}")
 
 
 def _print_journal_header() -> None:

@@ -29,6 +29,7 @@ READ_ENDPOINTS = (
     "/api/v1/positions/open",
     "/api/v1/trades",
     "/api/v1/execution",
+    "/api/v1/lifecycle",
     "/api/v1/reviews",
     "/api/v1/ai-reviews",
     "/api/v1/alerts",

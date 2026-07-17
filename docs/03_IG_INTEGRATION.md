@@ -206,3 +206,12 @@ market quote produced by the existing read-only client. It adds no endpoint and 
 import `IGDemoExecutionAdapter`. Quote timestamps, bid/ask validity, market status, and
 the completed-bar cutoff are fingerprinted. Calendar files are loaded locally before
 IG authentication, and their contents never enter request headers or broker calls.
+
+## Milestone 10 Demo Close Contract
+
+The centralized mutation policy additionally permits only `DELETE /positions/otc`
+version 1 for a full offsetting long-position close and existing
+`GET /confirms/{dealReference}` version 1 confirmation. The request contains exact
+`dealId`, `SELL`, full `size`, `MARKET`, and `FILL_OR_KILL`. Current positions are
+re-read before submission and after confirmation. No production host, redirects,
+amendments, working orders, account switching, shorts, or mutation retry is allowed.

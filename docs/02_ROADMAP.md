@@ -151,3 +151,14 @@ Operational context wiring for Milestone 7.5 is software-validated with determin
 and mocked read-only inputs. Real IG Demo execution validation remains incomplete until
 a naturally eligible order is submitted once, accepted, and reconciled; no forced
 candidate is permitted to close that validation item.
+
+# Milestone 10 - Software Validated
+
+Validated with deterministic and mocked transport: Demo position monitoring; stop,
+target, strategy, maximum-holding, and defensive risk exits; full long-position close;
+single-attempt submission; confirmation; reconciliation; persistent halt/idempotency;
+append-only evidence; read-only lifecycle views; and deterministic review records.
+A separately authorized real IG Demo close remains operational validation, not a
+prerequisite that automated tests may manufacture. Production/live, shorts, partial
+close, amendments, working orders, account switching, automatic retry, and AI or
+dashboard exit authority remain future/prohibited.

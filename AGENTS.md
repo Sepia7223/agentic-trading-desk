@@ -308,3 +308,22 @@ account, position, order, or working order.
   state, approve candidates, or override a rejection.
 - Approved intents are immutable, fingerprinted, and invalid at or after expiry. They
   are decision records, not broker orders or Paper Portfolio transactions.
+
+## Position Lifecycle Boundary
+
+- Only `DemoPositionLifecycleEngine` may invoke the dedicated position-exit port.
+- The close allowlist is exactly `DELETE /positions/otc` version 1 on the canonical
+  IG Demo gateway; confirmation remains `GET /confirms/{dealReference}` version 1.
+- Supported mutation is one full offsetting `SELL` close of an exact existing long
+  Demo position. It does not authorize short entry, partial close, or amendment.
+- Exit precedence is kill/emergency/risk, protective stop, market-closure policy,
+  profit target, strategy invalidation, maximum holding, then hold.
+- Preflight must re-read current broker positions and validate identity, quantity,
+  market/account freshness, risk state, limits, idempotency, and persistent halt.
+- A close request is attempted once. Timeout, malformed acknowledgement, unknown
+  confirmation, or reconciliation mismatch requires reconciliation and a persistent
+  human-cleared halt; automatic retry is forbidden.
+- Dashboard, AI, Strategy, Risk, Paper Portfolio, and Journal code must not import or
+  call the close adapter. Operations Center lifecycle routes remain GET-only.
+- Tests use mock transport. Never inspect `.env`, expose OAuth values, or perform a
+  real Demo close without separate operator authorization and an existing position.

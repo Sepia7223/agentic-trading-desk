@@ -142,3 +142,11 @@ timeframe. It reports count, return, drawdown, Sharpe, Sortino, profit factor, w
 rate, payoff, exposure, turnover, costs, MFE, MAE, recent performance, and stability.
 Records after the explicit cutoff are excluded and insufficient samples are marked.
 These summaries cannot promote or dynamically retune a strategy.
+
+## Milestone 10 Exit Consistency
+
+Live Demo lifecycle evaluation uses bid-side liquidation for long positions and the
+same adverse-first ambiguity principle used by backtesting and Paper Portfolio.
+Paper fills remain simulation evidence and are never overwritten by Demo broker
+results. Matching exits may produce a separate analytical comparison of time, price,
+costs, P&L, holding period, and reason.

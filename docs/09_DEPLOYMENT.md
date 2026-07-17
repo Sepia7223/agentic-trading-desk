@@ -159,3 +159,11 @@ Automated Demo deployment must mount operator-maintained economic and holiday JS
 files outside tracked source and pass both paths explicitly. Each file must have a
 source ID, UTC snapshot time, and coverage interval. Missing, malformed, stale, or
 out-of-coverage files prevent command startup before credentials or network access.
+
+## Milestone 10 Runtime State
+
+Lifecycle state and SQLite journal files reside under the ignored runtime directory.
+Only one monitor may own the exclusive state lock. Deployment defaults keep lifecycle
+and automatic exits disabled; both explicit Demo enable switches are required. A
+persistent halt is never cleared automatically. The Operations Center remains
+loopback-only and read-only.
