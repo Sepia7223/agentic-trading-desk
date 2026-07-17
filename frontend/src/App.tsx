@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -20,9 +20,23 @@ import {
 } from "lucide-react";
 
 import { Configuration } from "./pages/Configuration";
+import {
+  OperationsEventProvider,
+  useOperationsEvents,
+} from "./events/OperationsEvents";
 import { Overview } from "./pages/Overview";
+import {
+  AIReviews,
+  AlertsMonitor,
+  ExecutionMonitor,
+  JournalMonitor,
+  MarketContext,
+  PositionsMonitor,
+  RiskMonitor,
+  RouterMonitor,
+  TradesMonitor,
+} from "./pages/OperationalViews";
 import { Performance } from "./pages/Performance";
-import { RecordsPage } from "./pages/RecordsPage";
 import { Replay } from "./pages/Replay";
 import { Search } from "./pages/Search";
 import { WhyNoTrade } from "./pages/WhyNoTrade";
@@ -48,46 +62,17 @@ const navigation = [
 function CurrentPage({ page }: { page: string }) {
   const pages: Record<string, React.ReactNode> = {
     Overview: <Overview />,
-    Market: (
-      <RecordsPage
-        title="Live Market Context"
-        endpoint="/api/v1/context/latest"
-      />
-    ),
-    Router: (
-      <RecordsPage
-        title="Strategy Router"
-        endpoint="/api/v1/router/latest"
-        notice="Research strategies: RESEARCH ONLY - EXECUTION PROHIBITED"
-      />
-    ),
+    Market: <MarketContext />,
+    Router: <RouterMonitor />,
     "Why No Trade": <WhyNoTrade />,
-    Risk: <RecordsPage title="Risk Monitor" endpoint="/api/v1/risk/latest" />,
-    Execution: (
-      <RecordsPage title="Execution Monitor" endpoint="/api/v1/execution" />
-    ),
-    Positions: (
-      <RecordsPage
-        title="Open Positions: Paper and IG Demo"
-        endpoint="/api/v1/positions/open"
-      />
-    ),
-    Trades: <RecordsPage title="Closed Trades" endpoint="/api/v1/trades" />,
+    Risk: <RiskMonitor />,
+    Execution: <ExecutionMonitor />,
+    Positions: <PositionsMonitor />,
+    Trades: <TradesMonitor />,
     Performance: <Performance />,
-    "AI Reviews": (
-      <RecordsPage
-        title="AI Review Center"
-        endpoint="/api/v1/ai-reviews"
-        notice="AI authority: ADVISORY ONLY"
-      />
-    ),
-    Alerts: <RecordsPage title="Alerts Center" endpoint="/api/v1/alerts" />,
-    Journal: (
-      <RecordsPage
-        title="Journal Integrity"
-        endpoint="/api/v1/journal/status"
-      />
-    ),
+    "AI Reviews": <AIReviews />,
+    Alerts: <AlertsMonitor />,
+    Journal: <JournalMonitor />,
     Replay: <Replay />,
     Search: <Search />,
     Configuration: <Configuration />,
@@ -95,16 +80,9 @@ function CurrentPage({ page }: { page: string }) {
   return pages[page];
 }
 
-export default function App() {
+function OperationsShell() {
   const [page, setPage] = useState("Overview");
-  const [connected, setConnected] = useState(false);
-  useEffect(() => {
-    const protocol = location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${protocol}://${location.host}/ws/events`);
-    socket.onopen = () => setConnected(true);
-    socket.onclose = () => setConnected(false);
-    return () => socket.close();
-  }, []);
+  const { connected, lastEvent } = useOperationsEvents();
   return (
     <div className="app-shell">
       <aside>
@@ -139,7 +117,9 @@ export default function App() {
           </div>
           <div className="top-status">
             <span className={connected ? "dot online" : "dot"} />
-            {connected ? "Live events" : "Event stream offline"}
+            {connected
+              ? `Live events${lastEvent ? `: ${lastEvent.event_type}` : ""}`
+              : "Event stream offline"}
           </div>
         </header>
         <div className="safety-banner">
@@ -152,5 +132,13 @@ export default function App() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <OperationsEventProvider>
+      <OperationsShell />
+    </OperationsEventProvider>
   );
 }

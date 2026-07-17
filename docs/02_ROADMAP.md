@@ -133,7 +133,12 @@ The loopback-only Operations Center provides a GET-only FastAPI API, sanitized
 WebSocket events, and a React/TypeScript dashboard over immutable journal and
 typed runtime projections. System, context, router, deterministic why-no-trade,
 risk, execution, position, trade, performance, alert, journal, replay, search,
-and redacted configuration views are validated. It has no operational authority.
+and redacted configuration views are validated. WebSocket events refresh
+authoritative REST projections; execution stages and no-trade decisions are
+joined through immutable lineage; open Paper and Demo positions use current or
+reconciled evidence; performance includes drawdown, costs, exposure, turnover,
+and available context breakdowns; and bounded sanitized exports return JSONL,
+CSV, or Markdown attachments. It has no operational authority.
 
 # Next Active Milestone
 

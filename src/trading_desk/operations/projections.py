@@ -19,6 +19,8 @@ def project_record(record: JournalRecord) -> RecordProjection:
     return RecordProjection(
         journal_record_id=record.journal_record_id,
         source_record_id=record.source_record_id,
+        source_parent_ids=record.source_parent_ids,
+        atomic_group_id=record.atomic_group_id,
         record_type=record.record_type.value,
         effective_at=record.effective_at,
         instrument=record.instrument,

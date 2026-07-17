@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, Request, WebSocket
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from trading_desk.api.dependencies import OperationsDependencies
@@ -15,6 +15,7 @@ from trading_desk.journal.models import JournalRecordType
 from trading_desk.operations.config import OperationsConfiguration
 from trading_desk.operations.errors import OperationsDisabledError
 from trading_desk.operations.events import OperationsEventBus
+from trading_desk.operations.exports import OperationsExportFormat, export_records
 from trading_desk.operations.service import OperationsService
 
 
@@ -87,9 +88,7 @@ def create_operations_app(
 
     @app.get("/api/v1/positions/open")
     async def open_positions():  # type: ignore[no-untyped-def]
-        paper = service.records(record_type=JournalRecordType.PAPER_FILL)
-        demo = service.records(record_type=JournalRecordType.BROKER_CONFIRMATION)
-        return {"paper": paper, "demo": demo}
+        return service.open_positions()
 
     @app.get("/api/v1/trades")
     async def trades(limit: int = 100, offset: int = 0):  # type: ignore[no-untyped-def]
@@ -101,18 +100,14 @@ def create_operations_app(
 
     @app.get("/api/v1/trades/{trade_id}")
     async def trade_detail(trade_id: str):  # type: ignore[no-untyped-def]
-        records = service.lineage(trade_id)
+        records = service.evidence_chain(trade_id)
         if not records:
             raise HTTPException(status_code=404, detail="trade evidence is unavailable")
         return records
 
     @app.get("/api/v1/execution")
     async def execution(limit: int = 100, offset: int = 0):  # type: ignore[no-untyped-def]
-        return service.records(
-            record_type=JournalRecordType.EXECUTION_RECONCILIATION,
-            limit=limit,
-            offset=offset,
-        )
+        return service.execution_lifecycles(limit=limit, offset=offset)
 
     @app.get("/api/v1/reviews")
     async def reviews(limit: int = 100, offset: int = 0):  # type: ignore[no-untyped-def]
@@ -159,12 +154,20 @@ def create_operations_app(
         return service.configuration_view()
 
     @app.get("/api/v1/exports")
-    async def exports() -> dict[str, object]:
-        return {
-            "enabled": configuration.enable_exports,
-            "formats": ("JSONL", "CSV", "Markdown") if configuration.enable_exports else (),
-            "authority": "READ ONLY",
-        }
+    async def exports(
+        format: OperationsExportFormat = OperationsExportFormat.JSONL,
+        record_type: JournalRecordType | None = None,
+        limit: int = 100,
+    ) -> Response:
+        if not configuration.enable_exports:
+            raise HTTPException(status_code=503, detail="exports are disabled")
+        result = service.records(record_type=record_type, limit=limit)
+        content, media_type, filename = export_records(result.records, format)
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
 
     @app.websocket("/ws/events")
     async def websocket_events(websocket: WebSocket) -> None:

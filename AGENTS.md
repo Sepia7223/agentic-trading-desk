@@ -9,7 +9,8 @@ runtime analysis provider and must not receive broker credentials.
 - The Operations Center is a read-only projection over sanitized immutable
   journal and typed runtime evidence.
 - API operational routes are GET-only. WebSockets stream server events and
-  cannot receive commands.
+  cannot receive commands. Frontend event handling may only invalidate and
+  refresh sanitized read-only REST projections.
 - The default is disabled and the server may bind only to loopback. Remote
   unauthenticated access is prohibited.
 - Monitoring dependencies expose query and health methods only. Never inject a
@@ -19,8 +20,17 @@ runtime analysis provider and must not receive broker credentials.
   banner `REPLAY MODE - NO OPERATIONAL AUTHORITY`.
 - Why-no-trade explanations are reconstructed from deterministic source records;
   AI summaries remain separate and advisory.
+- Position views must distinguish current Paper portfolio state from reconciled
+  IG Demo evidence. Entry fills or confirmations alone are not authoritative
+  evidence that a position remains open.
+- Execution monitoring joins approved intent, request, preflight, operator
+  confirmation, submission, broker confirmation, and reconciliation evidence.
+  It must truncate deal references and may not expose transport headers.
 - Frontend code formats backend-authoritative risk and P&L values and must not
   recalculate or alter them.
+- Operations exports are bounded in-memory projections. CSV cells are protected
+  against formula injection; exports cannot read raw broker responses or local
+  credential files.
 - Redact credentials, OAuth values, raw headers, raw broker responses, machine
   paths, and full account/deal references from every projection and error.
 

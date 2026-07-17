@@ -108,10 +108,20 @@ Dashboard authority: READ ONLY
 ```
 
 Validated views cover system health, market context, strategy routing,
-deterministic why-no-trade reconstruction, risk and execution evidence, Paper
-and Demo positions, closed trades, backend-computed performance, AI advisory
-records, alerts, journal state, cutoff-safe replay, bounded search, and redacted
-configuration. Runtime sources that are not supplied are shown as `UNKNOWN`.
+deterministic lineage-based why-no-trade reconstruction, risk gates, joined
+execution lifecycles, current Paper portfolio state, reconciled Demo positions,
+closed trades, backend-computed performance and costs, AI advisory records,
+alerts, journal state, cutoff-safe replay, bounded search, sanitized JSONL/CSV/
+Markdown downloads, and redacted configuration. Typed WebSocket events
+invalidate the displayed REST projections so live screens refresh without an
+operator page reload. Runtime sources that are not supplied are shown as
+`UNKNOWN`.
+
+The performance view includes realized and unrealized P&L, equity and drawdown,
+daily P&L, spread/slippage/commission/funding attribution, exposure, turnover,
+and deterministic breakdowns by available instrument, strategy, regime,
+session, volatility, event, and environment evidence. JavaScript displays these
+backend projections and does not recalculate trading results.
 
 Still prohibited are dashboard order submission, closure or amendment, risk or
 strategy changes, halt clearing, journal rewriting, AI control, live trading,

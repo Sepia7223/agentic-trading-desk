@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from trading_desk.journal.models import JournalQuery, JournalRecordType
 from trading_desk.operations.alerts import derive_alerts
 from trading_desk.operations.config import OperationsConfiguration
+from trading_desk.operations.decision_trace import build_why_no_trade
+from trading_desk.operations.execution_views import build_execution_lifecycles
 from trading_desk.operations.fingerprints import fingerprint
 from trading_desk.operations.health import aggregate_status, unknown_health
 from trading_desk.operations.models import (
+    ExecutionLifecyclesProjection,
+    OpenPositionsProjection,
     OperationsSnapshot,
     PerformanceSummary,
     RecordProjection,
@@ -20,7 +23,9 @@ from trading_desk.operations.models import (
     SystemStatus,
     WhyNoTradeProjection,
 )
+from trading_desk.operations.performance import build_performance
 from trading_desk.operations.ports import JournalHealthReader, RuntimeStateReader
+from trading_desk.operations.position_views import build_open_positions
 from trading_desk.operations.projections import project_record, sanitize_mapping
 from trading_desk.operations.queries import bounded_query
 from trading_desk.operations.replay import build_replay
@@ -159,59 +164,26 @@ class OperationsService:
         )
 
     def why_no_trade(self, *, limit: int = 100) -> tuple[WhyNoTradeProjection, ...]:
-        records = self.records(
-            limit=min(limit * 8, self.configuration.maximum_query_records)
-        ).records
-        signals = tuple(
-            item
-            for item in records
-            if item.record_type
-            in {JournalRecordType.STRATEGY_SIGNAL.value, JournalRecordType.STRATEGY_REJECTION.value}
-        )[-limit:]
-        projections: list[WhyNoTradeProjection] = []
-        for signal in signals:
-            payload = signal.payload
-            reasons = _strings(payload.get("rejection_reasons") or payload.get("reason_codes"))
-            failed = _gate_names(payload.get("mandatory_gates"), passed=False)
-            passed = _gate_names(payload.get("mandatory_gates"), passed=True)
-            primary = reasons[0] if reasons else failed[0] if failed else "NO_ORDER_REQUESTED"
-            fields: dict[str, object] = {
-                "evaluation_timestamp": signal.effective_at,
-                "instrument": signal.instrument,
-                "session": _optional_text(payload.get("session")),
-                "router_result": _optional_text(payload.get("router_status")) or "UNKNOWN",
-                "strategy_result": _optional_text(payload.get("action")) or "NO_TRADE",
-                "risk_result": _optional_text(payload.get("risk_status")) or "NOT_EVALUATED",
-                "preflight_result": _optional_text(payload.get("preflight_status"))
-                or "NOT_EVALUATED",
-                "final_action": "NO ORDER",
-                "primary_reason": primary,
-                "secondary_reasons": reasons[1:],
-                "passed_gates": passed,
-                "failed_gates": failed,
-                "source_record_ids": (signal.source_record_id,),
-            }
-            projections.append(
-                WhyNoTradeProjection(
-                    evaluation_timestamp=signal.effective_at,
-                    instrument=signal.instrument,
-                    session=_optional_text(payload.get("session")),
-                    router_result=_optional_text(payload.get("router_status")) or "UNKNOWN",
-                    strategy_result=_optional_text(payload.get("action")) or "NO_TRADE",
-                    risk_result=_optional_text(payload.get("risk_status")) or "NOT_EVALUATED",
-                    preflight_result=(
-                        _optional_text(payload.get("preflight_status")) or "NOT_EVALUATED"
-                    ),
-                    final_action="NO ORDER",
-                    primary_reason=primary,
-                    secondary_reasons=reasons[1:],
-                    passed_gates=passed,
-                    failed_gates=failed,
-                    source_record_ids=(signal.source_record_id,),
-                    projection_fingerprint=fingerprint(fields),
-                )
-            )
-        return tuple(projections)
+        return build_why_no_trade(self.all_records(), limit)
+
+    def execution_lifecycles(
+        self, *, limit: int = 100, offset: int = 0
+    ) -> ExecutionLifecyclesProjection:
+        if limit > self.configuration.maximum_query_records:
+            raise ValueError("query limit exceeds Operations Center maximum")
+        lifecycles = build_execution_lifecycles(self.all_records())
+        page = lifecycles[offset : offset + limit]
+        next_offset = offset + limit if offset + limit < len(lifecycles) else None
+        return ExecutionLifecyclesProjection(
+            lifecycles=page,
+            total_matches=len(lifecycles),
+            next_offset=next_offset,
+        )
+
+    def open_positions(self, observed_at: datetime | None = None) -> OpenPositionsProjection:
+        now = _utc(observed_at or datetime.now(UTC))
+        records = self.all_records()
+        return build_open_positions(records, build_execution_lifecycles(records), now)
 
     def replay(self, *, cutoff_at: datetime, limit: int | None = None) -> ReplayTimeline:
         bounded = min(
@@ -247,37 +219,33 @@ class OperationsService:
         lineage = self.reader.lineage(source_record_id)
         return tuple(project_record(item) for item in lineage.records)
 
+    def evidence_chain(self, source_record_id: str) -> tuple[RecordProjection, ...]:
+        records = self.all_records()
+        seed = next((item for item in records if item.source_record_id == source_record_id), None)
+        if seed is None:
+            return self.lineage(source_record_id)
+        from trading_desk.operations.lineage import connected_records
+
+        return connected_records(seed, records)
+
+    def all_records(self) -> tuple[RecordProjection, ...]:
+        maximum = self.configuration.maximum_replay_records
+        records: list[RecordProjection] = []
+        offset = 0
+        while len(records) < maximum:
+            page_size = min(maximum - len(records), self.configuration.maximum_query_records)
+            page = self.records(limit=page_size, offset=offset)
+            records.extend(page.records)
+            if page.next_offset is None:
+                break
+            offset = page.next_offset
+        return tuple(records)
+
     def performance(self, *, limit: int = 500) -> PerformanceSummary:
         records = self.records(
             record_type=JournalRecordType.PAPER_CLOSED_TRADE, limit=limit
         ).records
-        pnl_values = tuple(_decimal(item.payload.get("net_pnl")) for item in records)
-        pnl = tuple(value for value in pnl_values if value is not None)
-        costs = sum(
-            (_decimal(item.payload.get("total_costs")) or Decimal("0") for item in records),
-            Decimal("0"),
-        )
-        wins = tuple(value for value in pnl if value > 0)
-        losses = tuple(value for value in pnl if value < 0)
-        total = sum(pnl, Decimal("0"))
-        curve: list[tuple[datetime, Decimal]] = []
-        cumulative = Decimal("0")
-        for record, value in zip(records, pnl_values, strict=True):
-            cumulative += value or Decimal("0")
-            curve.append((record.effective_at, cumulative))
-        return PerformanceSummary(
-            sample_size=len(pnl),
-            realized_pnl=total,
-            total_costs=costs,
-            wins=len(wins),
-            losses=len(losses),
-            win_rate=(Decimal(len(wins)) / Decimal(len(pnl))) if pnl else None,
-            profit_factor=(
-                sum(wins, Decimal("0")) / abs(sum(losses, Decimal("0"))) if losses else None
-            ),
-            expectancy=(total / Decimal(len(pnl))) if pnl else None,
-            equity_curve=tuple(curve),
-        )
+        return build_performance(records, self.latest(JournalRecordType.PAPER_PORTFOLIO_EVENT))
 
     def configuration_view(self) -> dict[str, object]:
         return {
@@ -337,28 +305,6 @@ def _strings(value: object) -> tuple[str, ...]:
     if isinstance(value, (list, tuple)):
         return tuple(str(item) for item in value)
     return ()
-
-
-def _gate_names(value: object, *, passed: bool) -> tuple[str, ...]:
-    if not isinstance(value, (tuple, list)):
-        return ()
-    result: list[str] = []
-    for item in value:
-        if not isinstance(item, dict) or bool(item.get("passed")) is not passed:
-            continue
-        result.append(str(item.get("name") or item.get("gate") or "UNKNOWN_GATE"))
-    return tuple(result)
-
-
-def _optional_text(value: object) -> str | None:
-    return str(value) if value is not None else None
-
-
-def _decimal(value: object) -> Decimal | None:
-    try:
-        return Decimal(str(value)) if value is not None else None
-    except Exception:
-        return None
 
 
 def _utc(value: datetime) -> datetime:

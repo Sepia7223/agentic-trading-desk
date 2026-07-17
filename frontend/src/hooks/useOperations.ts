@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { getJson } from "../api/client";
+import { useOperationsEvents } from "../events/OperationsEvents";
 
 export interface QueryState<T> {
   data?: T;
@@ -10,10 +11,10 @@ export interface QueryState<T> {
 
 export function useOperations<T>(path: string): QueryState<T> {
   const [state, setState] = useState<QueryState<T>>({ loading: true });
+  const { revision } = useOperationsEvents();
 
   useEffect(() => {
     let active = true;
-    setState({ loading: true });
     void getJson<T>(path)
       .then((data) => active && setState({ data, loading: false }))
       .catch((error: unknown) => {
@@ -27,6 +28,6 @@ export function useOperations<T>(path: string): QueryState<T> {
     return () => {
       active = false;
     };
-  }, [path]);
+  }, [path, revision]);
   return state;
 }
