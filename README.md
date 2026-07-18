@@ -683,7 +683,7 @@ python -m trading_desk.cli opportunity certify-readonly --enable-opportunity-eng
 python -m trading_desk.cli demo-exploration certify-lifecycle \
   --enable-opportunity-engine --enable-demo-exploration --enable-execution \
   --enable-operational-certification --economic-calendar economic-calendar.json \
-  --holiday-calendar holidays.json
+  --holiday-calendar holidays.json --exit-after-position-observed
 python -m trading_desk.cli opportunity diagnostics
 python -m trading_desk.cli demo-exploration status
 python -m trading_desk.cli demo-campaign start --enable-demo-campaign
@@ -700,6 +700,10 @@ updates into a bounded in-memory window. Entry authority is promoted to lifecycl
 authority only after exact position reconciliation; unknown, pre-existing, or
 ambiguous duplicate positions are not automatically managed. Controlled execution
 and lifecycle stages are mirrored to the durable Operations Center journal.
+For restart certification, `--exit-after-position-observed` ends the first process
+gracefully only after the reconciled ledger-backed position has been monitored. A
+second invocation without that switch proves rediscovery and continues the close
+lifecycle without permitting another entry.
 `demo-exploration run-cycle` and `run` additionally require all three explicit flags:
 `--enable-opportunity-engine`, `--enable-demo-exploration`, and `--enable-execution`.
 The continuous runner uses an exclusive process lock and persists scheduler, ledger,

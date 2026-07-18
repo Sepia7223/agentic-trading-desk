@@ -446,6 +446,7 @@ def build_parser() -> argparse.ArgumentParser:
         _add_opportunity_runtime_arguments(command, execution=True)
         if name == "certify-lifecycle":
             command.add_argument("--enable-operational-certification", action="store_true")
+            command.add_argument("--exit-after-position-observed", action="store_true")
             command.add_argument(
                 "--maximum-iterations", type=int, choices=range(1, 11521), default=5760
             )
@@ -926,10 +927,17 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
                     stop,
                     explicit_demo_enable=True,
                     maximum_iterations=(args.maximum_iterations if certification_mode else None),
+                    stop_when=(
+                        (lambda: bool(lifecycle_context.snapshots_by_position))
+                        if certification_mode and args.exit_after_position_observed
+                        else None
+                    ),
                 )
                 print(f"Cycles completed: {health.cycles_completed}")
                 print(f"Lifecycle cycles: {health.lifecycle_cycles_completed}")
                 print(f"Missed evaluations: {health.missed_evaluations}")
+                if health.reason_codes:
+                    print(f"Runtime stop reason: {','.join(health.reason_codes)}")
     finally:
         repository.close()
     return 0

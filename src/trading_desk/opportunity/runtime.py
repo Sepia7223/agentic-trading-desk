@@ -100,6 +100,7 @@ class AutonomousOpportunityRunner:
         *,
         explicit_demo_enable: bool,
         maximum_iterations: int | None = None,
+        stop_when: Callable[[], bool] | None = None,
     ) -> OpportunityRuntimeHealth:
         descriptor = self.process_lock.acquire_lock()
         cycles = 0
@@ -148,6 +149,11 @@ class AutonomousOpportunityRunner:
                     entry_halted=self.scheduler.state_store.load().entries_halted,
                 )
                 iterations += 1
+                if stop_when is not None and stop_when():
+                    self.health = self.health.model_copy(
+                        update={"reason_codes": ("POSITION_OBSERVED_RESTART_REQUIRED",)}
+                    )
+                    break
                 if maximum_iterations is not None and iterations >= maximum_iterations:
                     break
                 with suppress(TimeoutError):

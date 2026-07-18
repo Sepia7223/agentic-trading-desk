@@ -414,3 +414,41 @@ def test_continuous_runner_runs_multiple_cycles_and_releases_lock(tmp_path: Path
     assert lifecycle.calls == 0
     assert not (tmp_path / "runner.json.lock").exists()
     assert health.running is False
+
+
+def test_certification_runner_stops_gracefully_after_position_observation(tmp_path: Path) -> None:
+    state = OpportunityStateStore(tmp_path / "state.json")
+    scheduler = FakeScheduler(state)
+    orchestrator = FakeOrchestrator()
+    lifecycle = FakeLifecycle()
+    observations = 0
+
+    def position_observed() -> bool:
+        nonlocal observations
+        observations += 1
+        return observations == 2
+
+    runner = AutonomousOpportunityRunner(
+        orchestrator,  # type: ignore[arg-type]
+        scheduler,  # type: ignore[arg-type]
+        lifecycle,
+        DemoExplorationConfiguration(
+            enabled=True,
+            scheduler_poll_interval_seconds=1,
+        ),
+        tmp_path / "restart-runner.json",
+        sleep=lambda _: asyncio.sleep(0),
+    )
+
+    health = asyncio.run(
+        runner.run(
+            asyncio.Event(),
+            explicit_demo_enable=True,
+            maximum_iterations=10,
+            stop_when=position_observed,
+        )
+    )
+
+    assert health.cycles_completed == 2
+    assert health.reason_codes == ("POSITION_OBSERVED_RESTART_REQUIRED",)
+    assert not (tmp_path / "restart-runner.json.lock").exists()

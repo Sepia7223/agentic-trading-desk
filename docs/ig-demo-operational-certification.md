@@ -85,6 +85,12 @@ position monitoring, close submission, close confirmation, close reconciliation,
 position closure, and post-trade review are mirrored into the append-only SQLite
 journal consumed by the Operations Center.
 
+The first operational process uses `--exit-after-position-observed`. It exits
+gracefully only after the reconciled, ledger-backed position has completed a
+lifecycle observation and releases the process lock in `finally`. Restarting the
+same command without that switch must rediscover the position from broker and ledger
+state, keep the global entry latch active, and continue only lifecycle monitoring.
+
 The empty weekend calendar snapshots used during read-only observation validate file
 shape only. They are not authoritative economic-calendar evidence and must never be
 used to authorize execution.
