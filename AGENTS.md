@@ -182,6 +182,17 @@ runtime analysis provider and must not receive broker credentials.
 - Promotion requires frozen rules, configuration fingerprints, leakage-controlled
   validation, walk-forward evidence, costs, sufficient context samples, an
   untouched test, documentation, and a separate review.
+- Milestone 11.5-B real-entry certification must use `certify-lifecycle`, a populated
+  authoritative calendar, and a persisted one-submission limit. Never treat the
+  temporary weekend calendar snapshots as execution authorization. After one
+  submission, entry remains latched off while reconciliation and lifecycle polling
+  continue across restart.
+- Certification history must use bounded incremental updates after one full
+  bootstrap and fail closed on malformed incremental timestamps.
+- Only a uniquely matched, reconciled, ledger-backed Demo position may enter the
+  automatic lifecycle; untracked or ambiguous broker positions remain untouched.
+- Controlled execution and lifecycle evidence must be mirrored into the durable
+  append-only journal used by Operations Center projections.
 
 ## IG Read-Only Boundary
 

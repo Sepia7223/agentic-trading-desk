@@ -31,6 +31,9 @@ from trading_desk.backtest.reports import export_json, export_markdown, export_t
 from trading_desk.config import AppSettings, OperatingMode, SafetySettings
 from trading_desk.context.models import ContextTimeframe
 from trading_desk.context.operational import (
+    EconomicCalendarSnapshot,
+    HolidayCalendarSnapshot,
+    HolidayEntry,
     LocalJSONEconomicCalendar,
     LocalJSONHolidayCalendar,
     OperationalCandidateContextProvider,
@@ -52,6 +55,7 @@ from trading_desk.execution.engine import ExecutionEngine
 from trading_desk.execution.errors import ExecutionError
 from trading_desk.execution.fingerprints import fingerprint as execution_fingerprint
 from trading_desk.execution.idempotency import ExecutionIdempotencyStore
+from trading_desk.execution.journal import DurableExecutionJournal
 from trading_desk.execution.models import (
     ExecutionEventType,
     ExecutionRequest,
@@ -434,12 +438,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     exploration = subcommands.add_parser("demo-exploration", help="Bounded Demo policy")
     exploration_commands = exploration.add_subparsers(dest="exploration_command", required=True)
-    for name in ("run-cycle", "run"):
+    for name in ("run-cycle", "run", "certify-lifecycle"):
         command = exploration_commands.add_parser(name)
         command.add_argument("--enable-demo-exploration", action="store_true")
         command.add_argument("--enable-opportunity-engine", action="store_true")
         command.add_argument("--enable-execution", action="store_true")
         _add_opportunity_runtime_arguments(command, execution=True)
+        if name == "certify-lifecycle":
+            command.add_argument("--enable-operational-certification", action="store_true")
+            command.add_argument(
+                "--maximum-iterations", type=int, choices=range(1, 11521), default=5760
+            )
     exploration_commands.add_parser("status")
 
     campaign = subcommands.add_parser("demo-campaign", help="Reporting-only Demo campaign")
@@ -702,55 +711,64 @@ async def _run_read_only_certification_scan(args: argparse.Namespace) -> int:
     context_provider = OperationalCandidateContextProvider(calendar, holidays)
     universe = MarketUniverse()
     state_store = OpportunityStateStore(Path(args.state_file))
-    descriptor = state_store.acquire_lock()
-    state_store.release_lock(descriptor)
     repository = _opportunity_repository(Path(args.journal))
     repository.close()
-    observed_at = datetime.now(UTC)
-    async with IGDemoClient(settings) as broker:
-        accounts = await broker.get_accounts()
-        preferred = tuple(account for account in accounts if account.preferred)
-        if len(preferred) != 1:
-            raise ValueError("exactly one preferred Demo account is required")
-        account = preferred[0]
-        exposure = await OperationalExposureProvider(broker, universe).snapshot(observed_at)
-        provider = OperationalOpportunityEvidenceProvider(
-            broker,
-            context_provider,
-            holding_epics=exposure.existing_epics,
-            maximum_history_points=_opportunity_history_points(settings),
+    descriptor = state_store.acquire_lock()
+    try:
+        observed_at = datetime.now(UTC)
+        async with IGDemoClient(settings) as broker:
+            accounts = await broker.get_accounts()
+            preferred = tuple(account for account in accounts if account.preferred)
+            if len(preferred) != 1:
+                raise ValueError("exactly one preferred Demo account is required")
+            account = preferred[0]
+            exposure = await OperationalExposureProvider(broker, universe).snapshot(observed_at)
+            provider = OperationalOpportunityEvidenceProvider(
+                broker,
+                context_provider,
+                holding_epics=exposure.existing_epics,
+                maximum_history_points=_opportunity_history_points(settings),
+            )
+            for market in universe.markets:
+                if not market.enabled:
+                    continue
+                for timeframe in market.supported_timeframes:
+                    await provider.evaluate(market, timeframe, observed_at)
+        diagnostics = provider.diagnostics
+        loaded = {item.instrument_id for item in diagnostics if item.quote_valid}
+        rejected = {item.instrument_id for item in diagnostics if not item.quote_valid}
+        equity = account.balance.balance + account.balance.profit_loss
+        print(f"Preferred account: {_redact_account_id(account.account_id)}")
+        print(f"Account currency: {account.currency}")
+        print(f"Account balance: {_money(account.balance.balance)}")
+        print(f"Account equity: {_money(equity)}")
+        print(
+            f"Markets configured: {len(tuple(item for item in universe.markets if item.enabled))}"
         )
-        for market in universe.markets:
-            if not market.enabled:
-                continue
-            for timeframe in market.supported_timeframes:
-                await provider.evaluate(market, timeframe, observed_at)
-    diagnostics = provider.diagnostics
-    loaded = {item.instrument_id for item in diagnostics if item.quote_valid}
-    rejected = {item.instrument_id for item in diagnostics if not item.quote_valid}
-    equity = account.balance.balance + account.balance.profit_loss
-    print(f"Preferred account: {_redact_account_id(account.account_id)}")
-    print(f"Account currency: {account.currency}")
-    print(f"Account balance: {_money(account.balance.balance)}")
-    print(f"Account equity: {_money(equity)}")
-    print(f"Markets configured: {len(tuple(item for item in universe.markets if item.enabled))}")
-    print(f"Markets successfully loaded: {len(loaded)}")
-    print(f"Markets rejected: {len(rejected)}")
-    print(f"Timeframes evaluated: {len(diagnostics)}")
-    _print_operational_diagnostics(diagnostics)
-    print(f"Candidate count: {sum(item.candidates_created for item in diagnostics)}")
-    print("Journal event count: 0")
-    print("Risk submissions: 0")
-    print("Broker mutation: unavailable in read-only certification")
-    return 0
+        print(f"Markets successfully loaded: {len(loaded)}")
+        print(f"Markets rejected: {len(rejected)}")
+        print(f"Timeframes evaluated: {len(diagnostics)}")
+        _print_operational_diagnostics(diagnostics)
+        print(f"Candidate count: {sum(item.candidates_created for item in diagnostics)}")
+        print("Journal event count: 0")
+        print("Risk submissions: 0")
+        print("Broker mutation: unavailable in read-only certification")
+        return 0
+    finally:
+        state_store.release_lock(descriptor)
 
 
 def _create_controlled_opportunity_authority(
     broker: IGDemoExecutionAdapter,
     ledger: DemoTradeLedger,
     exploration_configuration: DemoExplorationConfiguration,
+    execution_journal=None,  # type: ignore[no-untyped-def]
 ) -> ControlledOpportunityAuthority:
-    return ControlledOpportunityAuthority(broker, ledger, exploration_configuration)
+    if execution_journal is None:
+        return ControlledOpportunityAuthority(broker, ledger, exploration_configuration)
+    return ControlledOpportunityAuthority(
+        broker, ledger, exploration_configuration, execution_journal=execution_journal
+    )
 
 
 def _opportunity_history_points(settings: AppSettings) -> int:
@@ -767,8 +785,20 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
         raise ValueError(
             "Demo Exploration requires engine, exploration, and execution enable switches"
         )
+    certification_mode = args.exploration_command == "certify-lifecycle"
+    if certification_mode and not args.enable_operational_certification:
+        raise ValueError("lifecycle certification requires its explicit enable switch")
     engine_configuration = OpportunityEngineConfiguration(enabled=True)
-    exploration_configuration = DemoExplorationConfiguration(enabled=True)
+    exploration_configuration = (
+        DemoExplorationConfiguration(
+            enabled=True,
+            maximum_trades_per_day=1,
+            maximum_concurrent_positions=1,
+            maximum_existing_positions=1,
+        )
+        if certification_mode
+        else DemoExplorationConfiguration(enabled=True)
+    )
     universe = MarketUniverse()
     campaign_store = DemoCampaignStateStore(Path(args.campaign_state))
     campaign = campaign_store.load()
@@ -778,6 +808,8 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
     lifecycle_state = lifecycle_store.load()
     calendar = LocalJSONEconomicCalendar(Path(args.economic_calendar))
     holiday_source = LocalJSONHolidayCalendar(Path(args.holiday_calendar))
+    if certification_mode:
+        _validate_certification_calendar_sources(calendar.snapshot(), holiday_source.snapshot())
     context_provider = OperationalCandidateContextProvider(calendar, holiday_source)
     settings = AppSettings.from_environment().model_copy(
         update={
@@ -792,7 +824,8 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
     ledger = DemoTradeLedger(Path(args.ledger))
     repository = _opportunity_repository(Path(args.journal))
     try:
-        journal = OpportunityJournal(DurableJournalWriter(repository))
+        durable_writer = DurableJournalWriter(repository)
+        journal = OpportunityJournal(durable_writer)
         async with (
             IGDemoExecutionAdapter(settings) as broker,
             create_demo_position_exit_adapter(settings) as exit_broker,
@@ -812,19 +845,23 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
                 state_store,
                 journal,
             )
-            lifecycle_context = OperationalLifecycleContextProvider(exit_broker)
+            lifecycle_context = OperationalLifecycleContextProvider(exit_broker, ledger=ledger)
             lifecycle = OperationalLifecyclePort(
                 PersistentPositionLifecycleMonitor(
                     exit_broker,
                     lifecycle_context,
                     lifecycle_store,
                     enabled_lifecycle_configuration(),
+                    durable_writer=durable_writer,
                 ),
                 context_provider=lifecycle_context,
                 ledger=ledger,
             )
             authority = _create_controlled_opportunity_authority(
-                broker, ledger, exploration_configuration
+                broker,
+                ledger,
+                exploration_configuration,
+                DurableExecutionJournal(durable_writer),
             )
             campaign_service = DemoCampaignService(
                 broker,
@@ -842,17 +879,17 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
                 ledger=ledger,
                 campaign=campaign_service,
                 journal=journal,
+                maximum_total_submissions=1 if certification_mode else None,
             )
-            closed_dates = tuple(
-                item.calendar_date.isoformat()
-                for item in holiday_source.snapshot().entries
-                if item.impact.value == "HOLIDAY"
+            closed_dates, closed_market_dates = _holiday_scheduler_closures(
+                universe, holiday_source.snapshot().entries
             )
             scheduler = CompletedBarSchedulerService(
                 universe,
                 state_store,
                 maximum_catch_up_bars=exploration_configuration.maximum_catch_up_bars,
                 closed_dates=closed_dates,
+                closed_market_dates=closed_market_dates,
             )
             if args.exploration_command == "run-cycle":
                 now = datetime.now(UTC)
@@ -885,13 +922,46 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
                     lifecycle,
                     exploration_configuration,
                     Path(args.state_file).with_name("opportunity-runner.json"),
-                ).run(stop, explicit_demo_enable=True)
+                ).run(
+                    stop,
+                    explicit_demo_enable=True,
+                    maximum_iterations=(args.maximum_iterations if certification_mode else None),
+                )
                 print(f"Cycles completed: {health.cycles_completed}")
                 print(f"Lifecycle cycles: {health.lifecycle_cycles_completed}")
                 print(f"Missed evaluations: {health.missed_evaluations}")
     finally:
         repository.close()
     return 0
+
+
+def _holiday_scheduler_closures(
+    universe: MarketUniverse, entries: tuple[HolidayEntry, ...]
+) -> tuple[tuple[str, ...], tuple[tuple[str, str], ...]]:
+    global_dates: set[str] = set()
+    market_dates: set[tuple[str, str]] = set()
+    for entry in entries:
+        if entry.impact.value != "HOLIDAY":
+            continue
+        calendar_date = entry.calendar_date.isoformat()
+        currencies = frozenset(item.upper() for item in entry.currencies)
+        if not currencies:
+            global_dates.add(calendar_date)
+            continue
+        for market in universe.markets:
+            if currencies & {market.base_currency, market.quote_currency}:
+                market_dates.add((market.instrument_id, calendar_date))
+    return tuple(sorted(global_dates)), tuple(sorted(market_dates))
+
+
+def _validate_certification_calendar_sources(
+    economic: EconomicCalendarSnapshot, holidays: HolidayCalendarSnapshot
+) -> None:
+    identifiers = (economic.source_identifier.casefold(), holidays.source_identifier.casefold())
+    if any("certification-weekend" in identifier for identifier in identifiers):
+        raise ValueError("temporary weekend calendar snapshots cannot authorize execution")
+    if not economic.events:
+        raise ValueError("operational certification requires a populated economic calendar")
 
 
 async def _run_demo_campaign(args: argparse.Namespace) -> int:

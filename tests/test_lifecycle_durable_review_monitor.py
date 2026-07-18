@@ -130,3 +130,50 @@ def test_persistent_monitor_prevents_replay_after_restart(tmp_path) -> None:  # 
     replay = asyncio.run(monitor.run_cycle(NOW + timedelta(seconds=1)))
     assert replay[0].result is None
     assert broker.submission_calls == 1
+
+
+def test_persistent_monitor_mirrors_reconciled_close_to_durable_journal(tmp_path) -> None:
+    broker = SequencedCloseBroker()
+    store = LifecycleStateStore(tmp_path / "durable-state.json")
+    with SQLiteJournalRepository(journal_configuration(tmp_path / "durable.db")) as repository:
+        writer = DurableJournalWriter(repository)
+        writer.append_source(
+            record_type=JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED,
+            source_record_id="candidate-1",
+            source={"candidate_id": "candidate-1"},
+            created_at=NOW,
+            environment="DEMO",
+        )
+        writer.append_source(
+            record_type=JournalRecordType.EXECUTION_REQUEST,
+            source_record_id="execution-1",
+            source={"execution_request_id": "execution-1"},
+            source_parent_ids=("candidate-1",),
+            created_at=NOW,
+            environment="DEMO",
+        )
+        monitor = PersistentPositionLifecycleMonitor(
+            broker,
+            StaticProvider(),
+            store,
+            enabled_configuration(),
+            durable_writer=writer,
+        )
+
+        outcomes = asyncio.run(monitor.run_cycle(NOW))
+
+        assert outcomes[0].reconciliation is not None
+        records = repository.query(JournalQuery(limit=100)).records
+        types = {record.record_type for record in records}
+        assert JournalRecordType.POSITION_MONITOR_SNAPSHOT in types
+        assert JournalRecordType.CLOSE_SUBMISSION in types
+        assert JournalRecordType.CLOSE_CONFIRMATION in types
+        assert JournalRecordType.CLOSE_RECONCILIATION in types
+        assert JournalRecordType.POSITION_CLOSED in types
+        assert JournalRecordType.POST_TRADE_REVIEW in types
+        first_lifecycle = next(
+            record
+            for record in records
+            if record.record_type is JournalRecordType.POSITION_MONITOR_SNAPSHOT
+        )
+        assert first_lifecycle.source_parent_ids == ("execution-1",)

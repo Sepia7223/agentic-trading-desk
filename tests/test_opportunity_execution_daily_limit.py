@@ -15,11 +15,13 @@ from tests.execution_helpers import (
 )
 from tests.risk_helpers import NOW, account, candidate, market
 
+from journal_helpers import configuration as journal_configuration
 from trading_desk import cli
 from trading_desk.execution.config import ExecutionConfiguration
 from trading_desk.execution.engine import ExecutionEngine
 from trading_desk.execution.errors import ExecutionBrokerError
 from trading_desk.execution.idempotency import ExecutionIdempotencyStore
+from trading_desk.execution.journal import DurableExecutionJournal
 from trading_desk.execution.models import (
     ExecutionReasonCode,
     ExecutionStatus,
@@ -28,6 +30,9 @@ from trading_desk.execution.models import (
 from trading_desk.execution.opportunity import ControlledOpportunityAuthority
 from trading_desk.execution.preflight import run_preflight
 from trading_desk.ig.execution import IGDemoExecutionAdapter
+from trading_desk.journal.models import JournalQuery, JournalRecordType
+from trading_desk.journal.sqlite import SQLiteJournalRepository
+from trading_desk.journal.writer import DurableJournalWriter
 from trading_desk.opportunity.campaign import campaign_snapshot
 from trading_desk.opportunity.config import (
     DemoCampaignConfiguration,
@@ -36,6 +41,7 @@ from trading_desk.opportunity.config import (
 )
 from trading_desk.opportunity.exposure import CurrentExposureSnapshot
 from trading_desk.opportunity.fingerprints import fingerprint
+from trading_desk.opportunity.journal import OpportunityJournal
 from trading_desk.opportunity.ledger import DemoTradeLedger, DemoTradeStatus
 from trading_desk.opportunity.preflight import (
     ExplorationRejectionCode,
@@ -235,3 +241,67 @@ def test_cli_composition_passes_exploration_configuration(
 
     assert isinstance(result, CapturingAuthority)
     assert received == [configuration]
+
+
+def test_controlled_execution_chain_is_durable_and_reconciled(tmp_path: Path) -> None:
+    configuration = enabled_configuration(maximum_orders_per_day=1)
+    request, confirmation, decision = request_and_confirmation(configuration=configuration)
+    with SQLiteJournalRepository(
+        journal_configuration(tmp_path / "execution-journal.db")
+    ) as repository:
+        writer = DurableJournalWriter(repository)
+        writer.append_source(
+            record_type=JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED,
+            source_record_id=decision.candidate_id,
+            source={"candidate_id": decision.candidate_id},
+            created_at=decision.decision_timestamp,
+            environment="DEMO",
+        )
+        OpportunityJournal(writer).append_risk_decision(decision.candidate_id, decision)
+        outcome = asyncio.run(
+            ExecutionEngine(
+                FakeExecutionBroker(),
+                configuration=configuration,
+                journal=DurableExecutionJournal(writer),
+            ).execute(
+                request=request,
+                decision=decision,
+                candidate=candidate(),
+                account=account(),
+                market=market(),
+                positions=(),
+                confirmation=confirmation,
+                evaluation_timestamp=NOW,
+            )
+        )
+
+        assert outcome.result.status is ExecutionStatus.ACCEPTED
+        assert outcome.demo_position is not None
+        records = repository.query(JournalQuery(limit=100)).records
+        types = {record.record_type for record in records}
+        assert {
+            JournalRecordType.APPROVED_TRADE_INTENT,
+            JournalRecordType.EXECUTION_REQUEST,
+            JournalRecordType.EXECUTION_PREFLIGHT,
+            JournalRecordType.BROKER_SUBMISSION,
+            JournalRecordType.BROKER_CONFIRMATION,
+            JournalRecordType.EXECUTION_RECONCILIATION,
+        } <= types
+        execution_request = next(
+            record
+            for record in records
+            if record.record_type is JournalRecordType.EXECUTION_REQUEST
+        )
+        assert execution_request.source_record_id == request.execution_request_id
+        assert all(
+            record.source_parent_ids
+            for record in records
+            if record.record_type
+            in {
+                JournalRecordType.EXECUTION_REQUEST,
+                JournalRecordType.EXECUTION_PREFLIGHT,
+                JournalRecordType.BROKER_SUBMISSION,
+                JournalRecordType.BROKER_CONFIRMATION,
+                JournalRecordType.EXECUTION_RECONCILIATION,
+            }
+        )

@@ -18,7 +18,13 @@ from trading_desk.context.models import (
 )
 from trading_desk.context.operational import ObservableMarketQuote, completed_market_data
 from trading_desk.context.provider import CandidateContextProvider
-from trading_desk.ig.models import HistoricalPricePage, MarketDetails, PriceResolution
+from trading_desk.ig.models import (
+    HistoricalPriceBar,
+    HistoricalPricePage,
+    MarketDetails,
+    PaginationMetadata,
+    PriceResolution,
+)
 from trading_desk.opportunity.config import MarketDefinition
 from trading_desk.opportunity.fingerprints import fingerprint
 from trading_desk.opportunity.models import (
@@ -92,6 +98,7 @@ class OperationalOpportunityEvidenceProvider:
         self._strategy_configuration = strategy_configuration or StrategyConfiguration()
         self._pipeline = RegimeAwareStrategyPipeline(self._strategy_configuration)
         self._maximum_history_points = maximum_history_points
+        self._history_cache: dict[tuple[str, PriceResolution], HistoricalPricePage] = {}
         self._details_cache_cycle: datetime | None = None
         self._details_cache: dict[str, MarketDetails] = {}
         self._diagnostics: list[OperationalEvaluationDiagnostic] = []
@@ -132,12 +139,7 @@ class OperationalOpportunityEvidenceProvider:
             )
             return ()
         resolution, strategy_resolution = _resolutions(timeframe)
-        page = await self._market_data.get_historical_prices(
-            market.epic,
-            resolution=resolution,
-            max_points=self._maximum_history_points,
-            page_number=1,
-        )
+        page = await self._historical_prices(market.epic, resolution)
         bars_retrieved = len(page.bars)
         invalid_bars = sum(1 for item in page.bars if not item.valid_for_strategy)
         build = market_data_from_ig_page(
@@ -326,6 +328,44 @@ class OperationalOpportunityEvidenceProvider:
             self._details_cache[epic] = details
         return details
 
+    async def _historical_prices(
+        self,
+        epic: str,
+        resolution: PriceResolution,
+    ) -> HistoricalPricePage:
+        cache_key = (epic, resolution)
+        cached = self._history_cache.get(cache_key)
+        requested_points = self._maximum_history_points if cached is None else 2
+        latest = await self._market_data.get_historical_prices(
+            epic,
+            resolution=resolution,
+            max_points=requested_points,
+            page_number=1,
+        )
+        if cached is None or not latest.bars or not _timestamps_strictly_increasing(latest.bars):
+            if cached is None and latest.bars and _timestamps_strictly_increasing(latest.bars):
+                self._history_cache[cache_key] = latest
+            return latest
+
+        by_timestamp = {bar.timestamp: bar for bar in cached.bars}
+        by_timestamp.update({bar.timestamp: bar for bar in latest.bars})
+        bars = tuple(
+            sorted(by_timestamp.values(), key=lambda bar: bar.timestamp)[
+                -self._maximum_history_points :
+            ]
+        )
+        merged = HistoricalPricePage(
+            bars=bars,
+            pagination=PaginationMetadata(
+                page_number=1,
+                page_size=len(bars),
+                total_pages=1,
+            ),
+            allowance=latest.allowance,
+        )
+        self._history_cache[cache_key] = merged
+        return merged
+
     def _record_diagnostic(
         self,
         market: MarketDefinition,
@@ -472,6 +512,12 @@ def _resolutions(
 
 def _decimal(value: float) -> Decimal:
     return Decimal(str(value))
+
+
+def _timestamps_strictly_increasing(bars: tuple[HistoricalPriceBar, ...]) -> bool:
+    return all(
+        left.timestamp < right.timestamp for left, right in zip(bars, bars[1:], strict=False)
+    )
 
 
 def _utc(value: datetime) -> datetime:

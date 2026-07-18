@@ -680,6 +680,10 @@ python -m trading_desk.cli opportunity rank-once --enable-opportunity-engine \
   --economic-calendar economic-calendar.json --holiday-calendar holidays.json
 python -m trading_desk.cli opportunity certify-readonly --enable-opportunity-engine \
   --economic-calendar economic-calendar.json --holiday-calendar holidays.json
+python -m trading_desk.cli demo-exploration certify-lifecycle \
+  --enable-opportunity-engine --enable-demo-exploration --enable-execution \
+  --enable-operational-certification --economic-calendar economic-calendar.json \
+  --holiday-calendar holidays.json
 python -m trading_desk.cli opportunity diagnostics
 python -m trading_desk.cli demo-exploration status
 python -m trading_desk.cli demo-campaign start --enable-demo-campaign
@@ -688,6 +692,14 @@ python -m trading_desk.cli demo-campaign report
 ```
 
 `scan-once` and `rank-once` are read-only and never submit to Risk or execution.
+`certify-lifecycle` is the Milestone 11.5-B operational mode. It requires populated,
+non-temporary calendar evidence, permits at most one persisted Demo submission across
+restarts, and continues lifecycle monitoring after new entries are latched off.
+It bootstraps each governed price series once, then merges two-point incremental
+updates into a bounded in-memory window. Entry authority is promoted to lifecycle
+authority only after exact position reconciliation; unknown, pre-existing, or
+ambiguous duplicate positions are not automatically managed. Controlled execution
+and lifecycle stages are mirrored to the durable Operations Center journal.
 `demo-exploration run-cycle` and `run` additionally require all three explicit flags:
 `--enable-opportunity-engine`, `--enable-demo-exploration`, and `--enable-execution`.
 The continuous runner uses an exclusive process lock and persists scheduler, ledger,

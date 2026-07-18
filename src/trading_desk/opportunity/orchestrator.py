@@ -7,11 +7,12 @@ from typing import Protocol
 
 from pydantic import BaseModel, ConfigDict
 
+from trading_desk.execution.models import ReconciliationStatus
 from trading_desk.opportunity.campaign import DemoCampaignSnapshot, halt_campaign
 from trading_desk.opportunity.exploration import authorize_for_risk
 from trading_desk.opportunity.exposure import CurrentExposureSnapshot
 from trading_desk.opportunity.journal import OpportunityJournal
-from trading_desk.opportunity.ledger import DemoTradeLedger
+from trading_desk.opportunity.ledger import DemoTradeLedger, DemoTradeStatus
 from trading_desk.opportunity.models import OpportunityCandidate
 from trading_desk.opportunity.preflight import exploration_preflight
 from trading_desk.opportunity.risk import to_risk_candidate
@@ -65,7 +66,10 @@ class OpportunityOrchestrator:
         ledger: DemoTradeLedger | None = None,
         campaign: CampaignStatePort | None = None,
         journal: OpportunityJournal | None = None,
+        maximum_total_submissions: int | None = None,
     ) -> None:
+        if maximum_total_submissions is not None and maximum_total_submissions < 1:
+            raise ValueError("total submission limit must be positive")
         self.cycle_service = cycle_service
         self.risk = risk
         self.execution = execution
@@ -74,6 +78,7 @@ class OpportunityOrchestrator:
         self.ledger = ledger
         self.campaign = campaign
         self.journal = journal
+        self.maximum_total_submissions = maximum_total_submissions
 
     async def run(
         self,
@@ -109,6 +114,7 @@ class OpportunityOrchestrator:
                     self.campaign.save(halted_campaign)
                     if self.journal is not None:
                         self.journal.append_campaign(halted_campaign)
+            entry_halted = entry_halted or self._submission_limit_reached()
             exposure = (
                 await self.exposure.snapshot(cycle_timestamp) if self.exposure is not None else None
             )
@@ -130,6 +136,8 @@ class OpportunityOrchestrator:
             selected = set(cycle.ranking.selected_candidate_ids)
             candidates = tuple(item for item in cycle.candidates if item.candidate_id in selected)
             for candidate in candidates:
+                if self._submission_limit_reached():
+                    break
                 authorization = authorize_for_risk(
                     candidate,
                     self.cycle_service.engine.exploration,
@@ -171,14 +179,31 @@ class OpportunityOrchestrator:
                     submitted_at = getattr(result, "submitted_at", None)
                     if submitted_at is not None:
                         submissions += 1
+                        if self._submission_limit_reached():
+                            self._latch_submission_limit()
                     status = getattr(result, "status", None)
-                    if submitted_at is not None and getattr(status, "value", "") != "ACCEPTED":
+                    reconciliation = getattr(outcome, "reconciliation", None)
+                    reconciliation_status = getattr(reconciliation, "status", None)
+                    execution_unresolved = (
+                        submitted_at is not None and getattr(status, "value", "") != "ACCEPTED"
+                    )
+                    reconciliation_failed = submitted_at is not None and (
+                        reconciliation_status is not ReconciliationStatus.RECONCILED
+                    )
+                    if execution_unresolved or reconciliation_failed:
+                        halt_reason = (
+                            "UNRESOLVED_EXECUTION_AMBIGUITY"
+                            if execution_unresolved
+                            else "RECONCILIATION_MISMATCH"
+                        )
                         state = self.cycle_service.state_store.load()
                         self.cycle_service.state_store.save(
                             update_state(
                                 state,
                                 entries_halted=True,
-                                halt_reasons=("UNRESOLVED_EXECUTION_AMBIGUITY",),
+                                halt_reasons=tuple(
+                                    dict.fromkeys((*state.halt_reasons, halt_reason))
+                                ),
                             )
                         )
                         if self.campaign is not None:
@@ -186,12 +211,15 @@ class OpportunityOrchestrator:
                             halted_campaign = halt_campaign(
                                 snapshot,
                                 cycle_timestamp,
-                                "UNRESOLVED_EXECUTION_AMBIGUITY",
-                                execution_incident=True,
+                                halt_reason,
+                                execution_incident=execution_unresolved,
+                                reconciliation_incident=reconciliation_failed,
                             )
                             self.campaign.save(halted_campaign)
                             if self.journal is not None:
                                 self.journal.append_campaign(halted_campaign)
+                    if self._submission_limit_reached():
+                        break
         finally:
             await self.lifecycle.monitor(cycle_timestamp)
         return OpportunityOrchestrationResult(
@@ -199,7 +227,27 @@ class OpportunityOrchestrator:
             risk_decision_ids=tuple(decisions),
             execution_submission_count=submissions,
             lifecycle_ran=True,
-            entry_halted=entry_halted,
+            entry_halted=entry_halted or self._submission_limit_reached(),
+        )
+
+    def _submission_limit_reached(self) -> bool:
+        if self.maximum_total_submissions is None or self.ledger is None:
+            return False
+        submitted = sum(
+            1 for item in self.ledger.load().records if item.status is DemoTradeStatus.SUBMITTED
+        )
+        return submitted >= self.maximum_total_submissions
+
+    def _latch_submission_limit(self) -> None:
+        state = self.cycle_service.state_store.load()
+        self.cycle_service.state_store.save(
+            update_state(
+                state,
+                entries_halted=True,
+                halt_reasons=tuple(
+                    dict.fromkeys((*state.halt_reasons, "TOTAL_SUBMISSION_LIMIT_REACHED"))
+                ),
+            )
         )
 
 

@@ -42,11 +42,13 @@ class CompletedBarSchedulerService:
         *,
         maximum_catch_up_bars: int,
         closed_dates: tuple[str, ...] = (),
+        closed_market_dates: tuple[tuple[str, str], ...] = (),
     ) -> None:
         self.universe = universe
         self.state_store = state_store
         self.maximum_catch_up_bars = maximum_catch_up_bars
         self.closed_dates = closed_dates
+        self.closed_market_dates = closed_market_dates
 
     def due(self, observed_at: datetime) -> tuple[ScheduledOpportunityEvaluation, ...]:
         state = self.state_store.load()
@@ -60,6 +62,7 @@ class CompletedBarSchedulerService:
             last_completed=completed,
             maximum_catch_up_bars=self.maximum_catch_up_bars,
             closed_dates=self.closed_dates,
+            closed_market_dates=self.closed_market_dates,
         )
 
 

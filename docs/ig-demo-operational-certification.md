@@ -54,6 +54,37 @@ position lifecycle, automatic close, or real-position restart can be certified.
 Those items remain open operational requirements. They must not be simulated or
 forced to change the decision.
 
+## Milestone 11.5-B
+
+Full certification requires an open-market run using `demo-exploration
+certify-lifecycle`. The command requires the Opportunity Engine, Demo Exploration,
+controlled execution, and operational-certification switches independently. It
+rejects the temporary weekend calendar sources and an empty economic calendar.
+
+The certification ledger permits one submitted entry in total, including ambiguous
+submissions, and preserves that limit across process restart and UTC day boundaries.
+Once consumed, new entries remain halted while position discovery, reconciliation,
+lifecycle monitoring, and an eligible automatic close continue. Full certification
+requires real evidence for the natural candidate, positive net expected value,
+exposure and correlation clearance, Risk approval, one write-ahead broker submission,
+confirmation, reconciliation, position rediscovery after restart, automatic close,
+realized P&L/costs, campaign update, journal lineage, and Operations Center projection.
+
+Each instrument/timeframe performs one bounded historical bootstrap. Later cycles
+request only the newest two bars and merge them into an in-memory, timestamp-unique
+window. A malformed incremental page is not merged. This keeps the long-running
+certification monitor within the broker's historical-price allowance without
+persisting raw market responses.
+
+An accepted confirmation is not sufficient to create managed-position authority.
+The trade ledger records `CONFIRMED` only after entry reconciliation is
+`RECONCILED`. The lifecycle monitor then accepts exactly one matching ledger-backed
+position and ignores untracked or ambiguous duplicate positions. Approved intent,
+execution request, preflight, submission, confirmation, entry reconciliation,
+position monitoring, close submission, close confirmation, close reconciliation,
+position closure, and post-trade review are mirrored into the append-only SQLite
+journal consumed by the Operations Center.
+
 The empty weekend calendar snapshots used during read-only observation validate file
 shape only. They are not authoritative economic-calendar evidence and must never be
 used to authorize execution.

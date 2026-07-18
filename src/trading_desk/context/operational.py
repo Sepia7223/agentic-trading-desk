@@ -224,15 +224,18 @@ class OperationalCandidateContextProvider:
             or not holidays.coverage_start <= evaluation.date() <= holidays.coverage_end
         ):
             reasons.append(ContextReasonCode.HOLIDAY_CONTEXT_UNAVAILABLE)
+        relevant_currencies = _instrument_currencies(
+            data.instrument_name, self.configuration.relevant_currencies
+        )
         relevant_events = tuple(
             event_visible_at(item, evaluation)
             for item in calendar.events
-            if item.currency.upper() in self.configuration.relevant_currencies
+            if item.currency.upper() in relevant_currencies
         )
         holiday = any(
             item.calendar_date == evaluation.date()
             and (
-                set(map(str.upper, item.currencies)) & set(self.configuration.relevant_currencies)
+                set(map(str.upper, item.currencies)) & set(relevant_currencies)
                 or set(map(str.lower, item.financial_centres))
                 & set(map(str.lower, self.configuration.relevant_financial_centres))
             )
@@ -262,6 +265,13 @@ class OperationalCandidateContextProvider:
         return MarketContextSnapshot.model_validate(
             {**fields, "context_id": identity, "context_fingerprint": identity}
         )
+
+
+def _instrument_currencies(instrument_name: str, configured: tuple[str, ...]) -> tuple[str, ...]:
+    parts = tuple(item.strip().upper() for item in instrument_name.split("/"))
+    if len(parts) == 2 and all(len(item) == 3 and item.isalpha() for item in parts):
+        return parts
+    return configured
 
 
 def completed_market_data(

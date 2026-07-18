@@ -249,6 +249,36 @@ def test_pre_event_window_is_preserved_as_capital_preservation_context() -> None
     assert result.context_quality is ContextQuality.INVALID
 
 
+def test_event_relevance_uses_the_evaluated_currency_pair() -> None:
+    gbp_event = EconomicEvent(
+        event_id="gbp-event",
+        currency="GBP",
+        country="GB",
+        category=EventCategory.EMPLOYMENT,
+        importance=EventImportance.HIGH,
+        scheduled_timestamp=NOW + timedelta(minutes=10),
+        source="operator-calendar",
+    )
+    eur_event = gbp_event.model_copy(
+        update={"event_id": "eur-event", "currency": "EUR", "category": EventCategory.GDP}
+    )
+    data = market_data(end=datetime(2026, 7, 15, 13, tzinfo=UTC), count=40).model_copy(
+        update={"instrument_name": "GBP/USD"}
+    )
+    result = OperationalCandidateContextProvider(
+        calendar(events=(eur_event, gbp_event)), holidays()
+    ).build_context(
+        data,
+        _strategy_candidate(),
+        evaluation_timestamp=NOW,
+        timeframe=ContextTimeframe.HOUR,
+        quote=quote(),
+    )
+    assert result is not None
+    assert result.event_category is EventCategory.EMPLOYMENT
+    assert ContextReasonCode.PRE_HIGH_IMPACT_EVENT in result.reason_codes
+
+
 def test_authoritative_holiday_routes_to_capital_preservation() -> None:
     entry = HolidayEntry(
         date=NOW.date(),

@@ -12,10 +12,12 @@ import pytest
 from trading_desk import cli
 from trading_desk.config import AppSettings
 from trading_desk.context.models import ContextTimeframe
+from trading_desk.context.operational import HolidayEntry, HolidayImpact
 from trading_desk.opportunity.config import (
     DemoExplorationConfiguration,
     MarketUniverse,
 )
+from trading_desk.opportunity.errors import OpportunityStateError
 from trading_desk.opportunity.runtime import AutonomousOpportunityRunner
 from trading_desk.opportunity.scheduler import plan_completed_bars
 from trading_desk.opportunity.state import OpportunityStateStore
@@ -86,6 +88,70 @@ def test_certification_cli_dispatches_to_read_only_scan(
     assert calls == 1
 
 
+def test_certification_holds_lock_through_broker_scan_and_releases_on_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    state_path = tmp_path / "certification-state.json"
+
+    class Broker:
+        async def __aenter__(self):  # type: ignore[no-untyped-def]
+            return self
+
+        async def __aexit__(self, *args):  # type: ignore[no-untyped-def]
+            return None
+
+        async def get_accounts(self):  # type: ignore[no-untyped-def]
+            balance = SimpleNamespace(
+                balance=0,
+                profit_loss=0,
+            )
+            return (
+                SimpleNamespace(
+                    account_id="masked-test-account",
+                    preferred=True,
+                    currency="USD",
+                    balance=balance,
+                ),
+            )
+
+    class Exposure:
+        async def snapshot(self, observed_at):  # type: ignore[no-untyped-def]
+            del observed_at
+            return SimpleNamespace(existing_epics=())
+
+    class Provider:
+        diagnostics = ()
+
+        async def evaluate(self, *args):  # type: ignore[no-untyped-def]
+            del args
+            with pytest.raises(OpportunityStateError, match="lock is active"):
+                OpportunityStateStore(state_path).acquire_lock()
+            raise RuntimeError("stop after proving lock ownership")
+
+    monkeypatch.setattr(cli.AppSettings, "from_environment", lambda: AppSettings())
+    monkeypatch.setattr(cli, "LocalJSONEconomicCalendar", lambda path: object())
+    monkeypatch.setattr(cli, "LocalJSONHolidayCalendar", lambda path: object())
+    monkeypatch.setattr(cli, "OperationalCandidateContextProvider", lambda *args: object())
+    monkeypatch.setattr(
+        cli, "_opportunity_repository", lambda path: SimpleNamespace(close=lambda: None)
+    )
+    monkeypatch.setattr(cli, "IGDemoClient", lambda settings: Broker())
+    monkeypatch.setattr(cli, "OperationalExposureProvider", lambda *args: Exposure())
+    monkeypatch.setattr(
+        cli, "OperationalOpportunityEvidenceProvider", lambda *args, **kwargs: Provider()
+    )
+    args = SimpleNamespace(
+        enable_opportunity_engine=True,
+        economic_calendar=str(tmp_path / "events.json"),
+        holiday_calendar=str(tmp_path / "holidays.json"),
+        state_file=str(state_path),
+        journal=str(tmp_path / "journal.db"),
+    )
+    with pytest.raises(RuntimeError, match="proving lock ownership"):
+        asyncio.run(cli._run_read_only_certification_scan(args))  # noqa: SLF001
+    assert not state_path.with_suffix(".json.lock").exists()
+
+
 def test_read_only_observer_runs_bounded_cycles_and_releases_lock(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -141,6 +207,39 @@ def test_demo_exploration_fails_before_configuration_or_authentication() -> None
         ]
     )
     assert result == 2
+
+
+def test_lifecycle_certification_requires_extra_enable_switch() -> None:
+    result = cli.main(
+        [
+            "demo-exploration",
+            "certify-lifecycle",
+            "--enable-opportunity-engine",
+            "--enable-demo-exploration",
+            "--enable-execution",
+            "--economic-calendar",
+            "events.json",
+            "--holiday-calendar",
+            "holidays.json",
+        ]
+    )
+    assert result == 2
+
+
+def test_lifecycle_certification_rejects_temporary_or_empty_calendars() -> None:
+    valid_holidays = SimpleNamespace(source_identifier="operator-holidays-v1")
+    with pytest.raises(ValueError, match="temporary weekend"):
+        cli._validate_certification_calendar_sources(  # noqa: SLF001
+            SimpleNamespace(
+                source_identifier="certification-weekend-events-v1", events=(object(),)
+            ),
+            valid_holidays,
+        )
+    with pytest.raises(ValueError, match="populated economic calendar"):
+        cli._validate_certification_calendar_sources(  # noqa: SLF001
+            SimpleNamespace(source_identifier="operator-events-v1", events=()),
+            valid_holidays,
+        )
 
 
 def test_scheduler_never_returns_current_unfinished_bar() -> None:
@@ -209,6 +308,33 @@ def test_scheduler_holiday_and_bounded_catchup_are_deterministic() -> None:
         )
         == ()
     )
+
+
+def test_currency_holiday_closes_only_affected_markets() -> None:
+    universe = MarketUniverse()
+    holiday = HolidayEntry(
+        date=NOW.date(),
+        name="JPY bank holiday",
+        currencies=("JPY",),
+        impact=HolidayImpact.HOLIDAY,
+    )
+    global_dates, market_dates = cli._holiday_scheduler_closures(  # noqa: SLF001
+        universe, (holiday,)
+    )
+    assert global_dates == ()
+    assert market_dates == (
+        ("EUR/JPY", NOW.date().isoformat()),
+        ("USD/JPY", NOW.date().isoformat()),
+    )
+    planned = plan_completed_bars(
+        universe,
+        NOW,
+        closed_market_dates=market_dates,
+    )
+    instruments = {item.instrument_id for item in planned}
+    assert "EUR/JPY" not in instruments
+    assert "USD/JPY" not in instruments
+    assert {"EUR/USD", "GBP/USD", "AUD/USD", "USD/CAD"} <= instruments
 
 
 def test_stale_process_lock_is_reclaimed_by_explicit_policy(tmp_path: Path) -> None:
