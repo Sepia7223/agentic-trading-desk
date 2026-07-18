@@ -291,7 +291,36 @@ class OperationsService:
                 "execution_approvals": JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED,
             }.items()
         }
-        return {"environment": "DEMO", "authority": "READ ONLY", **counts}
+        evaluations = tuple(
+            item
+            for item in records
+            if item.record_type == JournalRecordType.STRATEGY_EVALUATED.value
+        )
+        funnel = {
+            "research_only_evaluations": sum(
+                _safe_int(item.payload.get("research_only_evaluations")) for item in evaluations
+            ),
+            "demo_executable_evaluations": sum(
+                _safe_int(item.payload.get("demo_executable_evaluations")) for item in evaluations
+            ),
+            "context_rejections": _reason_count(records, ("CONTEXT", "EVENT", "HOLIDAY")),
+            "strategy_rejections": _reason_count(records, ("STRATEGY", "REGIME")),
+            "stale_data_rejections": _reason_count(records, ("STALE", "UNFINISHED")),
+            "cost_rejections": _reason_count(records, ("COST", "SPREAD")),
+            "expected_value_rejections": _reason_count(records, ("EXPECTED_VALUE",)),
+            "correlation_rejections": sum(
+                1
+                for item in records
+                if item.record_type == JournalRecordType.OPPORTUNITY_CORRELATION_REJECTED.value
+            ),
+            "execution_preflight_rejections": _reason_count(records, ("PREFLIGHT",)),
+            "system_halts": sum(
+                1
+                for item in records
+                if item.record_type == JournalRecordType.DEMO_CAMPAIGN_HALTED.value
+            ),
+        }
+        return {"environment": "DEMO", "authority": "READ ONLY", **counts, **funnel}
 
     def opportunity_breakdown(self, field: str) -> tuple[dict[str, object], ...]:
         counts: dict[str, int] = {}
@@ -310,7 +339,11 @@ class OperationsService:
 
     def demo_campaign(self):  # type: ignore[no-untyped-def]
         halted = self.latest(JournalRecordType.DEMO_CAMPAIGN_HALTED)
-        return halted or self.latest(JournalRecordType.DEMO_CAMPAIGN_SNAPSHOT_CREATED)
+        return (
+            halted
+            or self.latest(JournalRecordType.DEMO_CAMPAIGN_SNAPSHOT_CREATED)
+            or self.latest(JournalRecordType.DEMO_CAMPAIGN_STARTED)
+        )
 
     def configuration_view(self) -> dict[str, object]:
         return {
@@ -370,6 +403,21 @@ def _strings(value: object) -> tuple[str, ...]:
     if isinstance(value, (list, tuple)):
         return tuple(str(item) for item in value)
     return ()
+
+
+def _reason_count(records: tuple[RecordProjection, ...], markers: tuple[str, ...]) -> int:
+    count = 0
+    for record in records:
+        values = _strings(record.payload.get("rejection_reasons")) + _strings(
+            record.payload.get("rejection_codes")
+        )
+        if any(any(marker in value for marker in markers) for value in values):
+            count += 1
+    return count
+
+
+def _safe_int(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _utc(value: datetime) -> datetime:

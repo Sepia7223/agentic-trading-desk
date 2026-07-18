@@ -11,8 +11,8 @@ def test_all_cost_components_are_nonzero_and_deterministic() -> None:
     costs = estimate_costs(evidence(expected_holding_period=timedelta(days=2)))
     assert costs.spread_estimate > 0
     assert costs.slippage_estimate > 0
-    assert costs.commission_estimate > 0
-    assert costs.funding_estimate > 0
+    assert costs.commission_estimate == 0
+    assert costs.funding_estimate == 0
     assert costs.uncertainty_penalty > 0
     assert costs.low_liquidity_surcharge > 0
     assert costs.event_risk_surcharge > 0

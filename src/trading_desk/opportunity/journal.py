@@ -6,7 +6,9 @@ from trading_desk.journal.models import JournalRecord, JournalRecordType
 from trading_desk.journal.writer import DurableJournalWriter, JournalSource
 from trading_desk.opportunity.campaign import DemoCampaignSnapshot
 from trading_desk.opportunity.models import CandidateStatus
+from trading_desk.opportunity.preflight import ExplorationPreflightDecision
 from trading_desk.opportunity.service import OpportunityCycleResult
+from trading_desk.risk.models import RiskDecision, RiskDecisionStatus
 
 
 class OpportunityJournal:
@@ -37,44 +39,50 @@ class OpportunityJournal:
                 environment="DEMO",
             ),
         ]
-        for candidate in result.candidates:
-            instrument_id = f"{candidate.candidate_id}:instrument"
-            strategy_id = f"{candidate.candidate_id}:strategy"
-            cost_id = f"{candidate.candidate_id}:cost"
+        for evaluation in result.evaluations:
+            instrument_id = f"{evaluation.evaluation_id}:instrument"
             sources.extend(
                 (
                     JournalSource(
                         record_type=JournalRecordType.INSTRUMENT_EVALUATED,
                         source_record_id=instrument_id,
                         source_parent_ids=(f"{result.cycle_id}:universe",),
-                        payload={
-                            "instrument_id": candidate.instrument_id,
-                            "epic": candidate.epic,
-                            "timeframe": candidate.timeframe,
-                            "completed_bar_timestamp": candidate.completed_bar_timestamp,
-                        },
+                        payload=evaluation,
                         created_at=timestamp,
-                        instrument=candidate.instrument_id,
-                        epic=candidate.epic,
+                        instrument=evaluation.instrument_id,
+                        epic=evaluation.epic,
                         environment="DEMO",
                     ),
                     JournalSource(
                         record_type=JournalRecordType.STRATEGY_EVALUATED,
-                        source_record_id=strategy_id,
-                        source_parent_ids=(instrument_id, *candidate.evidence_ids),
+                        source_record_id=f"{evaluation.evaluation_id}:strategies",
+                        source_parent_ids=(instrument_id,),
                         payload={
-                            "strategy_id": candidate.strategy_id,
-                            "strategy_fingerprint": candidate.strategy_fingerprint,
-                            "validation_states": candidate.strategy_validation_states,
-                            "regime": candidate.regime,
+                            "strategy_evaluations": evaluation.strategy_evaluations,
+                            "research_only_evaluations": evaluation.research_only_evaluations,
+                            "demo_executable_evaluations": (evaluation.demo_executable_evaluations),
+                            "candidate_ids": evaluation.candidate_ids,
+                            "rejection_codes": evaluation.rejection_codes,
                         },
                         created_at=timestamp,
-                        instrument=candidate.instrument_id,
-                        epic=candidate.epic,
-                        strategy_variant=candidate.strategy_id,
+                        instrument=evaluation.instrument_id,
+                        epic=evaluation.epic,
                         environment="DEMO",
-                        deferred_linkage=True,
                     ),
+                )
+            )
+        for candidate in result.candidates:
+            strategy_id = next(
+                (
+                    f"{evaluation.evaluation_id}:strategies"
+                    for evaluation in result.evaluations
+                    if candidate.candidate_id in evaluation.candidate_ids
+                ),
+                f"{result.cycle_id}:universe",
+            )
+            cost_id = f"{candidate.candidate_id}:cost"
+            sources.extend(
+                (
                     JournalSource(
                         record_type=JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED,
                         source_record_id=candidate.candidate_id,
@@ -182,6 +190,69 @@ class OpportunityJournal:
         )
         return self.writer.append_sources(sources)
 
+    def append_failure(
+        self,
+        cycle_id: str,
+        created_at,
+        reason_code: str,  # type: ignore[no-untyped-def]
+    ) -> JournalRecord:
+        return self.writer.append_source(
+            record_type=JournalRecordType.OPPORTUNITY_CYCLE_FAILED,
+            source_record_id=f"{cycle_id}:failed:{reason_code}",
+            source={"cycle_id": cycle_id, "reason_code": reason_code},
+            created_at=created_at,
+            environment="DEMO",
+        )
+
+    def append_risk_decision(
+        self, candidate_id: str, decision: RiskDecision
+    ) -> tuple[JournalRecord, ...]:
+        submitted = JournalSource(
+            record_type=JournalRecordType.OPPORTUNITY_RISK_SUBMITTED,
+            source_record_id=f"{decision.decision_id}:submitted",
+            source_parent_ids=(candidate_id,),
+            payload={"candidate_id": candidate_id, "decision_id": decision.decision_id},
+            created_at=decision.decision_timestamp,
+            environment="DEMO",
+        )
+        outcome = JournalSource(
+            record_type=(
+                JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED
+                if decision.status is RiskDecisionStatus.APPROVED
+                else JournalRecordType.OPPORTUNITY_RISK_REJECTED
+            ),
+            source_record_id=f"{decision.decision_id}:outcome",
+            source_parent_ids=(submitted.source_record_id,),
+            payload={
+                "candidate_id": candidate_id,
+                "decision_id": decision.decision_id,
+                "status": decision.status,
+                "reason_codes": decision.reason_codes,
+            },
+            created_at=decision.decision_timestamp,
+            environment="DEMO",
+        )
+        return self.writer.append_sources((submitted, outcome))
+
+    def append_preflight_rejection(
+        self,
+        candidate_id: str,
+        created_at,  # type: ignore[no-untyped-def]
+        decision: ExplorationPreflightDecision,
+    ) -> JournalRecord:
+        return self.writer.append_source(
+            record_type=JournalRecordType.OPPORTUNITY_REJECTED,
+            source_record_id=f"{candidate_id}:preflight:{'-'.join(decision.rejection_codes)}",
+            source_parent_ids=(candidate_id,),
+            source={
+                "candidate_id": candidate_id,
+                "stage": "DEMO_EXPLORATION_PREFLIGHT",
+                "rejection_codes": decision.rejection_codes,
+            },
+            created_at=created_at,
+            environment="DEMO",
+        )
+
     def append_campaign(self, snapshot: DemoCampaignSnapshot) -> JournalRecord:
         record_type = (
             JournalRecordType.DEMO_CAMPAIGN_HALTED
@@ -193,5 +264,14 @@ class OpportunityJournal:
             source_record_id=snapshot.snapshot_fingerprint,
             source=snapshot,
             created_at=snapshot.snapshot_at,
+            environment="DEMO",
+        )
+
+    def append_campaign_started(self, snapshot: DemoCampaignSnapshot) -> JournalRecord:
+        return self.writer.append_source(
+            record_type=JournalRecordType.DEMO_CAMPAIGN_STARTED,
+            source_record_id=f"{snapshot.campaign_id}:started",
+            source=snapshot,
+            created_at=snapshot.started_at,
             environment="DEMO",
         )

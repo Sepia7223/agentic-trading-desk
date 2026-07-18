@@ -13,8 +13,9 @@ class CostConfiguration(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
     maximum_spread_age_seconds: int = Field(default=60, ge=1)
     slippage_fraction_of_spread: Decimal = Field(default=Decimal("0.25"), ge=0)
-    commission_per_unit: Decimal = Field(default=Decimal("0.01"), ge=0)
-    funding_per_boundary: Decimal = Field(default=Decimal("0.02"), ge=0)
+    # IG FX commission and funding cannot be inferred in price units from market data.
+    commission_per_unit: Decimal = Field(default=Decimal("0"), ge=0)
+    funding_per_boundary: Decimal = Field(default=Decimal("0"), ge=0)
     uncertainty_surcharge_rate: Decimal = Field(default=Decimal("0.10"), ge=0)
     low_liquidity_surcharge_rate: Decimal = Field(default=Decimal("0.10"), ge=0)
     event_risk_surcharge_rate: Decimal = Field(default=Decimal("0.10"), ge=0)

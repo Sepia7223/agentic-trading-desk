@@ -349,3 +349,18 @@ account, position, order, or working order.
   closes. Ambiguous mutation is never retried.
 - Journal every evaluation lineage. Operations APIs remain GET-only and WebSockets
   server-to-client. Dashboard, AI, and Journal have no trade authority.
+- `OperationalOpportunityEvidenceProvider` may depend on read-only IG market data,
+  Candidate Context, and Strategy Router only. It must not import Risk, execution,
+  credentials, tokens, or broker mutation adapters.
+- Read-only scan and ranking commands never invoke Risk. Demo exploration requires the
+  opportunity, exploration, and execution enable flags before authentication or
+  mutation; environment, campaign, ambiguity, reconciliation, and halt checks fail
+  closed first.
+- Load authoritative broker exposure before ranking. Missing exposure prevents new
+  Risk submissions but must not prevent lifecycle monitoring and protective exits.
+- Persist completed-bar keys, fair-scheduling cursor, submitted-order ledger, campaign
+  state, and safety halts. Daily limits count submitted orders on a UTC date, including
+  ambiguous submissions. Never retry an ambiguous mutation.
+- Campaign objectives are reporting only. Hard daily-loss, drawdown, consecutive-loss,
+  execution-incident, and reconciliation-incident thresholds persist an entry halt;
+  they never stop monitoring, reconciliation, or governed exits.

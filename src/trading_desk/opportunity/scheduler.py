@@ -46,10 +46,9 @@ def plan_completed_bars(
             continue
         for timeframe in market.supported_timeframes:
             seconds = timeframe.seconds
-            completed_epoch = int(observed_at.timestamp()) // seconds * seconds
-            latest = datetime.fromtimestamp(completed_epoch, UTC)
-            if latest >= observed_at:
-                latest -= timedelta(seconds=seconds)
+            current_bar_epoch = int(observed_at.timestamp()) // seconds * seconds
+            current_bar = datetime.fromtimestamp(current_bar_epoch, UTC)
+            latest = current_bar - timedelta(seconds=seconds)
             floor = previous.get(
                 (market.instrument_id, timeframe), latest - timedelta(seconds=seconds)
             )

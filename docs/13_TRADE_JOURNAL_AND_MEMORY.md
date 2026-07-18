@@ -555,3 +555,10 @@ suppression, ranking and selection, Risk submission/rejection, execution approva
 inactivity diagnostics, and Demo campaign state/halt events. Parent IDs preserve market
 context, evidence, candidate, ranking, Risk, execution, and campaign lineage. Records
 remain append-only, sanitized, replayable, and incapable of triggering execution.
+
+The operational provider and cycle service append these records during real command
+execution; they are not schema-only placeholders. A separate durable trade ledger
+records UTC trading date, submitted/confirmed/rejected/closed state, strategy,
+instrument, candidate, and execution identifiers. Daily capacity counts submissions,
+including ambiguous outcomes. Campaign snapshots and hard halts are persisted and
+feed sanitized GET-only Operations Center projections.

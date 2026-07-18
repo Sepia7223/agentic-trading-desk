@@ -652,9 +652,18 @@ exits remain prohibited.
 The disabled-by-default Opportunity Engine scans a strict six-market FOREX universe
 (`EUR/USD`, `GBP/USD`, `USD/JPY`, `AUD/USD`, `USD/CAD`, and `EUR/JPY`) on completed
 5-minute, 15-minute, and 1-hour bars. It creates immutable long-only candidates,
-includes non-zero spread, slippage, commission, funding, uncertainty, liquidity, and
-event costs, calculates net expected value, suppresses duplicates/correlation, and
-ranks at most three candidates for Risk per cycle.
+includes spread, slippage, uncertainty, liquidity, and event costs, calculates net
+expected value, suppresses duplicates/correlation, and ranks at most three candidates
+for Risk per cycle. Commission and funding default to zero until an authoritative
+source can express them in the same price units as the candidate evidence.
+
+The operational provider reads IG Demo market details and historical prices, removes
+the unfinished bar, builds authoritative market context, invokes the Strategy Router,
+and emits fingerprinted evidence only for an executable strategy. The scheduler stores
+the last evaluated completed bar, rotates fairly when capacity is bounded, performs
+bounded catch-up, and runs lifecycle monitoring independently from entry cadence.
+Authoritative broker positions are loaded before duplicate, correlation, concentration,
+concurrency, and re-entry filters. Unknown exposure fails closed before Risk.
 
 Only `trend-regime-v1` is both `BACKTEST_VALIDATED` and
 `DEMO_EXPLORATION_ENABLED`. Trend pullback, volatility breakout, and range mean
@@ -664,16 +673,30 @@ position, and only the lifecycle subsystem can close one.
 
 ```bash
 python -m trading_desk.cli opportunity validate-config
-python -m trading_desk.cli opportunity scan-once
+python -m trading_desk.cli opportunity scan-once --enable-opportunity-engine \
+  --economic-calendar economic-calendar.json --holiday-calendar holidays.json
+python -m trading_desk.cli opportunity rank-once --enable-opportunity-engine \
+  --economic-calendar economic-calendar.json --holiday-calendar holidays.json
 python -m trading_desk.cli opportunity diagnostics
 python -m trading_desk.cli demo-exploration status
+python -m trading_desk.cli demo-campaign start --enable-demo-campaign
+python -m trading_desk.cli demo-campaign status
 python -m trading_desk.cli demo-campaign report
 ```
+
+`scan-once` and `rank-once` are read-only and never submit to Risk or execution.
+`demo-exploration run-cycle` and `run` additionally require all three explicit flags:
+`--enable-opportunity-engine`, `--enable-demo-exploration`, and `--enable-execution`.
+The continuous runner uses an exclusive process lock and persists scheduler, ledger,
+campaign, lifecycle, and halt state under the configured local paths.
 
 Demo Exploration and the 30-day campaign are disabled by default and technically
 DEMO-only. The 100/250 closed-trade objectives and the 20,000-to-40,000 stretch
 objective are diagnostics/reporting only. They cannot force a trade, lower a
 threshold, increase size, bypass Risk, or enable Live. The Operations Center adds
 GET-only Opportunity, Activity, Strategy, Instrument, Regime, Inactivity, and Demo
-Campaign views. Automated tests use deterministic or mocked inputs; no real IG Demo
-trade was performed for Milestone 11.
+Campaign views backed by journal and campaign evidence. Campaign start records the
+authoritative preferred Demo account balance and equity; the 20,000 value is only a
+reporting reference. Submitted-order counts use a UTC trading-date boundary and
+survive restart. Automated tests use deterministic or mocked broker inputs; no real IG
+Demo scan, order, or close was performed for this correction.

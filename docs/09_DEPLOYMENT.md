@@ -175,3 +175,10 @@ fingerprinted state, duplicate-cycle rejection, and persisted completed-bar eval
 keys. Opportunity, Demo Exploration, and campaign features default disabled. Deployment
 must never enable Live, expose dashboard mutation routes, or treat campaign objectives
 as scheduler obligations.
+
+Read-only scan/rank require the Opportunity enable flag and authoritative economic and
+holiday calendar files. Demo exploration additionally requires explicit exploration
+and execution flags. Persist scheduler state, trade ledger, campaign state, lifecycle
+state, journal, and entry halts on durable local storage. Submitted-order limits use a
+UTC date boundary. Never run two owners against the same state: the exclusive lock and
+tested stale-lock policy are part of the safety boundary.

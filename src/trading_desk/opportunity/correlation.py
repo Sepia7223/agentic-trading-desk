@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime
 
 from trading_desk.opportunity.fingerprints import fingerprint
@@ -20,12 +21,15 @@ def suppress_candidates(
     recent_entries: tuple[tuple[str, datetime], ...] = (),
     cooldown_seconds: int = 0,
     maximum_correlated_positions: int = 1,
+    current_position_count: int = 0,
+    maximum_existing_positions: int = 3,
 ) -> tuple[OpportunityCandidate, ...]:
     ordered = sorted(candidates, key=_strength)
     seen_ids: set[str] = set()
     seen_bars: set[tuple[str, object, datetime]] = set()
     selected_instruments: set[str] = set()
     selected_groups: dict[str, int] = {}
+    occupied_groups = Counter(occupied_correlation_groups)
     recent = dict(recent_entries)
     results: list[OpportunityCandidate] = []
     for candidate in ordered:
@@ -39,6 +43,8 @@ def suppress_candidates(
             reasons.append(OpportunityRejectionCode.DUPLICATE_CANDIDATE)
         elif bar_key in seen_bars:
             reasons.append(OpportunityRejectionCode.SAME_BAR_DUPLICATE)
+        elif current_position_count >= maximum_existing_positions:
+            reasons.append(OpportunityRejectionCode.PORTFOLIO_EXPOSURE_LIMIT)
         elif candidate.epic in existing_epics:
             reasons.append(OpportunityRejectionCode.EXISTING_POSITION_CONFLICT)
         elif candidate.instrument_id in selected_instruments:
@@ -52,8 +58,7 @@ def suppress_candidates(
                 reasons.append(OpportunityRejectionCode.RECENT_REENTRY_COOLDOWN)
             correlation_count = max(
                 (
-                    selected_groups.get(group, 0)
-                    + (1 if group in occupied_correlation_groups else 0)
+                    selected_groups.get(group, 0) + occupied_groups[group]
                     for group in candidate.correlation_groups
                 ),
                 default=0,

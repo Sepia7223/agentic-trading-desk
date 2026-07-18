@@ -59,6 +59,8 @@ class DealingRuleUnit(ForwardCompatibleStrEnum):
 
 
 class PriceResolution(StrEnum):
+    MINUTE_5 = "MINUTE_5"
+    MINUTE_15 = "MINUTE_15"
     DAY = "DAY"
     HOUR = "HOUR"
     HOUR_4 = "HOUR_4"

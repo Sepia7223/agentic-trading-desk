@@ -76,6 +76,27 @@ class OpportunityRejectionCode(StrEnum):
     EXISTING_POSITION_CONFLICT = "EXISTING_POSITION_CONFLICT"
     RECENT_REENTRY_COOLDOWN = "RECENT_REENTRY_COOLDOWN"
     PORTFOLIO_EXPOSURE_LIMIT = "PORTFOLIO_EXPOSURE_LIMIT"
+    CYCLE_CAPACITY_EXCEEDED = "CYCLE_CAPACITY_EXCEEDED"
+    DAILY_TRADE_LIMIT = "DAILY_TRADE_LIMIT"
+    CAMPAIGN_HALTED = "CAMPAIGN_HALTED"
+    EXECUTION_AMBIGUITY = "EXECUTION_AMBIGUITY"
+    RECONCILIATION_MISMATCH = "RECONCILIATION_MISMATCH"
+
+
+class OpportunityEvaluationRecord(OpportunityModel):
+    evaluation_id: str = Field(min_length=64, max_length=64)
+    instrument_id: str
+    epic: str
+    timeframe: ContextTimeframe
+    completed_bar_timestamp: datetime
+    strategy_evaluations: int = Field(ge=0)
+    research_only_evaluations: int = Field(ge=0)
+    backtest_validated_evaluations: int = Field(ge=0)
+    demo_executable_evaluations: int = Field(ge=0)
+    ineligible_regime_evaluations: int = Field(ge=0)
+    candidate_producing_evaluations: int = Field(ge=0)
+    candidate_ids: tuple[str, ...] = ()
+    rejection_codes: tuple[OpportunityRejectionCode, ...] = ()
 
 
 class StrategyPolicy(OpportunityModel):

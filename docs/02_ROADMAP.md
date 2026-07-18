@@ -167,10 +167,12 @@ dashboard exit authority remain future/prohibited.
 
 Validated with deterministic and mocked inputs: six allowlisted FOREX instruments;
 5-minute, 15-minute, and 1-hour completed-bar evaluation; immutable cost-adjusted
-candidates; strategy validation states; duplicate/correlation suppression; bounded
-ranking; persistent cycle/evaluation idempotency; exclusive process locking;
-Risk-only approval/sizing; controlled-execution and lifecycle ports; schema-v4 journal
-evidence; inactivity diagnostics; reporting-only 30-day Demo campaign; and GET-only
-Operations Center views. Demo Exploration and campaign operation remain disabled by
-default. Real multi-instrument IG Demo campaign execution remains operationally
-unvalidated and must never be manufactured or forced.
+candidates; operational read-only evidence provider; persistent completed-bar
+scheduling and fair bounded catch-up; authoritative exposure; strategy validation
+states; duplicate/correlation suppression; deterministic ranking; persistent
+cycle/evaluation idempotency; exclusive process locking; durable submitted-order
+limits and campaign safety halts; Risk-only approval/sizing; controlled-execution and
+lifecycle composition; runtime schema-v4 journal evidence; inactivity diagnostics;
+and GET-only Operations Center projections. Demo Exploration and campaign operation
+remain disabled by default. Real multi-instrument IG Demo scanning, order execution,
+and closing remain operationally unvalidated and must never be manufactured or forced.

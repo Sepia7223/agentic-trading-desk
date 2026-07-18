@@ -392,3 +392,8 @@ dashboard component can skip the lifecycle engine and reach broker close mutatio
 Duplicate/Correlation Filter -> Bounded Ranking -> Risk -> Controlled Demo Execution ->
 Lifecycle -> Journal -> GET-only Operations Center`. Opportunity code reaches Risk
 through typed models only and cannot import broker mutation dependencies.
+The operational evidence provider obtains read-only IG details and prices, removes the
+unfinished bar, and preserves context/router/strategy fingerprints. The orchestrator
+loads authoritative positions before filtering and stops new Risk submissions when
+exposure is unknown. Durable campaign and submitted-order ledgers enforce limits
+across restart.

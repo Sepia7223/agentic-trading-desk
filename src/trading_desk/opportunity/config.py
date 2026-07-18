@@ -75,7 +75,8 @@ class MarketDefinition(OpportunityConfigurationModel):
 class OpportunityEngineConfiguration(OpportunityConfigurationModel):
     enabled: bool = False
     environment: Literal["DEMO"] = "DEMO"
-    maximum_candidates_per_cycle: int = Field(default=100, ge=1, le=500)
+    maximum_evaluations_per_cycle: int = Field(default=54, ge=1, le=500)
+    maximum_candidates_retained_per_cycle: int = Field(default=100, ge=1, le=500)
     maximum_candidates_sent_to_risk: int = Field(default=3, ge=1, le=10)
     minimum_net_expected_value: Decimal = Field(default=Decimal("0"), ge=0)
     exploratory_score_threshold: Decimal = Field(default=Decimal("55"), ge=0, le=100)
@@ -126,10 +127,14 @@ class DemoExplorationConfiguration(OpportunityConfigurationModel):
     preferred_closed_trades_per_30_days: int = Field(default=250, ge=1)
     maximum_trades_per_day: int = Field(default=20, ge=1, le=100)
     maximum_concurrent_positions: int = Field(default=3, ge=1, le=20)
+    maximum_existing_positions: int = Field(default=3, ge=1, le=20)
     maximum_correlated_positions: int = Field(default=1, ge=1, le=10)
     exploratory_risk_multiplier: Decimal = Field(default=Decimal("0.25"), gt=0, le=1)
     standard_risk_multiplier: Decimal = Field(default=Decimal("0.50"), gt=0, le=1)
     strong_risk_multiplier: Decimal = Field(default=Decimal("1.00"), gt=0, le=1)
+    lifecycle_interval_seconds: int = Field(default=60, ge=10, le=3600)
+    scheduler_poll_interval_seconds: int = Field(default=15, ge=1, le=300)
+    maximum_catch_up_bars: int = Field(default=3, ge=1, le=12)
 
     @model_validator(mode="after")
     def validate_policy(self) -> Self:

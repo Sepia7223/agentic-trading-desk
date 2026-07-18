@@ -59,6 +59,28 @@ def test_completed_bar_schedule_is_bounded_and_deterministic() -> None:
     assert all(item.completed_bar_timestamp < NOW for item in first)
 
 
+def test_cycle_capacity_uses_persisted_fair_rotation(tmp_path: Path) -> None:
+    service = OpportunityCycleService(
+        OpportunityEngine(
+            OpportunityEngineConfiguration(
+                enabled=True,
+                maximum_evaluations_per_cycle=1,
+            )
+        ),
+        EvidenceProvider(),
+        OpportunityStateStore(tmp_path / "fair-state.json"),
+    )
+    first = asyncio.run(service.run_cycle(NOW))
+    second = asyncio.run(service.run_cycle(NOW + timedelta(minutes=5)))
+    assert not first.cycle_complete
+    assert not second.cycle_complete
+    assert first.evaluations[0].instrument_id != second.evaluations[0].instrument_id or (
+        first.evaluations[0].timeframe != second.evaluations[0].timeframe
+    )
+    assert first.skipped_evaluation_ids
+    assert service.state_store.load().missed_evaluation_count > 0
+
+
 class RejectingRisk:
     calls = 0
 

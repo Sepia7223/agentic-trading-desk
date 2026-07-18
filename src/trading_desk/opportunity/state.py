@@ -21,6 +21,10 @@ class OpportunityPersistentState(BaseModel):
     completed_cycle_ids: tuple[str, ...] = ()
     completed_evaluation_keys: tuple[str, ...] = ()
     candidate_fingerprints: tuple[str, ...] = ()
+    last_completed_bars: tuple[tuple[str, str, datetime], ...] = ()
+    recently_closed_positions: tuple[tuple[str, datetime], ...] = ()
+    fair_schedule_cursor: int = 0
+    missed_evaluation_count: int = 0
     last_cycle_timestamp: datetime | None = None
     entries_halted: bool = False
     halt_reasons: tuple[str, ...] = ()
@@ -50,6 +54,10 @@ def initial_state() -> OpportunityPersistentState:
         "completed_cycle_ids": (),
         "completed_evaluation_keys": (),
         "candidate_fingerprints": (),
+        "last_completed_bars": (),
+        "recently_closed_positions": (),
+        "fair_schedule_cursor": 0,
+        "missed_evaluation_count": 0,
         "last_cycle_timestamp": None,
         "entries_halted": False,
         "halt_reasons": (),
