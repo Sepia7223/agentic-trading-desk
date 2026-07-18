@@ -13,7 +13,9 @@ from trading_desk.context.models import (
     VolatilityState,
 )
 from trading_desk.router.models import ResearchStrategyResult
+from trading_desk.strategy.contracts import StrategyDecision, evaluation_context
 from trading_desk.strategy.models import StrategyMarketData
+from trading_desk.strategy.portfolio_registry import PortfolioStrategyRegistry
 
 
 def evaluate_research_strategy(
@@ -22,6 +24,41 @@ def evaluate_research_strategy(
     data: StrategyMarketData,
 ) -> ResearchStrategyResult:
     """Evaluate a frozen research hypothesis without creating a TradeCandidate."""
+    if strategy_id != "post-news-continuation":
+        evaluator = PortfolioStrategyRegistry().require(strategy_id)
+        result = evaluator.evaluate(
+            context=evaluation_context(
+                evaluation_timestamp=context.evaluation_timestamp,
+                instrument_id=context.instrument,
+                epic=context.epic,
+                timeframe=context.timeframe,
+                completed_bar_timestamp=context.data_cutoff_timestamp,
+                market_data=data,
+                higher_timeframe_data=None,
+                market_context=context,
+                existing_position=False,
+                strategy_configuration_fingerprint=evaluator.strategy_fingerprint,
+            )
+        )
+        portfolio_observed = tuple(
+            (item.name, item.value) for item in result.evidence if isinstance(item.value, Decimal)
+        )
+        portfolio_fields: dict[str, object] = {
+            "strategy_id": strategy_id,
+            "context_id": context.context_id,
+            "evaluation_timestamp": context.evaluation_timestamp,
+            "trigger_observed": result.decision is StrategyDecision.CANDIDATE,
+            "reasons": result.rejection_reasons,
+            "observed_values": portfolio_observed,
+            "executable": False,
+        }
+        return ResearchStrategyResult.model_validate(
+            {
+                **portfolio_fields,
+                "research_result_id": fingerprint(portfolio_fields),
+            }
+        )
+
     reasons: list[str] = []
     trigger = False
     observed: tuple[tuple[str, Decimal], ...] = ()

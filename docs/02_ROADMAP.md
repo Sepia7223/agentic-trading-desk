@@ -176,3 +176,15 @@ lifecycle composition; runtime schema-v4 journal evidence; inactivity diagnostic
 and GET-only Operations Center projections. Demo Exploration and campaign operation
 remain disabled by default. Real multi-instrument IG Demo scanning, order execution,
 and closing remain operationally unvalidated and must never be manufactured or forced.
+
+# Milestone 12 - Software Implemented, Promotion Evidence Pending
+
+The common contract, canonical math, three additional deterministic evaluators,
+explicit lifecycle states, validation and portfolio evidence models, artifact
+integrity, promotion governance, persistent per-strategy entry breakers, position
+invalidation signals, CLI inspection, journal taxonomy, and GET-only Operations views
+are implemented. The accepted trend strategy remains the only Demo-enabled strategy.
+Pullback, breakout, and range mean reversion remain `RESEARCH_ONLY` because no approved
+historical dataset exists in the repository. Historical validation, locked final-test
+exposure, promotion review, and real IG Demo exploration remain planned operational
+work; synthetic tests cannot satisfy those gates.

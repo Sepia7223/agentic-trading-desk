@@ -1,0 +1,55 @@
+{
+  "artifact_id": "edba0e300a32b6d15de3462a2900cd804d5521c17dc12ff348071800821a1c75",
+  "strategy_id": "trend-regime-v1",
+  "strategy_version": "1.0.0",
+  "created_at": "2026-07-18T19:00:00Z",
+  "dataset_fingerprint": "e6fb8bd456e10acb4b3e0e049e8eddcbe8631a76cfba87e0d4c9b41a24ef5ba7",
+  "configuration_fingerprint": "6eb7c9da6f7ef6b39467aff3a00c5b087f5f40cb2c728de8760c0d5a97bffae6",
+  "files": [
+    [
+      "configuration.json",
+      "69d1901b776b179a85116e7f1fd643e325076326dd783bb4d16b2f93be638acc"
+    ],
+    [
+      "cost_stress_results.json",
+      "d756f855dd7011927b209e57315aaa5e908e855b08202242e957fb891a90c075"
+    ],
+    [
+      "dataset_manifest.json",
+      "fbe6e0cd7b42907d81e4c5011b0a42455f91fa5424be67d2d2815f9e0359ccb7"
+    ],
+    [
+      "development_results.json",
+      "d756f855dd7011927b209e57315aaa5e908e855b08202242e957fb891a90c075"
+    ],
+    [
+      "final_test_results.json",
+      "092ace8912d7ba388af5f8924640e764791a63f0acb64d6eda8468290dbf609a"
+    ],
+    [
+      "portfolio_results.json",
+      "5e2137d3db2e11b7d771ebb3c706f935789457906f70f94589d3b7dc2237f39c"
+    ],
+    [
+      "promotion_decision.json",
+      "26bde9945c63b1bfc21ce4b3862b4f799f5a48411da0073e4829c681d2e1b1bf"
+    ],
+    [
+      "robustness_results.json",
+      "d756f855dd7011927b209e57315aaa5e908e855b08202242e957fb891a90c075"
+    ],
+    [
+      "summary.md",
+      "52ff5f8426be05ca083cfb9ce1a36f546bd0ef440059284a46a7b1c721b50787"
+    ],
+    [
+      "validation_results.json",
+      "d756f855dd7011927b209e57315aaa5e908e855b08202242e957fb891a90c075"
+    ],
+    [
+      "walk_forward_results.json",
+      "d756f855dd7011927b209e57315aaa5e908e855b08202242e957fb891a90c075"
+    ]
+  ],
+  "complete": true
+}

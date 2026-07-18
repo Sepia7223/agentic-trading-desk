@@ -256,6 +256,11 @@ test("operator reviews opportunities without mutation controls", async ({
   for (const pageName of [
     "Activity Dashboard",
     "Strategy Leaderboard",
+    "Strategy Validation",
+    "Strategy Comparison",
+    "Strategy-Regime Matrix",
+    "Portfolio Contribution",
+    "Strategy Breakers",
     "Instrument Performance",
     "Regime Performance",
     "Inactivity Diagnostics",

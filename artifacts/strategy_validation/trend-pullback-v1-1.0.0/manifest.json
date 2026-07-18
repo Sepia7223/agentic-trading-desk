@@ -1,0 +1,55 @@
+{
+  "artifact_id": "143bc8584e65f547c50ad4c45fa147c9ef875da0b60f3f811f5acc740df76d55",
+  "strategy_id": "trend-pullback-v1",
+  "strategy_version": "1.0.0",
+  "created_at": "2026-07-18T19:00:00Z",
+  "dataset_fingerprint": "e35b9055ae88d20a38295230ad8660f594ce24d7dc97c0d6f25d5df33e77b238",
+  "configuration_fingerprint": "29fa854e44b72ba17ec1c06aad4b66e87c49304ad8918eb48716fdf353a1f79d",
+  "files": [
+    [
+      "configuration.json",
+      "57b3196c0f43868dc32bcbc35ecd6c4b6ab63382159e98d7553cfc47aacdaebf"
+    ],
+    [
+      "cost_stress_results.json",
+      "1cedbd6441ab7b832c99e1c234d4428ca56d9a09a8e0e4793b2e4ff94138f5c4"
+    ],
+    [
+      "dataset_manifest.json",
+      "89a47dbe3c5714cf4ae2d25394fd3e3319342e66e462a5fc43301a8dae610f81"
+    ],
+    [
+      "development_results.json",
+      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+    ],
+    [
+      "final_test_results.json",
+      "fe0d8fee30c4715ed965d67b03f0cdbf24fcb170f510a0a56f95a5dd969d1f78"
+    ],
+    [
+      "portfolio_results.json",
+      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+    ],
+    [
+      "promotion_decision.json",
+      "8a28feb02bce9020ff942f9270941cf6cd740d9a2ca1ede8774f99e3ec6cb3b3"
+    ],
+    [
+      "robustness_results.json",
+      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+    ],
+    [
+      "summary.md",
+      "b0d53af3ae3c8f1fe2cc5d4ad9bcccc0ff959532f277b77d0b133bb8aa938ce9"
+    ],
+    [
+      "validation_results.json",
+      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+    ],
+    [
+      "walk_forward_results.json",
+      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+    ]
+  ],
+  "complete": true
+}

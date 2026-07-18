@@ -10,6 +10,7 @@ class RouterConfiguration(BaseModel):
 
     strategy_priority: tuple[str, ...] = (
         "post-news-continuation",
+        "trend-pullback-v1",
         "trend-regime-v1",
         "volatility-breakout",
         "range-mean-reversion",

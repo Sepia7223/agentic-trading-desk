@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 from enum import Enum
 from typing import Any
@@ -21,6 +21,8 @@ def _primitive(value: object) -> Any:
         return format(value, "f")
     if isinstance(value, (datetime, date, time)):
         return value.isoformat()
+    if isinstance(value, timedelta):
+        return value.total_seconds()
     if isinstance(value, dict):
         return {str(key): _primitive(item) for key, item in sorted(value.items())}
     if isinstance(value, (tuple, list)):

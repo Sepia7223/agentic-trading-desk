@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from datetime import timedelta
 from pathlib import Path
 
 import pytest
@@ -74,3 +75,32 @@ def test_changing_cadence_is_detected() -> None:
     )
     with pytest.raises(BacktestDataError, match="CHANGING_CADENCE"):
         validate_bars(tuple(values), StrategyBarResolution.DAY)
+
+
+@pytest.mark.parametrize(
+    ("resolution", "minutes"),
+    [
+        (StrategyBarResolution.MINUTE_5, 5),
+        (StrategyBarResolution.MINUTE_15, 15),
+    ],
+)
+def test_intraday_portfolio_resolutions_are_validated(
+    resolution: StrategyBarResolution, minutes: int
+) -> None:
+    values = bars(30)
+    start = values[0].timestamp
+    intraday = tuple(
+        item.model_copy(update={"timestamp": start + timedelta(minutes=index * minutes)})
+        for index, item in enumerate(values)
+    )
+    assert validate_bars(intraday, resolution) == ()
+
+
+def test_stale_price_sequences_fail_data_quality() -> None:
+    template = bars(1)[0]
+    stale = tuple(
+        template.model_copy(update={"timestamp": template.timestamp + timedelta(days=index)})
+        for index in range(30)
+    )
+    with pytest.raises(BacktestDataError, match="STALE_PRICE_SEQUENCE"):
+        validate_bars(stale, StrategyBarResolution.DAY)

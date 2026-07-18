@@ -1,0 +1,15 @@
+{
+  "exposed": false,
+  "failed_gates": [
+    "APPROVED_DATASET_UNAVAILABLE",
+    "MINIMUM_CLOSED_TRADES",
+    "POSITIVE_EXPECTANCY",
+    "WALK_FORWARD_EVIDENCE",
+    "COST_STRESS_EVIDENCE",
+    "ROBUSTNESS_EVIDENCE",
+    "PORTFOLIO_CONTRIBUTION_EVIDENCE"
+  ],
+  "locked": true,
+  "status": "NOT_RUN",
+  "synthetic_data_promotional": false
+}

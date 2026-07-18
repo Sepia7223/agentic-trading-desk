@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import Counter
 from datetime import timedelta
+from statistics import median
 
 from trading_desk.backtest.models import BacktestBar, DataQualityFinding
 from trading_desk.strategy.models import StrategyBarResolution
@@ -25,6 +26,8 @@ def validate_bars(
         raise BacktestDataError("historical timestamps are not strictly increasing")
 
     expected_seconds = {
+        StrategyBarResolution.MINUTE_5: 300.0,
+        StrategyBarResolution.MINUTE_15: 900.0,
         StrategyBarResolution.DAY: 86400.0,
         StrategyBarResolution.HOUR_4: 14400.0,
         StrategyBarResolution.HOUR: 3600.0,
@@ -59,6 +62,23 @@ def validate_bars(
                 code="NON_TRADEABLE_BARS",
                 message=f"{non_tradeable} bars are marked non-tradeable",
                 blocking=False,
+            )
+        )
+    closes = tuple((bar.close_bid + bar.close_ask) / 2 for bar in bars)
+    if len(closes) >= 20 and len(set(closes[-20:])) == 1:
+        findings.append(
+            DataQualityFinding(
+                code="STALE_PRICE_SEQUENCE",
+                message="the latest 20 midpoint closes are identical",
+            )
+        )
+    spreads = tuple(bar.close_ask - bar.close_bid for bar in bars)
+    typical_spread = median(spreads)
+    if typical_spread > 0 and any(value > typical_spread * 10 for value in spreads):
+        findings.append(
+            DataQualityFinding(
+                code="EXTREME_SPREAD_ANOMALY",
+                message="a close spread exceeds ten times the dataset median",
             )
         )
     if any(finding.blocking for finding in findings):
