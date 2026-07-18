@@ -215,3 +215,8 @@ version 1 for a full offsetting long-position close and existing
 `dealId`, `SELL`, full `size`, `MARKET`, and `FILL_OR_KILL`. Current positions are
 re-read before submission and after confirmation. No production host, redirects,
 amendments, working orders, account switching, shorts, or mutation retry is allowed.
+
+IG confirmation mapping records `confirmed_at` using the adapter's local UTC clock at
+response observation. The mapped response fields do not provide an authoritative
+broker execution timestamp, so this value must be interpreted as `locally observed
+at`, never as exchange time or guaranteed broker execution time.
