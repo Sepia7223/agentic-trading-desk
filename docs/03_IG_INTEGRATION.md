@@ -216,6 +216,11 @@ version 1 for a full offsetting long-position close and existing
 re-read before submission and after confirmation. No production host, redirects,
 amendments, working orders, account switching, shorts, or mutation retry is allowed.
 
+IG confirmation mapping records `confirmed_at` using the adapter's local UTC clock at
+response observation. The mapped response fields do not provide an authoritative
+broker execution timestamp, so this value must be interpreted as `locally observed
+at`, never as exchange time or guaranteed broker execution time.
+
 ## Milestone 11 Broker Boundary
 
 The Opportunity Engine adds no HTTP or broker endpoint. Its six configured epics are

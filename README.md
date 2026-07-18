@@ -631,6 +631,10 @@ separate Paper-versus-Demo comparisons are analytical records only. Automated te
 use mocked IG transport; a real Demo close remains separately authorized operational
 validation.
 
+The close confirmation `confirmed_at` value is the local UTC time when the adapter
+observed the IG response. It is not represented as an exchange timestamp or an
+authoritative broker execution timestamp.
+
 ```bash
 python -m trading_desk.cli lifecycle config-check
 python -m trading_desk.cli lifecycle inspect --snapshot position.json
