@@ -207,6 +207,20 @@ it("renders execution lifecycle and alert empty states safely", async () => {
   expect(await screen.findByText("No active alerts.")).toBeInTheDocument();
 });
 
+it("renders the read-only Demo position lifecycle without close controls", async () => {
+  render(<App />);
+  await userEvent.click(screen.getByRole("button", { name: "Lifecycle" }));
+  expect(
+    await screen.findByText("No position lifecycle evidence recorded."),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/close submission is unavailable/i),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: /close|exit|submit|retry/i }),
+  ).not.toBeInTheDocument();
+});
+
 it("exposes bounded sanitized evidence export formats", async () => {
   render(<App />);
   await userEvent.click(screen.getByRole("button", { name: "Performance" }));

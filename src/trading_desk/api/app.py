@@ -109,6 +109,10 @@ def create_operations_app(
     async def execution(limit: int = 100, offset: int = 0):  # type: ignore[no-untyped-def]
         return service.execution_lifecycles(limit=limit, offset=offset)
 
+    @app.get("/api/v1/lifecycle")
+    async def lifecycle(limit: int = 100, offset: int = 0):  # type: ignore[no-untyped-def]
+        return service.lifecycle(limit=limit, offset=offset)
+
     @app.get("/api/v1/reviews")
     async def reviews(limit: int = 100, offset: int = 0):  # type: ignore[no-untyped-def]
         return service.records(

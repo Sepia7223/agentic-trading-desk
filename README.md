@@ -614,3 +614,35 @@ live strategy.**
 The original Claude-specific skill has been preserved at
 `docs/original-claude-skill.md` for upstream attribution and reference. The MIT
 license remains in `LICENSE`.
+
+## Validated in Milestone 10
+
+The disabled-by-default lifecycle engine monitors confirmed long IG Demo positions,
+uses bid-side liquidation prices, applies deterministic exit precedence, performs an
+exact fresh-state preflight, and permits one full offsetting `SELL` close request.
+Stop, target, strategy invalidation, maximum holding, account-risk, and emergency
+exits are supported. Confirmation and read-only position reconciliation are required
+before closure is recorded. Ambiguous or mismatched outcomes are never retried and
+persist an automatic lifecycle halt.
+
+Lifecycle evidence is written to the append-only SQLite journal and projected through
+the GET-only Operations Center Lifecycle view. Deterministic post-trade reviews and
+separate Paper-versus-Demo comparisons are analytical records only. Automated tests
+use mocked IG transport; a real Demo close remains separately authorized operational
+validation.
+
+The close confirmation `confirmed_at` value is the local UTC time when the adapter
+observed the IG response. It is not represented as an exchange timestamp or an
+authoritative broker execution timestamp.
+
+```bash
+python -m trading_desk.cli lifecycle config-check
+python -m trading_desk.cli lifecycle inspect --snapshot position.json
+python -m trading_desk.cli lifecycle evaluate --snapshot position.json --risk risk.json
+```
+
+Mutation commands additionally require both lifecycle enable switches, fresh Demo
+credentials, a current broker position match, persistent state, and a durable journal.
+Live trading, production hosts, shorts, partial closes, amendments, working orders,
+account switching, ambiguous-close retry, AI-triggered exits, and dashboard-triggered
+exits remain prohibited.

@@ -247,6 +247,26 @@ class OperationsService:
         ).records
         return build_performance(records, self.latest(JournalRecordType.PAPER_PORTFOLIO_EVENT))
 
+    def lifecycle(self, *, limit: int = 100, offset: int = 0) -> SearchResult:
+        lifecycle_types = {
+            JournalRecordType.POSITION_MONITOR_SNAPSHOT.value,
+            JournalRecordType.EXIT_DECISION.value,
+            JournalRecordType.EXIT_PREFLIGHT.value,
+            JournalRecordType.CLOSE_REQUEST.value,
+            JournalRecordType.CLOSE_SUBMISSION.value,
+            JournalRecordType.CLOSE_CONFIRMATION.value,
+            JournalRecordType.CLOSE_RECONCILIATION.value,
+            JournalRecordType.POSITION_CLOSED.value,
+            JournalRecordType.POSITION_CLOSE_BLOCKED.value,
+            JournalRecordType.POSITION_LIFECYCLE_HALTED.value,
+            JournalRecordType.POST_TRADE_REVIEW.value,
+            JournalRecordType.PAPER_DEMO_EXIT_COMPARISON.value,
+        }
+        records = tuple(item for item in self.all_records() if item.record_type in lifecycle_types)
+        page = records[offset : offset + limit]
+        next_offset = offset + limit if offset + limit < len(records) else None
+        return SearchResult(records=page, total_matches=len(records), next_offset=next_offset)
+
     def configuration_view(self) -> dict[str, object]:
         return {
             "environment": self.configuration.environment,

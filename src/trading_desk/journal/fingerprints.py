@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from enum import Enum
 from pathlib import Path
@@ -114,6 +114,9 @@ def to_primitive(value: object) -> Any:
         return {"__datetime__": value.isoformat()}
     if isinstance(value, date):
         return {"__date__": value.isoformat()}
+    if isinstance(value, timedelta):
+        microseconds = value.days * 86_400_000_000 + value.seconds * 1_000_000 + value.microseconds
+        return {"__timedelta_microseconds__": microseconds}
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):
@@ -174,6 +177,8 @@ def decode_primitive(value: Any) -> Any:
             return datetime.fromisoformat(value["__datetime__"])
         if set(value) == {"__date__"}:
             return date.fromisoformat(value["__date__"])
+        if set(value) == {"__timedelta_microseconds__"}:
+            return timedelta(microseconds=int(value["__timedelta_microseconds__"]))
         return {key: decode_primitive(item) for key, item in value.items()}
     return value
 

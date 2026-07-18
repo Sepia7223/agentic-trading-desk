@@ -287,3 +287,14 @@ authoritative calendar snapshots before routing.
 **Authoritative Calendar Snapshot:** locally supplied structured dataset with an
 identifier, UTC `as_of` timestamp, declared coverage, strict entries, and fingerprint.
 Absence or stale coverage is not equivalent to no event or a normal day.
+
+**Demo Position Lifecycle:** disabled-by-default deterministic authority that monitors
+an existing confirmed long IG Demo position and may submit one full offsetting close.
+
+**Exit Trigger:** deterministic reason to request closure; it is not evidence that the
+broker accepted or completed a close.
+
+**Persistent Lifecycle Halt:** restart-safe block on further close mutation after an
+ambiguous request or reconciliation mismatch; human review is required to clear it.
+
+**Liquidation-Side Price:** bid used to value and test exits for a long position.

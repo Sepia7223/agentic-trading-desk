@@ -76,6 +76,28 @@ test.beforeEach(async ({ page }) => {
         total_matches: 1,
       };
     }
+    if (url.includes("/lifecycle")) {
+      body = {
+        records: [
+          {
+            journal_record_id: "lifecycle-journal-1",
+            source_record_id: "lifecycle-1",
+            source_parent_ids: [],
+            record_type: "POSITION_LIFECYCLE_HALTED",
+            effective_at: now,
+            environment: "DEMO",
+            payload: {
+              position_id: "position-1",
+              status: "RECONCILIATION_REQUIRED",
+              remaining_quantity: "1",
+              exit_reason: "PROTECTIVE_STOP",
+            },
+            record_fingerprint: "b".repeat(64),
+          },
+        ],
+        total_matches: 1,
+      };
+    }
     if (url.includes("/why-no-trade")) {
       body = [
         {
@@ -171,6 +193,22 @@ test("operator inspects the joined execution lifecycle", async ({ page }) => {
     page.getByText("RECONCILED", { exact: true }).first(),
   ).toBeVisible();
   await expect(page.getByText("***3456")).toBeVisible();
+});
+
+test("operator inspects lifecycle halt without mutation controls", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Lifecycle" }).click();
+  await expect(page.getByText("Demo position lifecycle")).toBeVisible();
+  await expect(page.getByText("ACTIVE")).toBeVisible();
+  await expect(page.getByText("PROTECTIVE_STOP")).toBeVisible();
+  await expect(
+    page.getByText(/close submission is unavailable/i),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /close|retry/i })).toHaveCount(
+    0,
+  );
 });
 
 test("operator traces no-trade evidence and separates Paper from Demo", async ({

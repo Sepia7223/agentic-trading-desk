@@ -459,3 +459,11 @@ context-grouped reporting are implemented. Only the existing trend/regime
 strategy is validated. **Research:** range, breakout, and post-news strategies
 are isolated as `RESEARCH_ONLY`. **Future/prohibited:** AI selection, automatic
 promotion, forced trades, and live trading remain unavailable.
+
+## Validated in Milestone 10
+
+The deterministic Demo lifecycle now extends confirmed-position evidence through
+monitoring, exit evaluation, exact preflight, one close attempt, confirmation,
+reconciliation, durable journaling, read-only operations projection, and post-trade
+review. Authority remains isolated in the lifecycle engine. Live, short, partial,
+amendment, retry, AI-exit, and dashboard-exit capabilities remain prohibited.

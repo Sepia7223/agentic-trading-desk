@@ -167,3 +167,9 @@ export interface ExecutionLifecycles {
   total_matches: number;
   next_offset?: number;
 }
+
+export interface LifecycleRecords {
+  records: RecordProjection[];
+  total_matches: number;
+  next_offset?: number;
+}

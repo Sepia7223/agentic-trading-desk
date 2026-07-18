@@ -24,6 +24,7 @@ def test_only_execution_and_ig_execution_packages_reference_mutation_surface() -
         source_root / "execution",
         source_root / "ig" / "execution.py",
         source_root / "ig" / "execution_policy.py",
+        source_root / "ig" / "position_exit.py",
         source_root / "ports" / "execution.py",
         source_root / "cli.py",
     }

@@ -185,3 +185,10 @@ already sanitized structured news for human review only.
 Economic-event eligibility is sourced from validated structured local records, not
 from AI classification or sentiment. AI cannot fill missing calendar coverage,
 declare a normal holiday state, or convert unavailable context into an eligible route.
+
+## Milestone 10 AI Boundary
+
+AI may review immutable completed lifecycle evidence after the fact. It cannot trigger
+or confirm an exit, select quantity, alter precedence, change stop/target, clear a
+persistent halt, submit/retry a close, reconcile broker state, or mutate source
+records. Deterministic lifecycle completion does not depend on an AI provider.

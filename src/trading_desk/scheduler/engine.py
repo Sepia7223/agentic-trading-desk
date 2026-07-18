@@ -57,6 +57,9 @@ class DeterministicScheduler:
         actions: list[ScheduledAction] = []
         cadence = (
             (ScheduledActionType.MARKET_HEALTH, self.config.health_interval_seconds),
+            (ScheduledActionType.POSITION_MONITOR, self.config.health_interval_seconds),
+            (ScheduledActionType.EXIT_EVALUATION, self.config.health_interval_seconds),
+            (ScheduledActionType.ACCOUNT_RISK_REFRESH, self.config.health_interval_seconds),
             (ScheduledActionType.EXECUTION_STATE_VERIFICATION, self.config.health_interval_seconds),
             (ScheduledActionType.ECONOMIC_CALENDAR, self.config.calendar_interval_seconds),
             (

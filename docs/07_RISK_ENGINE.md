@@ -226,3 +226,10 @@ The router does not approve quantity, risk, stops, targets, or submission. It ma
 pass only a candidate from a `VALIDATED` selected strategy into the existing Risk
 Engine. Research results and capital-preservation decisions terminate before Risk.
 Risk remains authoritative and may reject every routed candidate.
+
+## Milestone 10 Defensive Exit Input
+
+The lifecycle engine consumes immutable Risk state for kill switch, daily-loss,
+drawdown, exposure, and emergency conditions. It cannot alter limits or clear a halt.
+Unknown, incomplete, stale, or inconsistent Risk/account state blocks normal close
+submission and is journaled; explicit defensive reasons outrank favorable exits.

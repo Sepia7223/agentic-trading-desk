@@ -171,7 +171,8 @@ class IGDemoExecutionAdapter(IGDemoClient):
             raise ExecutionBrokerError(
                 "IG execution transport failed",
                 operation=operation.value,
-                ambiguous=operation is ExecutionOperation.OPEN_POSITION,
+                ambiguous=operation
+                in {ExecutionOperation.OPEN_POSITION, ExecutionOperation.CLOSE_POSITION},
             ) from None
         data = _decode_json(response, operation)
         error_code = data.get("errorCode") if isinstance(data.get("errorCode"), str) else None
@@ -189,7 +190,9 @@ class IGDemoExecutionAdapter(IGDemoClient):
                 error_code=error_code,
                 request_id=_request_id(response),
                 ambiguous=(
-                    operation is ExecutionOperation.OPEN_POSITION and response.status_code >= 500
+                    operation
+                    in {ExecutionOperation.OPEN_POSITION, ExecutionOperation.CLOSE_POSITION}
+                    and response.status_code >= 500
                 ),
             )
         return response, data
@@ -257,7 +260,8 @@ def _raise_invalid_response(operation: ExecutionOperation, response: httpx.Respo
         operation=operation.value,
         http_status=response.status_code,
         request_id=_request_id(response),
-        ambiguous=operation is ExecutionOperation.OPEN_POSITION,
+        ambiguous=operation
+        in {ExecutionOperation.OPEN_POSITION, ExecutionOperation.CLOSE_POSITION},
     ) from None
 
 

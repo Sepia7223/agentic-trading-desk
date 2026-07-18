@@ -537,3 +537,11 @@ and deterministic fingerprints for historical prices, current quote, economic
 calendar, and holiday calendar. It contains no credentials or raw HTTP data. A later
 journal integration may persist the resulting immutable snapshot and router decision;
 the context provider itself has no journal-led trading authority.
+
+## Validated in Milestone 10
+
+Forward-only schema version 3 recognizes position snapshots, exit decisions,
+preflights, close requests/submissions/confirmations/reconciliations, closure, blocked
+and halted states, post-trade review, and Paper/Demo comparison. Lifecycle source
+records retain their own hash chain and are wrapped in the global append-only journal
+with parent linkage. The journal is evidence only and cannot call the close adapter.
