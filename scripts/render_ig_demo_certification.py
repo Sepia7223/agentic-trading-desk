@@ -31,6 +31,76 @@ FORBIDDEN_KEYS = {
 }
 FORBIDDEN_VALUE_MARKERS = ("bearer ", "x-ig-api-key", "x-security-token", "cst=")
 
+CERTIFIED_EXACT_VALUES = {
+    "environment_summary.json": {
+        "result_status": "PASSED",
+        "environment": "DEMO",
+        "live_available": False,
+        "canonical_gateway": True,
+    },
+    "read_only_scan_report.json": {
+        "result_status": "PASSED",
+        "broker_mutations": 0,
+    },
+    "scheduler_report.json": {
+        "result_status": "PASSED",
+        "duplicate_evaluations": 0,
+        "restart_verified": True,
+        "process_lock_verified": True,
+    },
+    "campaign_start_report.json": {
+        "result_status": "PASSED",
+        "duplicate_start_rejected": True,
+        "restart_verified": True,
+    },
+    "runtime_observation_report.json": {
+        "result_status": "PASSED",
+        "orders_submitted": 1,
+    },
+    "entry_certification.json": {
+        "result_status": "PASSED",
+        "natural_candidate_observed": True,
+        "positive_net_expected_value": True,
+        "exposure_clearance": True,
+        "correlation_clearance": True,
+        "risk_approved": True,
+        "mutation_attempts": 1,
+        "write_ahead_submission_recorded": True,
+        "single_submission_verified": True,
+        "broker_confirmation": "ACCEPTED",
+        "reconciliation": "RECONCILED",
+        "confirmed_quantity_present": True,
+        "confirmed_entry_level_present": True,
+    },
+    "lifecycle_certification.json": {
+        "result_status": "PASSED",
+        "position_discovered": True,
+        "monitoring_verified": True,
+        "close_attempts": 1,
+        "position_restart_verified": True,
+        "close_confirmation": "ACCEPTED",
+        "close_reconciliation": "POSITION_CLOSED",
+        "realized_pnl_present": True,
+        "realized_costs_present": True,
+        "campaign_updated": True,
+        "durable_lineage_verified": True,
+        "session_cleanup_completed": True,
+    },
+    "operations_center_report.json": {
+        "result_status": "PASSED",
+        "loopback_only": True,
+        "read_only_api_verified": True,
+        "websocket_server_to_client_only": True,
+        "mutation_controls_present": True,
+        "credential_exposure_detected": False,
+        "entry_projected": True,
+        "position_projected": True,
+        "lifecycle_close_projected": True,
+        "campaign_projected": True,
+        "journal_integrity_verified": True,
+    },
+}
+
 
 def render(
     templates: Path,
@@ -47,8 +117,8 @@ def render(
     common_evidence_ids = observations.get("_sanitized_evidence_ids", [])
     if not isinstance(common_fingerprints, dict) or not isinstance(common_evidence_ids, list):
         raise ValueError("common fingerprints and evidence IDs have invalid types")
-    output.mkdir(parents=True, exist_ok=True)
     created_at = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    rendered: dict[str, dict[str, Any]] = {}
     for name in JSON_ARTIFACTS:
         document = json.loads((templates / name).read_text(encoding="utf-8"))
         overrides = observations.get(name, {})
@@ -68,6 +138,11 @@ def render(
         if name == "certification_manifest.json":
             document["result_status"] = decision
         _validate_sanitized(document)
+        rendered[name] = document
+
+    _validate_decision(decision, rendered)
+    output.mkdir(parents=True, exist_ok=True)
+    for name, document in rendered.items():
         (output / name).write_text(
             json.dumps(document, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )
@@ -100,6 +175,20 @@ def _validate_sanitized(value: Any) -> None:
         lowered = value.casefold()
         if any(marker in lowered for marker in FORBIDDEN_VALUE_MARKERS):
             raise ValueError("secret-like certification value rejected")
+
+
+def _validate_decision(decision: str, documents: dict[str, dict[str, Any]]) -> None:
+    if decision != "CERTIFIED":
+        return
+    evidence_ids = documents["certification_manifest.json"]["sanitized_evidence_ids"]
+    fingerprints = documents["certification_manifest.json"]["configuration_fingerprints"]
+    if not evidence_ids or not fingerprints:
+        raise ValueError("CERTIFIED requires evidence IDs and configuration fingerprints")
+    for artifact, requirements in CERTIFIED_EXACT_VALUES.items():
+        document = documents[artifact]
+        for field, expected in requirements.items():
+            if document.get(field) != expected:
+                raise ValueError(f"CERTIFIED evidence requirement failed: {artifact}:{field}")
 
 
 def main() -> None:

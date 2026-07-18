@@ -9,5 +9,12 @@
   "position_discovered": false,
   "monitoring_verified": false,
   "close_attempts": 0,
-  "position_restart_verified": false
+  "position_restart_verified": false,
+  "close_confirmation": null,
+  "close_reconciliation": null,
+  "realized_pnl_present": false,
+  "realized_costs_present": false,
+  "campaign_updated": false,
+  "durable_lineage_verified": false,
+  "session_cleanup_completed": false
 }

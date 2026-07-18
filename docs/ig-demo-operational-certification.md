@@ -94,3 +94,12 @@ state, keep the global entry latch active, and continue only lifecycle monitorin
 The empty weekend calendar snapshots used during read-only observation validate file
 shape only. They are not authoritative economic-calendar evidence and must never be
 used to authorize execution.
+
+The evidence renderer rejects a `CERTIFIED` decision unless the sanitized package
+explicitly proves the natural candidate, positive net expected value, exposure and
+correlation clearance, Risk approval, exactly one write-ahead submission, accepted
+entry confirmation, entry reconciliation, open-position discovery, process-restart
+rediscovery, exactly one accepted and reconciled close, realized P&L and costs,
+campaign refresh, durable journal lineage, session cleanup, and read-only Operations
+Center projections. Partial or pending defaults can only render a non-certified
+decision.

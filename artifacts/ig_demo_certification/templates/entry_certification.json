@@ -7,8 +7,15 @@
   "sanitized_evidence_ids": [],
   "result_status": "PENDING_NO_NATURAL_ENTRY",
   "natural_candidate_observed": false,
+  "positive_net_expected_value": false,
+  "exposure_clearance": false,
+  "correlation_clearance": false,
   "risk_approved": false,
   "mutation_attempts": 0,
+  "write_ahead_submission_recorded": false,
+  "single_submission_verified": false,
   "broker_confirmation": null,
-  "reconciliation": null
+  "reconciliation": null,
+  "confirmed_quantity_present": false,
+  "confirmed_entry_level_present": false
 }

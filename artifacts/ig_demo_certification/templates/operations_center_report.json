@@ -10,5 +10,10 @@
   "read_only_api_verified": false,
   "websocket_server_to_client_only": false,
   "mutation_controls_present": false,
-  "credential_exposure_detected": false
+  "credential_exposure_detected": false,
+  "entry_projected": false,
+  "position_projected": false,
+  "lifecycle_close_projected": false,
+  "campaign_projected": false,
+  "journal_integrity_verified": false
 }
