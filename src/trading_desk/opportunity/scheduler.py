@@ -32,6 +32,7 @@ def plan_completed_bars(
     last_completed: tuple[tuple[str, ContextTimeframe, datetime], ...] = (),
     maximum_catch_up_bars: int = 3,
     closed_dates: tuple[str, ...] = (),
+    closed_market_dates: tuple[tuple[str, str], ...] = (),
 ) -> tuple[ScheduledOpportunityEvaluation, ...]:
     if observed_at.tzinfo is None or observed_at.utcoffset() != UTC.utcoffset(observed_at):
         raise ValueError("scheduler observation must be UTC")
@@ -40,6 +41,7 @@ def plan_completed_bars(
     previous = {
         (instrument, timeframe): timestamp for instrument, timeframe, timestamp in last_completed
     }
+    market_closures = frozenset(closed_market_dates)
     results: list[ScheduledOpportunityEvaluation] = []
     for market in universe.markets:
         if not market.enabled:
@@ -55,7 +57,12 @@ def plan_completed_bars(
             pending: list[datetime] = []
             cursor = floor + timedelta(seconds=seconds)
             while cursor <= latest:
-                if cursor.date().isoformat() not in closed_dates:
+                calendar_date = cursor.date().isoformat()
+                if (
+                    calendar_date not in closed_dates
+                    and (market.instrument_id, calendar_date) not in market_closures
+                    and _market_session_open(market.session_policy, cursor)
+                ):
                     pending.append(cursor)
                 cursor += timedelta(seconds=seconds)
             for completed_at in pending[-maximum_catch_up_bars:]:
@@ -84,3 +91,14 @@ def plan_completed_bars(
             ),
         )
     )
+
+
+def _market_session_open(session_policy: str, bar_timestamp: datetime) -> bool:
+    if session_policy != "FX_CONTINUOUS_EX_ROLLOVER":
+        return True
+    weekday = bar_timestamp.weekday()
+    if weekday == 4 and bar_timestamp.hour >= 21:
+        return False
+    if weekday == 5:
+        return False
+    return not (weekday == 6 and bar_timestamp.hour < 21)

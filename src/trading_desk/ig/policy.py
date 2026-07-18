@@ -10,6 +10,7 @@ from urllib.parse import urlsplit
 from trading_desk.ig.errors import ReadOnlyPolicyViolation
 
 LOGIN_VERSION = 3
+REFRESH_SESSION_VERSION = 1
 LOGOUT_VERSION = 1
 ACCOUNTS_VERSION = 1
 POSITIONS_VERSION = 2
@@ -22,6 +23,7 @@ EPIC_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,79}\Z")
 
 class Operation(StrEnum):
     LOGIN = "login"
+    REFRESH_SESSION = "refresh_session"
     LOGOUT = "logout"
     ACCOUNTS = "accounts"
     POSITIONS = "positions"
@@ -39,6 +41,7 @@ class AllowedRequest:
 
 
 _EXACT_SESSION = re.compile(r"/session\Z")
+_EXACT_REFRESH_SESSION = re.compile(r"/session/refresh-token\Z")
 _EXACT_ACCOUNTS = re.compile(r"/accounts\Z")
 _EXACT_POSITIONS = re.compile(r"/positions\Z")
 _EXACT_MARKETS = re.compile(r"/markets\Z")
@@ -47,6 +50,9 @@ _HISTORICAL_PRICES = re.compile(r"/prices/([A-Za-z0-9][A-Za-z0-9._:-]{0,79})\Z")
 
 READ_ONLY_ENDPOINT_ALLOWLIST: dict[Operation, AllowedRequest] = {
     Operation.LOGIN: AllowedRequest("POST", _EXACT_SESSION, LOGIN_VERSION, False),
+    Operation.REFRESH_SESSION: AllowedRequest(
+        "POST", _EXACT_REFRESH_SESSION, REFRESH_SESSION_VERSION, False
+    ),
     Operation.LOGOUT: AllowedRequest("DELETE", _EXACT_SESSION, LOGOUT_VERSION, True),
     Operation.ACCOUNTS: AllowedRequest("GET", _EXACT_ACCOUNTS, ACCOUNTS_VERSION, True),
     Operation.POSITIONS: AllowedRequest("GET", _EXACT_POSITIONS, POSITIONS_VERSION, True),

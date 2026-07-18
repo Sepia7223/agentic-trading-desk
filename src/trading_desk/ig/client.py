@@ -27,7 +27,6 @@ from trading_desk.ig.errors import (
     IGAuthorizationError,
     IGConfigurationError,
     IGOAuthResponseValidationError,
-    IGOAuthTokenExpiredError,
     IGRateLimitError,
     IGResponseValidationError,
     IGSessionMissingError,
@@ -62,6 +61,7 @@ from trading_desk.ig.policy import (
     MARKET_DETAILS_VERSION,
     MARKET_SEARCH_VERSION,
     POSITIONS_VERSION,
+    REFRESH_SESSION_VERSION,
     Operation,
     enforce_read_only_policy,
     validate_epic,
@@ -327,6 +327,7 @@ class IGDemoClient:
             params={
                 "resolution": normalized_resolution.value,
                 "max": requested_points,
+                "pageSize": requested_points,
                 "pageNumber": page_number,
             },
             expect_json=True,
@@ -358,7 +359,7 @@ class IGDemoClient:
             "Version": str(version),
         }
         if allowed.requires_session:
-            self._require_active_oauth_session(operation)
+            await self._ensure_active_oauth_session(operation)
             assert self._access_token is not None
             assert self._account_id is not None
             headers["Authorization"] = f"Bearer {self._access_token.get_secret_value()}"
@@ -452,7 +453,7 @@ class IGDemoClient:
             and self._account_id is not None
         )
 
-    def _require_active_oauth_session(self, operation: Operation) -> None:
+    async def _ensure_active_oauth_session(self, operation: Operation) -> None:
         if not self._has_session():
             raise IGSessionMissingError(
                 f"operation {operation.value!r} requires an authenticated IG session"
@@ -462,11 +463,49 @@ class IGDemoClient:
             self._access_token_expires_at - self._broker_settings.oauth_expiry_safety_margin_seconds
         )
         if self._clock() >= expires_with_margin:
+            await self._refresh_oauth_session()
+
+    async def _refresh_oauth_session(self) -> None:
+        if self._refresh_token is None or self._account_id is None:
             self._clear_session()
-            raise IGOAuthTokenExpiredError(
-                "IG OAuth access token expired",
-                operation=operation.value,
+            raise IGSessionMissingError("OAuth refresh requires an authenticated IG session")
+        refresh_token = self._refresh_token.get_secret_value()
+        try:
+            response, data = await self._send(
+                Operation.REFRESH_SESSION,
+                "POST",
+                "/session/refresh-token",
+                REFRESH_SESSION_VERSION,
+                json_body={"refresh_token": refresh_token},
+                expect_json=True,
             )
+            try:
+                oauth = _mapping(data.get("oauthToken", data))
+                access_token = _required_text(oauth, "access_token").strip()
+                new_refresh_token = _required_text(oauth, "refresh_token").strip()
+                token_type = _required_text(oauth, "token_type").strip()
+                expires_in = _required_positive_float(oauth, "expires_in")
+                received_at = self._clock()
+                if (
+                    not access_token
+                    or not new_refresh_token
+                    or token_type.casefold() != "bearer"
+                    or not math.isfinite(received_at)
+                ):
+                    raise ValueError("OAuth refresh response is invalid")
+            except (KeyError, TypeError, ValueError):
+                raise IGOAuthResponseValidationError(
+                    "IG OAuth refresh response was malformed",
+                    operation=Operation.REFRESH_SESSION.value,
+                    http_status=response.status_code,
+                    request_id=_request_id(response),
+                ) from None
+            self._access_token = SecretStr(access_token)
+            self._refresh_token = SecretStr(new_refresh_token)
+            self._access_token_expires_at = received_at + expires_in
+        except IGAPIError:
+            self._clear_session()
+            raise
 
     def _clear_session(self) -> None:
         self._access_token = None
@@ -584,14 +623,21 @@ def _default_currency_code(value: object) -> str | None:
     if not isinstance(value, list):
         raise _SafeFieldValidationError("instrument.currencies", "expected a list")
     currencies = value
-    defaults = []
+    codes: list[str] = []
+    defaults: list[str] = []
     for item in currencies:
         currency = _mapping(item)
+        code = _required_text(currency, "code")
+        codes.append(code)
         if currency.get("isDefault") is True:
-            defaults.append(_required_text(currency, "code"))
+            defaults.append(code)
+    if len(defaults) == 1:
+        return defaults[0]
+    if not defaults and len(codes) == 1:
+        return codes[0]
     if len(defaults) != 1:
         raise _SafeFieldValidationError("instrument.currencies", "one default is required")
-    return defaults[0]
+    raise AssertionError("unreachable currency selection state")
 
 
 def _required_market_details_object(raw: Mapping[str, Any], key: str) -> Mapping[str, Any]:

@@ -17,8 +17,9 @@ from trading_desk.execution.config import (
     ExecutionMode,
 )
 from trading_desk.execution.engine import ExecutionEngine
+from trading_desk.execution.journal import ExecutionJournal
 from trading_desk.execution.mapping import create_execution_request
-from trading_desk.execution.models import ExecutionOutcome
+from trading_desk.execution.models import ExecutionOutcome, ReconciliationStatus
 from trading_desk.ig.execution import IGDemoExecutionAdapter
 from trading_desk.ig.models import OpenPosition
 from trading_desk.opportunity.config import DemoExplorationConfiguration
@@ -45,11 +46,13 @@ class ControlledOpportunityAuthority:
         exploration_configuration: DemoExplorationConfiguration,
         *,
         policy: AutomatedDemoExecutionPolicy | None = None,
+        execution_journal: ExecutionJournal | None = None,
     ) -> None:
         self.broker = broker
         self.ledger = ledger
         self.exploration_configuration = exploration_configuration
         self.policy = policy or AutomatedDemoExecutionPolicy(enabled=True)
+        self.execution_journal = execution_journal
         self._decision: RiskDecision | None = None
         self._candidate: TradeCandidate | None = None
         self._account: AccountRiskState | None = None
@@ -174,6 +177,7 @@ class ControlledOpportunityAuthority:
             self.broker,
             configuration=configuration,
             risk_engine=self._risk_engine,
+            journal=self.execution_journal,
             before_submission=persist_submission,
         ).execute(
             request=request,
@@ -187,7 +191,12 @@ class ControlledOpportunityAuthority:
             orders_today=self.ledger.submitted_on(now.date()),
             automatic=True,
         )
-        if outcome.result.status.value == "ACCEPTED":
+        if (
+            outcome.result.status.value == "ACCEPTED"
+            and outcome.reconciliation is not None
+            and outcome.reconciliation.status is ReconciliationStatus.RECONCILED
+            and outcome.demo_position is not None
+        ):
             self.ledger.append(
                 self.ledger.create_record(
                     occurred_at=now,

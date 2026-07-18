@@ -96,14 +96,16 @@ Requirements:
 
 -   Clear session state on authentication failure.
 -   Never persist tokens outside the approved session lifecycle.
--   Do not auto-refresh tokens unless an approved milestone adds that
-    capability.
+-   Renew an expiring OAuth session with at most one allowlisted refresh request.
+-   Clear all session state and fail closed if renewal fails; never retry or fall
+    back to automatic login.
 
 # Read-Only Operations
 
 Validated allowlist:
 
 -   `POST /session`, version 3 -- OAuth login
+-   `POST /session/refresh-token`, version 1 -- bounded OAuth renewal
 -   `DELETE /session`, version 1 -- logout
 -   `GET /accounts`, version 1
 -   `GET /positions`, version 2

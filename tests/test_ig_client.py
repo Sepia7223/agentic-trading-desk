@@ -22,10 +22,10 @@ from trading_desk.cli import main as cli_main
 from trading_desk.config import AppSettings, BrokerSettings, SafetySettings
 from trading_desk.ig.client import IGDemoClient, _validate_optional_environment_indicator
 from trading_desk.ig.errors import (
+    IGAPIError,
     IGAuthenticationError,
     IGConfigurationError,
     IGOAuthResponseValidationError,
-    IGOAuthTokenExpiredError,
     IGRateLimitError,
     IGResponseValidationError,
     IGSessionMissingError,
@@ -455,27 +455,75 @@ def test_failed_login_redacts_oauth_values_and_clears_state(
     assert _REFRESH_TOKEN not in output
 
 
-def test_expired_oauth_token_blocks_transport_and_clears_session() -> None:
+def test_expired_oauth_token_refreshes_once_before_read_only_request() -> None:
     calls: list[httpx.Request] = []
     now = [100.0]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if request.url.path == f"{DEMO_BASE_PATH}/session":
+            if request.method == "POST":
+                return _login_response()
+            return httpx.Response(200)
+        if request.url.path == f"{DEMO_BASE_PATH}/session/refresh-token":
+            assert request.method == "POST"
+            assert request.headers["Version"] == "1"
+            assert json.loads(request.content)["refresh_token"] == _REFRESH_TOKEN
+            return httpx.Response(
+                200,
+                json=_oauth_token(
+                    access_token="renewed-synthetic-access-token",
+                    refresh_token="renewed-synthetic-refresh-token",
+                ),
+            )
+        assert request.headers["Authorization"] == "Bearer renewed-synthetic-access-token"
+        return httpx.Response(200, json={"accounts": []})
 
     async def scenario() -> None:
         client = IGDemoClient(
             _settings(oauth_expiry_safety_margin_seconds=5),
-            transport=httpx.MockTransport(
-                _route_handler(lambda _: httpx.Response(200, json={"accounts": []}), calls)
-            ),
+            transport=httpx.MockTransport(handler),
             clock=lambda: now[0],
         )
         await client.login()
         now[0] = 155.0
-        with pytest.raises(IGOAuthTokenExpiredError, match="access token expired"):
+        assert await client.get_accounts() == ()
+        assert "authenticated=true" in repr(client)
+        await client.aclose()
+
+    _run(scenario())
+    assert [request.url.path for request in calls].count(
+        f"{DEMO_BASE_PATH}/session/refresh-token"
+    ) == 1
+
+
+def test_failed_oauth_refresh_clears_session_without_read_retry() -> None:
+    calls: list[httpx.Request] = []
+    now = [100.0]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if request.url.path == f"{DEMO_BASE_PATH}/session":
+            return _login_response()
+        if request.url.path == f"{DEMO_BASE_PATH}/session/refresh-token":
+            return httpx.Response(401, json={"errorCode": "error.security.oauth-token-invalid"})
+        raise AssertionError("read-only request must not run after failed refresh")
+
+    async def scenario() -> None:
+        client = IGDemoClient(
+            _settings(oauth_expiry_safety_margin_seconds=5),
+            transport=httpx.MockTransport(handler),
+            clock=lambda: now[0],
+        )
+        await client.login()
+        now[0] = 155.0
+        with pytest.raises(IGAuthenticationError, match="authentication failed"):
             await client.get_accounts()
         assert "authenticated=false" in repr(client)
         await client.aclose()
 
     _run(scenario())
-    assert len(calls) == 1
+    assert len(calls) == 2
 
 
 def test_logout_always_clears_oauth_state_when_request_fails() -> None:
@@ -724,6 +772,75 @@ def test_market_details_v3_parses_time_of_day_and_rules(
     assert "Updated: 12:34:56" in capsys.readouterr().out
 
 
+def test_market_details_accepts_single_unmarked_real_response_currency() -> None:
+    payload = _market_details_payload()
+    payload["instrument"]["currencies"] = [  # type: ignore[index]
+        {
+            "baseExchangeRate": 1,
+            "code": "JPY",
+            "exchangeRate": 1,
+            "isDefault": False,
+            "symbol": "YEN",
+        }
+    ]
+
+    def operation(request: httpx.Request) -> httpx.Response:
+        assert request.headers["Version"] == str(MARKET_DETAILS_VERSION)
+        return httpx.Response(200, json=payload)
+
+    async def scenario() -> None:
+        client = IGDemoClient(_settings(), transport=httpx.MockTransport(_route_handler(operation)))
+        await client.login()
+        market = await client.get_market_details("CS.D.USDJPY.CFD.IP")
+        assert market.currency_code == "JPY"
+        await client.aclose()
+
+    _run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("epic", "name", "currency", "is_default"),
+    (
+        ("CS.D.EURUSD.CFD.IP", "EUR/USD", "USD", True),
+        ("CS.D.GBPUSD.CFD.IP", "GBP/USD", "USD", True),
+        ("CS.D.USDJPY.CFD.IP", "USD/JPY", "JPY", False),
+        ("CS.D.AUDUSD.CFD.IP", "AUD/USD", "USD", True),
+        ("CS.D.USDCAD.CFD.IP", "USD/CAD", "CAD", True),
+        ("CS.D.EURJPY.CFD.IP", "EUR/JPY", "JPY", True),
+    ),
+)
+def test_governed_market_detail_response_shapes_parse(
+    epic: str, name: str, currency: str, is_default: bool
+) -> None:
+    payload = _market_details_payload()
+    instrument = payload["instrument"]
+    assert isinstance(instrument, dict)
+    instrument.update(
+        {
+            "epic": epic,
+            "name": name,
+            "currencies": [{"code": currency, "isDefault": is_default}],
+        }
+    )
+
+    def operation(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith(f"/markets/{epic}")
+        return httpx.Response(200, json=payload)
+
+    async def scenario() -> None:
+        client = IGDemoClient(_settings(), transport=httpx.MockTransport(_route_handler(operation)))
+        await client.login()
+        market = await client.get_market_details(epic)
+        assert (market.epic, market.instrument_name, market.currency_code) == (
+            epic,
+            name,
+            currency,
+        )
+        await client.aclose()
+
+    _run(scenario())
+
+
 @pytest.mark.parametrize(
     ("raw_time", "expected"),
     [
@@ -907,6 +1024,7 @@ def test_supported_price_requests_are_constructed_correctly(resolution: PriceRes
     def operation(request: httpx.Request) -> httpx.Response:
         assert request.url.params["resolution"] == resolution.value
         assert request.url.params["max"] == "20"
+        assert request.url.params["pageSize"] == "20"
         assert request.url.params["pageNumber"] == "2"
         assert request.headers["Version"] == "3"
         return httpx.Response(200, json=_prices_payload())
@@ -1017,6 +1135,27 @@ def test_allowance_403_errors_map_to_rate_limit() -> None:
         await client.aclose()
 
     _run(scenario())
+
+
+def test_temporary_read_failure_is_safe_and_not_retried() -> None:
+    account_calls = 0
+
+    def operation(request: httpx.Request) -> httpx.Response:
+        nonlocal account_calls
+        account_calls += 1
+        raise httpx.ReadTimeout("synthetic timeout", request=request)
+
+    async def scenario() -> None:
+        client = IGDemoClient(_settings(), transport=httpx.MockTransport(_route_handler(operation)))
+        await client.login()
+        with pytest.raises(IGAPIError, match="IG request failed") as captured:
+            await client.get_accounts()
+        assert captured.value.operation == Operation.ACCOUNTS.value
+        assert captured.value.http_status is None
+        await client.aclose()
+
+    _run(scenario())
+    assert account_calls == 1
 
 
 @pytest.mark.parametrize(

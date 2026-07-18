@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from trading_desk.execution.fingerprints import fingerprint as execution_fingerprint
 from trading_desk.journal.models import JournalRecord, JournalRecordType
 from trading_desk.journal.writer import DurableJournalWriter, JournalSource
 from trading_desk.opportunity.campaign import DemoCampaignSnapshot
@@ -232,7 +233,21 @@ class OpportunityJournal:
             created_at=decision.decision_timestamp,
             environment="DEMO",
         )
-        return self.writer.append_sources((submitted, outcome))
+        sources = [submitted, outcome]
+        if decision.approved_intent is not None:
+            sources.append(
+                JournalSource(
+                    record_type=JournalRecordType.APPROVED_TRADE_INTENT,
+                    source_record_id=execution_fingerprint(decision.approved_intent),
+                    source_parent_ids=(outcome.source_record_id,),
+                    payload=decision.approved_intent,
+                    created_at=decision.decision_timestamp,
+                    instrument=decision.approved_intent.instrument,
+                    epic=decision.approved_intent.epic,
+                    environment="DEMO",
+                )
+            )
+        return self.writer.append_sources(tuple(sources))
 
     def append_preflight_rejection(
         self,

@@ -35,6 +35,7 @@ from trading_desk.execution.automated import (
     AutomatedCycleStatus,
     AutomatedDemoRunner,
     AutomatedHaltReason,
+    _preferred_account,
     create_initial_state,
     update_state,
 )
@@ -92,6 +93,16 @@ def _account() -> Account:
             available_funds=Decimal("100000"),
         ),
     )
+
+
+def test_preferred_account_selection_rejects_missing_and_multiple_matches() -> None:
+    preferred = _account()
+    not_preferred = preferred.model_copy(update={"preferred": False})
+    with pytest.raises(ValueError, match="exactly one preferred Demo account"):
+        _preferred_account((not_preferred,))
+    with pytest.raises(ValueError, match="exactly one preferred Demo account"):
+        _preferred_account((preferred, preferred.model_copy(update={"account_id": "other"})))
+    assert _preferred_account((not_preferred, preferred)) == preferred
 
 
 def _details() -> MarketDetails:

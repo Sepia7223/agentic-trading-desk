@@ -151,7 +151,7 @@ class IGDemoExecutionAdapter(IGDemoClient):
         pending_not_found: bool = False,
     ) -> tuple[httpx.Response, dict[str, Any]]:
         enforce_execution_policy(operation, method, path, version)
-        self._require_active_oauth_session_for_execution(operation)
+        await self._require_active_oauth_session_for_execution(operation)
         api_key = self._required_secret(self._broker_settings.api_key, "IG_API_KEY")
         assert self._access_token is not None
         assert self._account_id is not None
@@ -197,11 +197,13 @@ class IGDemoExecutionAdapter(IGDemoClient):
             )
         return response, data
 
-    def _require_active_oauth_session_for_execution(self, operation: ExecutionOperation) -> None:
+    async def _require_active_oauth_session_for_execution(
+        self, operation: ExecutionOperation
+    ) -> None:
         try:
             from trading_desk.ig.policy import Operation
 
-            self._require_active_oauth_session(Operation.POSITIONS)
+            await self._ensure_active_oauth_session(Operation.POSITIONS)
         except Exception as error:
             if isinstance(error, ExecutionBrokerError):
                 raise

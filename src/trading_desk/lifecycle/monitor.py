@@ -3,11 +3,12 @@
 from datetime import datetime
 from typing import Protocol
 
+from trading_desk.journal.writer import DurableJournalWriter
 from trading_desk.lifecycle.config import LifecycleConfiguration
 from trading_desk.lifecycle.engine import DemoPositionLifecycleEngine
 from trading_desk.lifecycle.errors import LifecycleStateError
 from trading_desk.lifecycle.idempotency import LifecycleIdempotencyStore
-from trading_desk.lifecycle.journal import InMemoryLifecycleJournal
+from trading_desk.lifecycle.journal import DurableLifecycleJournal, InMemoryLifecycleJournal
 from trading_desk.lifecycle.models import (
     DemoPositionSnapshot,
     LifecycleOutcome,
@@ -75,11 +76,14 @@ class PersistentPositionLifecycleMonitor:
         provider: LifecycleContextProvider,
         state_store: LifecycleStateStore,
         configuration: LifecycleConfiguration,
+        *,
+        durable_writer: DurableJournalWriter | None = None,
     ) -> None:
         self.broker = broker
         self.provider = provider
         self.state_store = state_store
         self.configuration = configuration
+        self.durable_writer = durable_writer
 
     async def run_cycle(self, now: datetime) -> tuple[LifecycleOutcome, ...]:
         descriptor = self.state_store.acquire_lock()
@@ -90,7 +94,11 @@ class PersistentPositionLifecycleMonitor:
                     "persistent lifecycle halt requires explicit human review"
                 )
             idempotency = LifecycleIdempotencyStore(state.idempotency)
-            journal = InMemoryLifecycleJournal(state.journal_records)
+            journal = (
+                DurableLifecycleJournal(self.durable_writer, state.journal_records)
+                if self.durable_writer is not None
+                else InMemoryLifecycleJournal(state.journal_records)
+            )
             engine = DemoPositionLifecycleEngine(
                 self.broker,
                 configuration=self.configuration,

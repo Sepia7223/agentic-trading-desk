@@ -92,8 +92,13 @@ class SnapshotSource:
 
 
 class ReadOnlyMarketSource:
-    def __init__(self, page: HistoricalPricePage, details: MarketDetails) -> None:
-        self.page = page
+    def __init__(
+        self,
+        page: HistoricalPricePage,
+        details: MarketDetails,
+        later_pages: tuple[HistoricalPricePage, ...] = (),
+    ) -> None:
+        self.pages = [page, *later_pages]
         self.details = details
         self.calls: list[tuple[str, object]] = []
 
@@ -109,7 +114,11 @@ class ReadOnlyMarketSource:
         page_number: int = 1,
     ) -> HistoricalPricePage:
         self.calls.append(("prices", (epic, resolution, max_points, page_number)))
-        return self.page
+        index = min(
+            sum(1 for operation, _ in self.calls if operation == "prices") - 1,
+            len(self.pages) - 1,
+        )
+        return self.pages[index]
 
 
 class BullishPipeline:
@@ -258,6 +267,105 @@ def test_operational_provider_uses_real_context_router_and_completed_ig_bars() -
     assert result[0].strategy.demo_executable
     assert len(result[0].evidence_ids) >= 6
     assert source.calls[1][1][1] is PriceResolution.MINUTE_5  # type: ignore[index]
+
+
+def test_operational_provider_fetches_market_details_once_per_cycle() -> None:
+    provider, source = operational_provider()
+    market = MarketUniverse().require_enabled("EUR/USD")
+    for timeframe in (
+        ContextTimeframe.MINUTE_5,
+        ContextTimeframe.MINUTE_15,
+        ContextTimeframe.HOUR,
+    ):
+        asyncio.run(provider.evaluate(market, timeframe, NOW))
+
+    assert source.calls.count(("details", EPIC)) == 1
+    assert sum(1 for operation, _ in source.calls if operation == "prices") == 3
+    assert len(provider.diagnostics) == 3
+    assert all(item.bars_retrieved == 240 for item in provider.diagnostics)
+    assert all(item.epic == EPIC for item in provider.diagnostics)
+
+
+def test_operational_provider_bootstraps_then_merges_bounded_incremental_history() -> None:
+    initial = page(count=220)
+    replacement_timestamp = initial.bars[-1].timestamp
+    replacement_close = Decimal("9.9999")
+    replacement = initial.bars[-1].model_copy(
+        update={"close": _price(replacement_close)},
+    )
+    next_bar = initial.bars[-1].model_copy(
+        update={
+            "timestamp": replacement_timestamp + timedelta(minutes=5),
+            "close": _price(Decimal("10.0001")),
+        },
+    )
+    incremental = HistoricalPricePage(
+        bars=(replacement, next_bar),
+        pagination=PaginationMetadata(page_number=1, page_size=2, total_pages=1),
+        allowance=APIAllowanceMetadata(
+            allowance_expiry_seconds=42,
+            remaining_allowance=73,
+            total_allowance=100,
+        ),
+    )
+    source = ReadOnlyMarketSource(initial, details(), (incremental,))
+    provider = OperationalOpportunityEvidenceProvider(
+        source,
+        context_provider(),
+        maximum_history_points=220,
+    )
+    provider._pipeline = BullishPipeline()  # type: ignore[assignment]
+    market = MarketUniverse().require_enabled("EUR/USD")
+
+    asyncio.run(provider.evaluate(market, ContextTimeframe.MINUTE_5, NOW))
+    asyncio.run(
+        provider.evaluate(
+            market,
+            ContextTimeframe.MINUTE_5,
+            NOW + timedelta(minutes=5),
+        )
+    )
+
+    price_calls = [value for operation, value in source.calls if operation == "prices"]
+    assert [call[2] for call in price_calls] == [220, 2]  # type: ignore[index]
+    cached = provider._history_cache[(EPIC, PriceResolution.MINUTE_5)]
+    assert len(cached.bars) == 220
+    assert len({bar.timestamp for bar in cached.bars}) == 220
+    assert cached.bars[-2].midpoint_close == replacement_close
+    assert cached.bars[-1].timestamp == next_bar.timestamp
+    assert cached.allowance.remaining_allowance == 73
+    assert cached.pagination.page_size == 220
+
+
+def test_operational_provider_does_not_cache_malformed_incremental_timestamps() -> None:
+    initial = page(count=220)
+    malformed = HistoricalPricePage(
+        bars=(initial.bars[-1], initial.bars[-2]),
+        pagination=PaginationMetadata(page_number=1, page_size=2, total_pages=1),
+        allowance=initial.allowance,
+    )
+    source = ReadOnlyMarketSource(initial, details(), (malformed,))
+    provider = OperationalOpportunityEvidenceProvider(
+        source,
+        context_provider(),
+        maximum_history_points=220,
+    )
+    provider._pipeline = BullishPipeline()  # type: ignore[assignment]
+    market = MarketUniverse().require_enabled("EUR/USD")
+
+    asyncio.run(provider.evaluate(market, ContextTimeframe.MINUTE_5, NOW))
+    result = asyncio.run(
+        provider.evaluate(
+            market,
+            ContextTimeframe.MINUTE_5,
+            NOW + timedelta(minutes=5),
+        )
+    )
+
+    assert result == ()
+    cached = provider._history_cache[(EPIC, PriceResolution.MINUTE_5)]
+    assert cached == initial
+    assert provider.diagnostics[-1].rejection_reason == "HISTORICAL_DATA_INVALID"
 
 
 @pytest.mark.parametrize("history", (0, 100, 219))

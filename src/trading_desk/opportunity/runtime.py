@@ -42,11 +42,13 @@ class CompletedBarSchedulerService:
         *,
         maximum_catch_up_bars: int,
         closed_dates: tuple[str, ...] = (),
+        closed_market_dates: tuple[tuple[str, str], ...] = (),
     ) -> None:
         self.universe = universe
         self.state_store = state_store
         self.maximum_catch_up_bars = maximum_catch_up_bars
         self.closed_dates = closed_dates
+        self.closed_market_dates = closed_market_dates
 
     def due(self, observed_at: datetime) -> tuple[ScheduledOpportunityEvaluation, ...]:
         state = self.state_store.load()
@@ -60,6 +62,7 @@ class CompletedBarSchedulerService:
             last_completed=completed,
             maximum_catch_up_bars=self.maximum_catch_up_bars,
             closed_dates=self.closed_dates,
+            closed_market_dates=self.closed_market_dates,
         )
 
 
@@ -97,6 +100,7 @@ class AutonomousOpportunityRunner:
         *,
         explicit_demo_enable: bool,
         maximum_iterations: int | None = None,
+        stop_when: Callable[[], bool] | None = None,
     ) -> OpportunityRuntimeHealth:
         descriptor = self.process_lock.acquire_lock()
         cycles = 0
@@ -145,6 +149,11 @@ class AutonomousOpportunityRunner:
                     entry_halted=self.scheduler.state_store.load().entries_halted,
                 )
                 iterations += 1
+                if stop_when is not None and stop_when():
+                    self.health = self.health.model_copy(
+                        update={"reason_codes": ("POSITION_OBSERVED_RESTART_REQUIRED",)}
+                    )
+                    break
                 if maximum_iterations is not None and iterations >= maximum_iterations:
                     break
                 with suppress(TimeoutError):

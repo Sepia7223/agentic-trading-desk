@@ -22,8 +22,14 @@ from trading_desk.opportunity.ledger import DemoTradeLedger, DemoTradeStatus
 
 
 class OperationalLifecycleContextProvider:
-    def __init__(self, broker) -> None:  # type: ignore[no-untyped-def]
+    def __init__(
+        self,
+        broker,  # type: ignore[no-untyped-def]
+        *,
+        ledger: DemoTradeLedger | None = None,
+    ) -> None:
         self.broker = broker
+        self.ledger = ledger
         self._accounts: tuple[Account, ...] = ()
         self.snapshots_by_position: dict[str, DemoPositionSnapshot] = {}
 
@@ -32,7 +38,10 @@ class OperationalLifecycleContextProvider:
         positions: tuple[OpenPosition, ...] = await self.broker.get_open_positions()
         results: list[DemoPositionSnapshot] = []
         for position in positions:
-            snapshot = await self._snapshot(position, now)
+            execution_id = self._managed_execution_id(position, positions)
+            if execution_id is None:
+                continue
+            snapshot = await self._snapshot(position, now, execution_id)
             results.append(snapshot)
             self.snapshots_by_position[snapshot.position_id] = snapshot
         return tuple(results)
@@ -50,7 +59,12 @@ class OperationalLifecycleContextProvider:
         del snapshot, now
         return StrategyExitState.HOLD
 
-    async def _snapshot(self, position: OpenPosition, now: datetime) -> DemoPositionSnapshot:
+    async def _snapshot(
+        self,
+        position: OpenPosition,
+        now: datetime,
+        source_execution_id: str,
+    ) -> DemoPositionSnapshot:
         if position.direction is not Direction.BUY:
             raise ValueError("automatic lifecycle is long-only")
         details = await self.broker.get_market_details(position.market.epic)
@@ -95,7 +109,7 @@ class OperationalLifecycleContextProvider:
             "position_status": PositionStatus.OPEN,
             "account_snapshot_id": account_id,
             "market_snapshot_id": market_id,
-            "source_execution_id": fingerprint(position.deal_id),
+            "source_execution_id": source_execution_id,
             "strategy_id": "trend-regime-v1",
             "strategy_version": "1.0.0",
             "strategy_configuration_fingerprint": fingerprint("trend-regime-v1"),
@@ -109,6 +123,30 @@ class OperationalLifecycleContextProvider:
         return DemoPositionSnapshot.model_validate(
             {**fields, "snapshot_id": identity, "snapshot_fingerprint": identity}
         )
+
+    def _managed_execution_id(
+        self,
+        position: OpenPosition,
+        positions: tuple[OpenPosition, ...],
+    ) -> str | None:
+        if self.ledger is None:
+            return fingerprint(position.deal_id)
+        if (
+            sum(
+                item.market.instrument_name == position.market.instrument_name for item in positions
+            )
+            != 1
+        ):
+            return None
+        matching = tuple(
+            item.execution_id
+            for item in self.ledger.load().records
+            if item.status is DemoTradeStatus.CONFIRMED
+            and item.instrument == position.market.instrument_name
+            and item.execution_id is not None
+        )
+        unique = tuple(dict.fromkeys(matching))
+        return unique[0] if len(unique) == 1 else None
 
 
 class OperationalLifecyclePort:

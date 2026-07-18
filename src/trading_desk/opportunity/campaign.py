@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Protocol, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from trading_desk.ig.models import Account
 from trading_desk.opportunity.config import DemoCampaignConfiguration
@@ -23,6 +24,7 @@ class DemoCampaignSnapshot(BaseModel):
     snapshot_at: datetime
     started_at: datetime
     planned_end_at: datetime
+    account_currency: str = Field(pattern=r"^(?:[A-Z]{3}|UNKNOWN)$")
     starting_balance: Decimal
     starting_equity: Decimal
     current_balance: Decimal
@@ -74,7 +76,9 @@ class DemoCampaignSnapshot(BaseModel):
         return value.astimezone(UTC)
 
     @model_validator(mode="after")
-    def identity(self) -> Self:
+    def identity(self, info: ValidationInfo) -> Self:
+        if isinstance(info.context, dict) and info.context.get("legacy_currency_migration") is True:
+            return self
         expected = fingerprint(self.model_dump(mode="python", exclude={"snapshot_fingerprint"}))
         if self.snapshot_fingerprint != expected:
             raise ValueError("campaign snapshot fingerprint mismatch")
@@ -103,6 +107,7 @@ def campaign_snapshot(
     configuration: DemoCampaignConfiguration | None = None,
     starting_balance: Decimal | None = None,
     starting_equity: Decimal | None = None,
+    account_currency: str = "UNKNOWN",
     status: str = "ACTIVE",
     submitted_trade_count: int | None = None,
 ) -> DemoCampaignSnapshot:
@@ -139,6 +144,7 @@ def campaign_snapshot(
         "snapshot_at": observed_at,
         "started_at": started_at,
         "planned_end_at": started_at + timedelta(days=config.duration_days),
+        "account_currency": account_currency,
         "starting_balance": start,
         "starting_equity": equity_start,
         "current_balance": current_balance,
@@ -207,8 +213,18 @@ class DemoCampaignStateStore:
         if not self.path.is_file():
             raise ValueError("no persisted Demo campaign exists")
         try:
-            return DemoCampaignSnapshot.model_validate_json(self.path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+            fields = json.loads(self.path.read_text(encoding="utf-8"))
+            if "account_currency" not in fields:
+                fields["account_currency"] = "UNKNOWN"
+                migrated = DemoCampaignSnapshot.model_validate(
+                    fields, context={"legacy_currency_migration": True}
+                )
+                identity_fields = migrated.model_dump(
+                    mode="python", exclude={"snapshot_fingerprint"}
+                )
+                fields = {**identity_fields, "snapshot_fingerprint": fingerprint(identity_fields)}
+            return DemoCampaignSnapshot.model_validate(fields)
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
             raise ValueError("persisted Demo campaign state is invalid") from None
 
     def save(self, snapshot: DemoCampaignSnapshot) -> None:
@@ -272,6 +288,7 @@ class DemoCampaignService:
             configuration=self.configuration,
             starting_balance=account.balance.balance,
             starting_equity=equity,
+            account_currency=account.currency,
         )
         self.store.save(snapshot)
         if self.journal is not None:
@@ -340,6 +357,7 @@ class DemoCampaignService:
             configuration=self.configuration,
             starting_balance=previous.starting_balance,
             starting_equity=previous.starting_equity,
+            account_currency=account.currency,
             status=previous.status,
         )
         if previous.entry_halted and not snapshot.entry_halted:
@@ -367,6 +385,7 @@ class DemoCampaignService:
 
 class DemoCampaignReport(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
+    account_currency: str = Field(pattern=r"^(?:[A-Z]{3}|UNKNOWN)$")
     starting_balance: Decimal
     current_balance: Decimal
     current_equity: Decimal
@@ -419,6 +438,7 @@ def campaign_report(
         item.holding_period_seconds for item in closed if item.holding_period_seconds is not None
     )
     fields = {
+        "account_currency": snapshot.account_currency,
         "starting_balance": snapshot.starting_balance,
         "current_balance": snapshot.current_balance,
         "current_equity": snapshot.current_equity,

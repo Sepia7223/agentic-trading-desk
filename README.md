@@ -451,9 +451,10 @@ Authenticated read-only requests send `Authorization: Bearer <access token>`,
 `IG-ACCOUNT-ID`, and the API key. OAuth values remain private in memory and are
 never included in models, logs, exceptions, or CLI output. Access-token expiry is
 calculated with a monotonic clock and a five-second default safety margin. An
-expired token blocks the request before transport. Automatic refresh is not
-implemented; each CLI command creates a fresh session and logs out with
-`DELETE /session` when finished.
+expiring token triggers exactly one allowlisted `POST /session/refresh-token`
+version 1 request before the intended operation. A failed or malformed refresh
+clears all in-memory session state and is never retried. Each CLI command logs out
+with `DELETE /session` when finished.
 
 Create a local, untracked configuration from the placeholder template:
 
@@ -677,6 +678,12 @@ python -m trading_desk.cli opportunity scan-once --enable-opportunity-engine \
   --economic-calendar economic-calendar.json --holiday-calendar holidays.json
 python -m trading_desk.cli opportunity rank-once --enable-opportunity-engine \
   --economic-calendar economic-calendar.json --holiday-calendar holidays.json
+python -m trading_desk.cli opportunity certify-readonly --enable-opportunity-engine \
+  --economic-calendar economic-calendar.json --holiday-calendar holidays.json
+python -m trading_desk.cli demo-exploration certify-lifecycle \
+  --enable-opportunity-engine --enable-demo-exploration --enable-execution \
+  --enable-operational-certification --economic-calendar economic-calendar.json \
+  --holiday-calendar holidays.json --exit-after-position-observed
 python -m trading_desk.cli opportunity diagnostics
 python -m trading_desk.cli demo-exploration status
 python -m trading_desk.cli demo-campaign start --enable-demo-campaign
@@ -685,6 +692,18 @@ python -m trading_desk.cli demo-campaign report
 ```
 
 `scan-once` and `rank-once` are read-only and never submit to Risk or execution.
+`certify-lifecycle` is the Milestone 11.5-B operational mode. It requires populated,
+non-temporary calendar evidence, permits at most one persisted Demo submission across
+restarts, and continues lifecycle monitoring after new entries are latched off.
+It bootstraps each governed price series once, then merges two-point incremental
+updates into a bounded in-memory window. Entry authority is promoted to lifecycle
+authority only after exact position reconciliation; unknown, pre-existing, or
+ambiguous duplicate positions are not automatically managed. Controlled execution
+and lifecycle stages are mirrored to the durable Operations Center journal.
+For restart certification, `--exit-after-position-observed` ends the first process
+gracefully only after the reconciled ledger-backed position has been monitored. A
+second invocation without that switch proves rediscovery and continues the close
+lifecycle without permitting another entry.
 `demo-exploration run-cycle` and `run` additionally require all three explicit flags:
 `--enable-opportunity-engine`, `--enable-demo-exploration`, and `--enable-execution`.
 The continuous runner uses an exclusive process lock and persists scheduler, ledger,

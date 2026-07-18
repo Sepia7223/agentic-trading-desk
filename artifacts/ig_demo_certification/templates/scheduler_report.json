@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "created_at": "1970-01-01T00:00:00Z",
+  "base_sha": "{{BASE_SHA}}",
+  "head_sha": "{{HEAD_SHA}}",
+  "configuration_fingerprints": {},
+  "sanitized_evidence_ids": [],
+  "result_status": "PENDING",
+  "observation_seconds": 0,
+  "completed_evaluation_keys": 0,
+  "missed_evaluations": 0,
+  "duplicate_evaluations": 0,
+  "restart_verified": false,
+  "process_lock_verified": false
+}
