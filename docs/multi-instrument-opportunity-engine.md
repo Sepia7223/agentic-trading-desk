@@ -101,9 +101,10 @@ reconciliation, and governed exits continue during an entry halt.
 The append-only trade ledger uses UTC trading dates. The daily limit counts submitted
 orders, including ambiguous submissions, so restart or an uncertain broker response
 cannot reopen capacity. It also records confirmations, rejections, closes, strategy,
-instrument, candidate ID, and execution ID. The established controlled-execution
-limit of one submitted order per day remains stricter than the Opportunity campaign's
-configurable ceiling and cannot be raised by the Opportunity layer.
+instrument, candidate ID, and execution ID. Opportunity preflight and controlled
+execution receive the same immutable `maximum_trades_per_day` value. The standalone
+automated Demo smoke runner retains its separate one-order-per-day policy; Risk and
+other execution gates may still reject more strictly.
 
 ## Persistence and evidence
 

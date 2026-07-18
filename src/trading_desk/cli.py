@@ -650,6 +650,14 @@ async def _run_read_only_opportunity_cycle(args: argparse.Namespace) -> int:
     return 0
 
 
+def _create_controlled_opportunity_authority(
+    broker: IGDemoExecutionAdapter,
+    ledger: DemoTradeLedger,
+    exploration_configuration: DemoExplorationConfiguration,
+) -> ControlledOpportunityAuthority:
+    return ControlledOpportunityAuthority(broker, ledger, exploration_configuration)
+
+
 async def _run_demo_exploration(args: argparse.Namespace) -> int:
     if not (
         args.enable_opportunity_engine and args.enable_demo_exploration and args.enable_execution
@@ -713,7 +721,9 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
                 context_provider=lifecycle_context,
                 ledger=ledger,
             )
-            authority = ControlledOpportunityAuthority(broker, ledger)
+            authority = _create_controlled_opportunity_authority(
+                broker, ledger, exploration_configuration
+            )
             campaign_service = DemoCampaignService(
                 broker,
                 campaign_store,

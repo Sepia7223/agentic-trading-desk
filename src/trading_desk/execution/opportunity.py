@@ -21,6 +21,7 @@ from trading_desk.execution.mapping import create_execution_request
 from trading_desk.execution.models import ExecutionOutcome
 from trading_desk.ig.execution import IGDemoExecutionAdapter
 from trading_desk.ig.models import OpenPosition
+from trading_desk.opportunity.config import DemoExplorationConfiguration
 from trading_desk.opportunity.ledger import DemoTradeLedger, DemoTradeStatus
 from trading_desk.risk.engine import RiskEngine
 from trading_desk.risk.models import (
@@ -41,11 +42,13 @@ class ControlledOpportunityAuthority:
         self,
         broker: IGDemoExecutionAdapter,
         ledger: DemoTradeLedger,
+        exploration_configuration: DemoExplorationConfiguration,
         *,
         policy: AutomatedDemoExecutionPolicy | None = None,
     ) -> None:
         self.broker = broker
         self.ledger = ledger
+        self.exploration_configuration = exploration_configuration
         self.policy = policy or AutomatedDemoExecutionPolicy(enabled=True)
         self._decision: RiskDecision | None = None
         self._candidate: TradeCandidate | None = None
@@ -54,6 +57,12 @@ class ControlledOpportunityAuthority:
         self._positions: tuple[OpenPosition, ...] = ()
         self._currency: str | None = None
         self._risk_engine: RiskEngine | None = None
+
+    @property
+    def maximum_orders_per_day(self) -> int:
+        """Return the immutable daily limit shared with Opportunity preflight."""
+
+        return self.exploration_configuration.maximum_trades_per_day
 
     async def evaluate(self, candidate: object, evaluated_at: datetime) -> RiskDecision:
         if not isinstance(candidate, TradeCandidate):
@@ -135,7 +144,7 @@ class ControlledOpportunityAuthority:
             require_operator_confirmation=False,
             maximum_order_quantity=intent.approved_quantity,
             maximum_order_notional=intent.notional_exposure,
-            maximum_orders_per_day=1,
+            maximum_orders_per_day=self.maximum_orders_per_day,
         )
         request = create_execution_request(
             self._decision,

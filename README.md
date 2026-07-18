@@ -698,5 +698,8 @@ GET-only Opportunity, Activity, Strategy, Instrument, Regime, Inactivity, and De
 Campaign views backed by journal and campaign evidence. Campaign start records the
 authoritative preferred Demo account balance and equity; the 20,000 value is only a
 reporting reference. Submitted-order counts use a UTC trading-date boundary and
-survive restart. Automated tests use deterministic or mocked broker inputs; no real IG
-Demo scan, order, or close was performed for this correction.
+survive restart. Opportunity and controlled-execution preflights use the same immutable
+Demo Exploration daily maximum; ambiguous submissions consume a slot. The standalone
+automated Demo smoke runner keeps its independent one-order-per-day limit. Automated
+tests use deterministic or mocked broker inputs; no real IG Demo scan, order, or close
+was performed for this correction.

@@ -28,7 +28,7 @@ class ExecutionConfiguration(BaseModel):
     execution_mode: ExecutionMode = ExecutionMode.MANUAL_CONFIRMED
     require_operator_confirmation: bool = True
     maximum_orders_per_run: int = Field(default=1, ge=1, le=1)
-    maximum_orders_per_day: int = Field(default=1, ge=1, le=10)
+    maximum_orders_per_day: int = Field(default=1, ge=1, le=100)
     maximum_order_quantity: Decimal = Field(default=Decimal("1"), gt=0)
     maximum_order_notional: Decimal = Field(default=Decimal("10000"), gt=0)
     maximum_intent_age: timedelta = Field(default=timedelta(minutes=5), gt=timedelta(0))
