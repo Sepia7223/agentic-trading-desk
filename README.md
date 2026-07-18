@@ -451,9 +451,10 @@ Authenticated read-only requests send `Authorization: Bearer <access token>`,
 `IG-ACCOUNT-ID`, and the API key. OAuth values remain private in memory and are
 never included in models, logs, exceptions, or CLI output. Access-token expiry is
 calculated with a monotonic clock and a five-second default safety margin. An
-expired token blocks the request before transport. Automatic refresh is not
-implemented; each CLI command creates a fresh session and logs out with
-`DELETE /session` when finished.
+expiring token triggers exactly one allowlisted `POST /session/refresh-token`
+version 1 request before the intended operation. A failed or malformed refresh
+clears all in-memory session state and is never retried. Each CLI command logs out
+with `DELETE /session` when finished.
 
 Create a local, untracked configuration from the placeholder template:
 
@@ -676,6 +677,8 @@ python -m trading_desk.cli opportunity validate-config
 python -m trading_desk.cli opportunity scan-once --enable-opportunity-engine \
   --economic-calendar economic-calendar.json --holiday-calendar holidays.json
 python -m trading_desk.cli opportunity rank-once --enable-opportunity-engine \
+  --economic-calendar economic-calendar.json --holiday-calendar holidays.json
+python -m trading_desk.cli opportunity certify-readonly --enable-opportunity-engine \
   --economic-calendar economic-calendar.json --holiday-calendar holidays.json
 python -m trading_desk.cli opportunity diagnostics
 python -m trading_desk.cli demo-exploration status

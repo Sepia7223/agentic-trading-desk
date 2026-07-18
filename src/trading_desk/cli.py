@@ -7,6 +7,7 @@ import asyncio
 import signal
 import sys
 from collections.abc import Sequence
+from contextlib import suppress
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -422,9 +423,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     opportunity_commands = opportunity.add_subparsers(dest="opportunity_command", required=True)
     opportunity_commands.add_parser("validate-config")
-    for name in ("scan-once", "rank-once"):
+    for name in ("scan-once", "rank-once", "certify-readonly"):
         command = opportunity_commands.add_parser(name)
         _add_opportunity_runtime_arguments(command, execution=False)
+    observe = opportunity_commands.add_parser("observe")
+    _add_opportunity_runtime_arguments(observe, execution=False)
+    observe.add_argument("--cycles", type=int, default=3)
+    observe.add_argument("--interval-seconds", type=int, default=300)
     opportunity_commands.add_parser("diagnostics")
 
     exploration = subcommands.add_parser("demo-exploration", help="Bounded Demo policy")
@@ -588,6 +593,10 @@ def _run_opportunity_command(args: argparse.Namespace) -> int:
             print(f"Configuration: {engine.configuration_fingerprint}")
         elif args.opportunity_command in {"scan-once", "rank-once"}:
             return asyncio.run(_run_read_only_opportunity_cycle(args))
+        elif args.opportunity_command == "certify-readonly":
+            return asyncio.run(_run_read_only_certification_scan(args))
+        elif args.opportunity_command == "observe":
+            return asyncio.run(_run_read_only_opportunity_observer(args))
         else:
             diagnostic = diagnose_inactivity(datetime.now(UTC), "ON_DEMAND", ActivityCounters())
             print(f"Bottleneck: {diagnostic.dominant_bottleneck.value}")
@@ -627,7 +636,7 @@ async def _run_read_only_opportunity_cycle(args: argparse.Namespace) -> int:
                 broker,
                 context_provider,
                 holding_epics=exposure.existing_epics,
-                maximum_history_points=min(settings.broker.max_historical_price_points, 500),
+                maximum_history_points=_opportunity_history_points(settings),
             )
             service = OpportunityCycleService(
                 OpportunityEngine(engine_configuration, universe=universe),
@@ -642,11 +651,97 @@ async def _run_read_only_opportunity_cycle(args: argparse.Namespace) -> int:
                 recent_entries=exposure.recently_closed,
                 current_position_count=exposure.current_position_count,
             )
+            diagnostics = provider.diagnostics
     finally:
         repository.close()
     _print_opportunity_cycle(result, ranked=args.opportunity_command == "rank-once")
+    _print_operational_diagnostics(diagnostics)
     print("Risk submissions: 0")
     print("Broker mutation: unavailable in read-only scan")
+    return 0
+
+
+async def _run_read_only_opportunity_observer(args: argparse.Namespace) -> int:
+    if not 1 <= args.cycles <= 24:
+        raise ValueError("read-only observation cycles must be between 1 and 24")
+    if not 15 <= args.interval_seconds <= 3600:
+        raise ValueError("read-only observation interval must be between 15 and 3600 seconds")
+    lock_store = OpportunityStateStore(Path(f"{args.state_file}.observer"))
+    descriptor = lock_store.acquire_lock()
+    stop = asyncio.Event()
+    _install_shutdown_handlers(stop)
+    completed = 0
+    try:
+        while completed < args.cycles and not stop.is_set():
+            await _run_read_only_opportunity_cycle(args)
+            completed += 1
+            if completed >= args.cycles:
+                break
+            with suppress(TimeoutError):
+                await asyncio.wait_for(stop.wait(), timeout=args.interval_seconds)
+    finally:
+        lock_store.release_lock(descriptor)
+    state = OpportunityStateStore(Path(args.state_file)).load()
+    print(f"Observation cycles completed: {completed}")
+    print(f"Completed evaluation keys: {len(state.completed_evaluation_keys)}")
+    print(f"Missed evaluations: {state.missed_evaluation_count}")
+    print("Risk submissions: 0")
+    print("Broker mutation: unavailable in read-only observation")
+    return 0
+
+
+async def _run_read_only_certification_scan(args: argparse.Namespace) -> int:
+    """Validate every governed market/timeframe without scheduler or mutation authority."""
+    if not args.enable_opportunity_engine:
+        raise ValueError("read-only certification requires --enable-opportunity-engine")
+    settings = AppSettings.from_environment()
+    if settings.safety.operating_mode is not OperatingMode.READ_ONLY:
+        raise ValueError("read-only certification requires READ_ONLY mode")
+    calendar = LocalJSONEconomicCalendar(Path(args.economic_calendar))
+    holidays = LocalJSONHolidayCalendar(Path(args.holiday_calendar))
+    context_provider = OperationalCandidateContextProvider(calendar, holidays)
+    universe = MarketUniverse()
+    state_store = OpportunityStateStore(Path(args.state_file))
+    descriptor = state_store.acquire_lock()
+    state_store.release_lock(descriptor)
+    repository = _opportunity_repository(Path(args.journal))
+    repository.close()
+    observed_at = datetime.now(UTC)
+    async with IGDemoClient(settings) as broker:
+        accounts = await broker.get_accounts()
+        preferred = tuple(account for account in accounts if account.preferred)
+        if len(preferred) != 1:
+            raise ValueError("exactly one preferred Demo account is required")
+        account = preferred[0]
+        exposure = await OperationalExposureProvider(broker, universe).snapshot(observed_at)
+        provider = OperationalOpportunityEvidenceProvider(
+            broker,
+            context_provider,
+            holding_epics=exposure.existing_epics,
+            maximum_history_points=_opportunity_history_points(settings),
+        )
+        for market in universe.markets:
+            if not market.enabled:
+                continue
+            for timeframe in market.supported_timeframes:
+                await provider.evaluate(market, timeframe, observed_at)
+    diagnostics = provider.diagnostics
+    loaded = {item.instrument_id for item in diagnostics if item.quote_valid}
+    rejected = {item.instrument_id for item in diagnostics if not item.quote_valid}
+    equity = account.balance.balance + account.balance.profit_loss
+    print(f"Preferred account: {_redact_account_id(account.account_id)}")
+    print(f"Account currency: {account.currency}")
+    print(f"Account balance: {_money(account.balance.balance)}")
+    print(f"Account equity: {_money(equity)}")
+    print(f"Markets configured: {len(tuple(item for item in universe.markets if item.enabled))}")
+    print(f"Markets successfully loaded: {len(loaded)}")
+    print(f"Markets rejected: {len(rejected)}")
+    print(f"Timeframes evaluated: {len(diagnostics)}")
+    _print_operational_diagnostics(diagnostics)
+    print(f"Candidate count: {sum(item.candidates_created for item in diagnostics)}")
+    print("Journal event count: 0")
+    print("Risk submissions: 0")
+    print("Broker mutation: unavailable in read-only certification")
     return 0
 
 
@@ -656,6 +751,13 @@ def _create_controlled_opportunity_authority(
     exploration_configuration: DemoExplorationConfiguration,
 ) -> ControlledOpportunityAuthority:
     return ControlledOpportunityAuthority(broker, ledger, exploration_configuration)
+
+
+def _opportunity_history_points(settings: AppSettings) -> int:
+    required = StrategyConfiguration().minimum_bars_required
+    if settings.broker.max_historical_price_points < required:
+        raise ValueError("configured historical point limit is below the strategy minimum")
+    return required
 
 
 async def _run_demo_exploration(args: argparse.Namespace) -> int:
@@ -698,7 +800,7 @@ async def _run_demo_exploration(args: argparse.Namespace) -> int:
             provider = OperationalOpportunityEvidenceProvider(
                 broker,
                 context_provider,
-                maximum_history_points=min(settings.broker.max_historical_price_points, 500),
+                maximum_history_points=_opportunity_history_points(settings),
             )
             cycle = OpportunityCycleService(
                 OpportunityEngine(
@@ -862,9 +964,25 @@ def _print_opportunity_cycle(result: OpportunityCycleResult, *, ranked: bool) ->
             )
 
 
+def _print_operational_diagnostics(diagnostics):  # type: ignore[no-untyped-def]
+    print(f"Operational evaluations: {len(diagnostics)}")
+    print(f"Bars retrieved: {sum(item.bars_retrieved for item in diagnostics)}")
+    for item in diagnostics:
+        cutoff = item.latest_completed_bar.isoformat() if item.latest_completed_bar else "none"
+        reason = item.rejection_reason or "none"
+        print(
+            f"- {item.instrument_id} {item.timeframe.value} | status="
+            f"{item.market_status or 'UNKNOWN'} | bars={item.bars_retrieved} | "
+            f"invalid={item.invalid_bars} | cutoff={cutoff} | "
+            f"context={item.context_outcome} | route={item.route_outcome} | "
+            f"candidates={item.candidates_created} | reason={reason}"
+        )
+
+
 def _print_campaign_status(snapshot, configuration):  # type: ignore[no-untyped-def]
     print(f"Campaign: {snapshot.campaign_name}")
     print(f"Status: {snapshot.status}")
+    print(f"Account currency: {snapshot.account_currency}")
     print(f"Starting balance: {snapshot.starting_balance}")
     print(f"Current balance: {snapshot.current_balance}")
     print(f"Current equity: {snapshot.current_equity}")
@@ -882,6 +1000,7 @@ def _print_campaign_status(snapshot, configuration):  # type: ignore[no-untyped-
 
 def _print_campaign_report(report):  # type: ignore[no-untyped-def]
     for label, value in (
+        ("Account currency", report.account_currency),
         ("Starting balance", report.starting_balance),
         ("Current balance", report.current_balance),
         ("Current equity", report.current_equity),

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -97,3 +98,43 @@ def test_milestone_7_5_is_documented_with_research_isolation() -> None:
     assert "research_only" in corpus or "research only" in corpus
     assert "capital preservation" in corpus
     assert "ai strategy selection" in corpus or "ai-selected strategies" in corpus
+
+
+def test_operational_certification_templates_are_complete_and_sanitized() -> None:
+    root = ROOT / "artifacts" / "ig_demo_certification" / "templates"
+    json_names = (
+        "certification_manifest.json",
+        "environment_summary.json",
+        "read_only_scan_report.json",
+        "scheduler_report.json",
+        "campaign_start_report.json",
+        "runtime_observation_report.json",
+        "entry_certification.json",
+        "lifecycle_certification.json",
+        "operations_center_report.json",
+    )
+    assert all(
+        (root / name).is_file() for name in (*json_names, "limitations.md", "final_decision.md")
+    )
+    forbidden_keys = {
+        "password",
+        "api_key",
+        "access_token",
+        "refresh_token",
+        "authorization",
+        "raw_response",
+        "raw_headers",
+        "account_id",
+    }
+    for name in json_names:
+        document = json.loads((root / name).read_text(encoding="utf-8"))
+        assert {
+            "schema_version",
+            "created_at",
+            "base_sha",
+            "head_sha",
+            "configuration_fingerprints",
+            "sanitized_evidence_ids",
+            "result_status",
+        } <= document.keys()
+        assert forbidden_keys.isdisjoint(document.keys())

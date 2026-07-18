@@ -189,6 +189,7 @@ Every IG request must pass through the central allowlist. The complete allowed
 operation surface is:
 
 - `POST /session` version 3: OAuth login.
+- `POST /session/refresh-token` version 1: one bounded OAuth renewal.
 - `DELETE /session` version 1: logout.
 - `GET /accounts` version 1: account review.
 - `GET /positions` version 2: open-position review.
@@ -209,15 +210,14 @@ account, position, order, or working order.
 - Use `Authorization: Bearer <access token>` and `IG-ACCOUNT-ID` only after the
   central policy confirms an authenticated read-only operation.
 - Clear access token, refresh token, expiry, and account ID after every logout
-  attempt, failed login, or detected access-token expiry.
+  attempt, failed login, or failed token refresh.
 - Never persist or expose tokens through properties, representations, logs,
   exceptions, CLI output, screenshots, tests, or journal records.
 - Errors may contain only HTTP status, IG error code, request ID, and operation.
 - Do not retry login automatically.
-- Do not refresh OAuth tokens automatically. No refresh operation belongs in the
-  allowlist until separately documented, implemented, and reviewed.
-- Calculate token expiry with a monotonic clock and fail before transport when the
-  configured safety margin is reached.
+- When the monotonic expiry safety margin is reached, make exactly one allowlisted
+  refresh request before the intended operation. Never retry a failed refresh or
+  fall back to login; clear all session state and fail closed.
 - Missing environment information is accepted because the exact demo gateway and
   local runtime boundary establish `DEMO`; an explicit non-demo value fails closed.
 - Missing credentials or session state must fail before an authenticated request.

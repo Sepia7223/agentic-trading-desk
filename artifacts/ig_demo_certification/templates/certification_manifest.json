@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.0",
+  "created_at": "1970-01-01T00:00:00Z",
+  "base_sha": "{{BASE_SHA}}",
+  "head_sha": "{{HEAD_SHA}}",
+  "configuration_fingerprints": {},
+  "sanitized_evidence_ids": [],
+  "result_status": "PENDING",
+  "artifacts": [
+    "environment_summary.json",
+    "read_only_scan_report.json",
+    "scheduler_report.json",
+    "campaign_start_report.json",
+    "runtime_observation_report.json",
+    "entry_certification.json",
+    "lifecycle_certification.json",
+    "operations_center_report.json"
+  ]
+}

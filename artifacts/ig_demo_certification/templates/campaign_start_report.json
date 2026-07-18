@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0",
+  "created_at": "1970-01-01T00:00:00Z",
+  "base_sha": "{{BASE_SHA}}",
+  "head_sha": "{{HEAD_SHA}}",
+  "configuration_fingerprints": {},
+  "sanitized_evidence_ids": [],
+  "result_status": "PENDING",
+  "account_currency": "{{CURRENCY}}",
+  "starting_balance": "{{SANITIZED_BALANCE}}",
+  "starting_equity": "{{SANITIZED_EQUITY}}",
+  "duplicate_start_rejected": false,
+  "restart_verified": false
+}

@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "created_at": "1970-01-01T00:00:00Z",
+  "base_sha": "{{BASE_SHA}}",
+  "head_sha": "{{HEAD_SHA}}",
+  "configuration_fingerprints": {},
+  "sanitized_evidence_ids": [],
+  "result_status": "PENDING_NO_CERTIFIED_POSITION",
+  "position_discovered": false,
+  "monitoring_verified": false,
+  "close_attempts": 0,
+  "position_restart_verified": false
+}

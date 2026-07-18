@@ -260,6 +260,23 @@ def test_operational_provider_uses_real_context_router_and_completed_ig_bars() -
     assert source.calls[1][1][1] is PriceResolution.MINUTE_5  # type: ignore[index]
 
 
+def test_operational_provider_fetches_market_details_once_per_cycle() -> None:
+    provider, source = operational_provider()
+    market = MarketUniverse().require_enabled("EUR/USD")
+    for timeframe in (
+        ContextTimeframe.MINUTE_5,
+        ContextTimeframe.MINUTE_15,
+        ContextTimeframe.HOUR,
+    ):
+        asyncio.run(provider.evaluate(market, timeframe, NOW))
+
+    assert source.calls.count(("details", EPIC)) == 1
+    assert sum(1 for operation, _ in source.calls if operation == "prices") == 3
+    assert len(provider.diagnostics) == 3
+    assert all(item.bars_retrieved == 240 for item in provider.diagnostics)
+    assert all(item.epic == EPIC for item in provider.diagnostics)
+
+
 @pytest.mark.parametrize("history", (0, 100, 219))
 def test_incomplete_history_produces_no_candidate(history: int) -> None:
     provider, _ = operational_provider(history=history)
