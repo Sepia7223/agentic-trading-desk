@@ -56,10 +56,10 @@ def test_documents_do_not_claim_current_execution_live_trading_or_ai_control() -
     assert all(re.search(pattern, corpus) is None for pattern in prohibited_claims)
 
 
-def test_governed_documents_identify_milestone_9_as_current() -> None:
+def test_governed_documents_identify_milestone_11_as_current() -> None:
     for relative_path in DOCS:
         content = (ROOT / relative_path).read_text(encoding="utf-8")
-        assert re.search(r'current_validated_milestone: ["\']?9', content), relative_path
+        assert re.search(r'current_validated_milestone: ["\']?11', content), relative_path
 
 
 def test_milestone_9_documents_read_only_operations_boundary() -> None:

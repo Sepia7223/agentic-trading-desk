@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -220,3 +220,11 @@ IG confirmation mapping records `confirmed_at` using the adapter's local UTC clo
 response observation. The mapped response fields do not provide an authoritative
 broker execution timestamp, so this value must be interpreted as `locally observed
 at`, never as exchange time or guaranteed broker execution time.
+
+## Milestone 11 Broker Boundary
+
+The Opportunity Engine adds no HTTP or broker endpoint. Its six configured epics are
+allowlist data, never user-selected mutation targets. Selected candidates still pass
+through Risk, the existing canonical Demo gateway preflight, one-attempt controlled
+execution, confirmation, reconciliation, and lifecycle. No real Milestone 11 Demo
+campaign order was submitted.

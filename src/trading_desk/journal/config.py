@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from trading_desk.journal.fingerprints import fingerprint
 
-CURRENT_SCHEMA_VERSION = 3
+CURRENT_SCHEMA_VERSION = 4
 
 
 class SQLiteSynchronousMode(StrEnum):
@@ -28,7 +28,7 @@ class JournalConfiguration(BaseModel):
     enforce_foreign_keys: bool = True
     synchronous_mode: SQLiteSynchronousMode = SQLiteSynchronousMode.FULL
     busy_timeout_seconds: int = Field(default=10, ge=1, le=120)
-    maximum_batch_size: int = Field(default=100, ge=1, le=10_000)
+    maximum_batch_size: int = Field(default=500, ge=1, le=10_000)
     maximum_query_records: int = Field(default=1_000, ge=1, le=100_000)
     store_ai_structured_responses: bool = True
     store_raw_provider_responses: bool = False

@@ -267,6 +267,84 @@ class OperationsService:
         next_offset = offset + limit if offset + limit < len(records) else None
         return SearchResult(records=page, total_matches=len(records), next_offset=next_offset)
 
+    def opportunity_records(self, *, limit: int = 100) -> SearchResult:
+        types = {
+            JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED.value,
+            JournalRecordType.OPPORTUNITY_REJECTED.value,
+            JournalRecordType.OPPORTUNITY_SELECTED.value,
+            JournalRecordType.OPPORTUNITY_RISK_REJECTED.value,
+            JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED.value,
+        }
+        records = tuple(item for item in self.all_records() if item.record_type in types)
+        page = records[-limit:]
+        return SearchResult(records=page, total_matches=len(records), next_offset=None)
+
+    def opportunity_activity(self) -> dict[str, object]:
+        records = self.all_records()
+        counts = {
+            name: sum(1 for item in records if item.record_type == record_type.value)
+            for name, record_type in {
+                "cycles": JournalRecordType.OPPORTUNITY_CYCLE_COMPLETED,
+                "candidates": JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED,
+                "selected": JournalRecordType.OPPORTUNITY_SELECTED,
+                "risk_rejections": JournalRecordType.OPPORTUNITY_RISK_REJECTED,
+                "execution_approvals": JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED,
+            }.items()
+        }
+        evaluations = tuple(
+            item
+            for item in records
+            if item.record_type == JournalRecordType.STRATEGY_EVALUATED.value
+        )
+        funnel = {
+            "research_only_evaluations": sum(
+                _safe_int(item.payload.get("research_only_evaluations")) for item in evaluations
+            ),
+            "demo_executable_evaluations": sum(
+                _safe_int(item.payload.get("demo_executable_evaluations")) for item in evaluations
+            ),
+            "context_rejections": _reason_count(records, ("CONTEXT", "EVENT", "HOLIDAY")),
+            "strategy_rejections": _reason_count(records, ("STRATEGY", "REGIME")),
+            "stale_data_rejections": _reason_count(records, ("STALE", "UNFINISHED")),
+            "cost_rejections": _reason_count(records, ("COST", "SPREAD")),
+            "expected_value_rejections": _reason_count(records, ("EXPECTED_VALUE",)),
+            "correlation_rejections": sum(
+                1
+                for item in records
+                if item.record_type == JournalRecordType.OPPORTUNITY_CORRELATION_REJECTED.value
+            ),
+            "execution_preflight_rejections": _reason_count(records, ("PREFLIGHT",)),
+            "system_halts": sum(
+                1
+                for item in records
+                if item.record_type == JournalRecordType.DEMO_CAMPAIGN_HALTED.value
+            ),
+        }
+        return {"environment": "DEMO", "authority": "READ ONLY", **counts, **funnel}
+
+    def opportunity_breakdown(self, field: str) -> tuple[dict[str, object], ...]:
+        counts: dict[str, int] = {}
+        for record in self.opportunity_records(
+            limit=self.configuration.maximum_replay_records
+        ).records:
+            value = record.payload.get(field)
+            label = str(value) if value not in (None, "") else "UNKNOWN"
+            counts[label] = counts.get(label, 0) + 1
+        return tuple({"label": label, "records": count} for label, count in sorted(counts.items()))
+
+    def inactivity_diagnostics(self, *, limit: int = 100) -> SearchResult:
+        return self.records(
+            record_type=JournalRecordType.INACTIVITY_DIAGNOSTIC_CREATED, limit=limit
+        )
+
+    def demo_campaign(self):  # type: ignore[no-untyped-def]
+        halted = self.latest(JournalRecordType.DEMO_CAMPAIGN_HALTED)
+        return (
+            halted
+            or self.latest(JournalRecordType.DEMO_CAMPAIGN_SNAPSHOT_CREATED)
+            or self.latest(JournalRecordType.DEMO_CAMPAIGN_STARTED)
+        )
+
     def configuration_view(self) -> dict[str, object]:
         return {
             "environment": self.configuration.environment,
@@ -325,6 +403,21 @@ def _strings(value: object) -> tuple[str, ...]:
     if isinstance(value, (list, tuple)):
         return tuple(str(item) for item in value)
     return ()
+
+
+def _reason_count(records: tuple[RecordProjection, ...], markers: tuple[str, ...]) -> int:
+    count = 0
+    for record in records:
+        values = _strings(record.payload.get("rejection_reasons")) + _strings(
+            record.payload.get("rejection_codes")
+        )
+        if any(any(marker in value for marker in markers) for value in values):
+            count += 1
+    return count
+
+
+def _safe_int(value: object) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) else 0
 
 
 def _utc(value: datetime) -> datetime:

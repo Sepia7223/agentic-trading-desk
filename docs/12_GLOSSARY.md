@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -298,3 +298,16 @@ broker accepted or completed a close.
 ambiguous request or reconciliation mismatch; human review is required to clear it.
 
 **Liquidation-Side Price:** bid used to value and test exits for a long position.
+
+**Opportunity Candidate:** immutable long-only evidence record containing context,
+strategy, cost-adjusted expected value, score, confidence, and rejection lineage; it is
+not an order and contains no quantity.
+
+**Demo Exploration:** disabled-by-default DEMO-only policy that permits eligible ranked
+candidates to reach Risk after explicit enablement; it grants no execution authority.
+
+**Activity Target:** reporting objective used to diagnose inactivity, never a mandatory
+trade rule.
+
+**Campaign Entry Halt:** persistent prohibition on new campaign entries after a hard
+safety breach; position monitoring and governed exits continue.

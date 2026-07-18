@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -166,3 +166,11 @@ The validated strategy may provide only the typed deterministic exit state `HOLD
 `EXIT`, or `UNKNOWN`. It cannot call the broker, choose close quantity, change stop or
 target, reorder exit precedence, or retry a close. `UNKNOWN` is not treated as a
 favorable strategy exit; defensive Risk policy remains separately authoritative.
+
+## Milestone 11 Strategy Registry
+
+Strategy lifecycle states are `RESEARCH_ONLY`, `BACKTEST_VALIDATED`,
+`DEMO_EXPLORATION_ENABLED`, and `DISABLED`. Only `trend-regime-v1` currently has both
+required executable states. Trend pullback, volatility breakout, and range mean
+reversion remain research-only and cannot reach Risk. Promotion is evidence-driven,
+never an activity-target response.

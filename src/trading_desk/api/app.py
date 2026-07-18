@@ -153,6 +153,34 @@ def create_operations_app(
     async def performance(limit: int = 500):  # type: ignore[no-untyped-def]
         return service.performance(limit=limit)
 
+    @app.get("/api/v1/opportunities")
+    async def opportunities(limit: int = 100):  # type: ignore[no-untyped-def]
+        return service.opportunity_records(limit=limit)
+
+    @app.get("/api/v1/activity")
+    async def opportunity_activity():  # type: ignore[no-untyped-def]
+        return service.opportunity_activity()
+
+    @app.get("/api/v1/strategy-leaderboard")
+    async def strategy_leaderboard():  # type: ignore[no-untyped-def]
+        return service.opportunity_breakdown("strategy_id")
+
+    @app.get("/api/v1/instrument-performance")
+    async def instrument_performance():  # type: ignore[no-untyped-def]
+        return service.opportunity_breakdown("instrument_id")
+
+    @app.get("/api/v1/regime-performance")
+    async def regime_performance():  # type: ignore[no-untyped-def]
+        return service.opportunity_breakdown("regime")
+
+    @app.get("/api/v1/inactivity-diagnostics")
+    async def inactivity_diagnostics(limit: int = 100):  # type: ignore[no-untyped-def]
+        return service.inactivity_diagnostics(limit=limit)
+
+    @app.get("/api/v1/demo-campaign")
+    async def demo_campaign():  # type: ignore[no-untyped-def]
+        return _optional(service.demo_campaign())
+
     @app.get("/api/v1/configuration")
     async def configuration_view() -> dict[str, object]:
         return service.configuration_view()

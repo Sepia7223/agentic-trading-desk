@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -233,3 +233,11 @@ The lifecycle engine consumes immutable Risk state for kill switch, daily-loss,
 drawdown, exposure, and emergency conditions. It cannot alter limits or clear a halt.
 Unknown, incomplete, stale, or inconsistent Risk/account state blocks normal close
 submission and is journaled; explicit defensive reasons outrank favorable exits.
+
+## Milestone 11 Risk Integration
+
+Ranking selects only which candidates may be evaluated. Risk still approves or rejects,
+sets quantity, and enforces account, loss, drawdown, position, exposure, cooldown, stop,
+and halt rules. Opportunity confidence multipliers are recommendations capped at one;
+they cannot increase Risk policy or quantity. Campaign and activity objectives are not
+Risk inputs.

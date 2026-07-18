@@ -18,6 +18,7 @@ import {
   Settings,
   ShieldCheck,
   Waypoints,
+  ListFilter,
 } from "lucide-react";
 
 import { Configuration } from "./pages/Configuration";
@@ -42,9 +43,25 @@ import { Performance } from "./pages/Performance";
 import { Replay } from "./pages/Replay";
 import { Search } from "./pages/Search";
 import { WhyNoTrade } from "./pages/WhyNoTrade";
+import {
+  ActivityDashboard,
+  DemoCampaign,
+  InactivityDiagnostics,
+  InstrumentPerformance,
+  OpportunityBoard,
+  RegimePerformance,
+  StrategyLeaderboard,
+} from "./pages/OpportunityViews";
 
 const navigation = [
   ["Overview", Activity],
+  ["Opportunities", ListFilter],
+  ["Activity Dashboard", Activity],
+  ["Strategy Leaderboard", BarChart3],
+  ["Instrument Performance", Landmark],
+  ["Regime Performance", Radar],
+  ["Inactivity Diagnostics", CircleHelp],
+  ["Demo Campaign", Gauge],
   ["Market", Radar],
   ["Router", GitBranch],
   ["Why No Trade", CircleHelp],
@@ -65,6 +82,13 @@ const navigation = [
 function CurrentPage({ page }: { page: string }) {
   const pages: Record<string, React.ReactNode> = {
     Overview: <Overview />,
+    Opportunities: <OpportunityBoard />,
+    "Activity Dashboard": <ActivityDashboard />,
+    "Strategy Leaderboard": <StrategyLeaderboard />,
+    "Instrument Performance": <InstrumentPerformance />,
+    "Regime Performance": <RegimePerformance />,
+    "Inactivity Diagnostics": <InactivityDiagnostics />,
+    "Demo Campaign": <DemoCampaign />,
     Market: <MarketContext />,
     Router: <RouterMonitor />,
     "Why No Trade": <WhyNoTrade />,

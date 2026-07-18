@@ -275,6 +275,8 @@ def infer_bar_cadence(
     """Return a conservative cadence without consulting a market calendar."""
 
     cadence_by_resolution = {
+        StrategyBarResolution.MINUTE_5: 300.0,
+        StrategyBarResolution.MINUTE_15: 900.0,
         StrategyBarResolution.HOUR: 3600.0,
         StrategyBarResolution.HOUR_4: 14400.0,
         StrategyBarResolution.DAY: 86400.0,

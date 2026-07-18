@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9 (Production deployment planned for Milestone 12)
+current_validated_milestone: 11 (Production deployment remains future)
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -167,3 +167,18 @@ Only one monitor may own the exclusive state lock. Deployment defaults keep life
 and automatic exits disabled; both explicit Demo enable switches are required. A
 persistent halt is never cleared automatically. The Operations Center remains
 loopback-only and read-only.
+
+## Milestone 11 Runtime State
+
+Opportunity cycles use an exclusive process lock, bounded candidate count, atomic
+fingerprinted state, duplicate-cycle rejection, and persisted completed-bar evaluation
+keys. Opportunity, Demo Exploration, and campaign features default disabled. Deployment
+must never enable Live, expose dashboard mutation routes, or treat campaign objectives
+as scheduler obligations.
+
+Read-only scan/rank require the Opportunity enable flag and authoritative economic and
+holiday calendar files. Demo exploration additionally requires explicit exploration
+and execution flags. Persist scheduler state, trade ledger, campaign state, lifecycle
+state, journal, and entry halts on durable local storage. Submitted-order limits use a
+UTC date boundary. Never run two owners against the same state: the exclusive lock and
+tested stale-lock policy are part of the safety boundary.

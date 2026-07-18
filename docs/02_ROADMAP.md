@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -142,7 +142,7 @@ CSV, or Markdown attachments. It has no operational authority.
 
 # Next Active Milestone
 
-Milestone 10 remains planned. Semantic vector search, autonomous
+Milestone 11 is software-validated on the Milestone 10 lineage. Semantic vector search, autonomous
 learning or parameter changes, cloud persistence, live trading, unbounded
 automation, closure, working orders, account switching, short execution, and AI
 execution authority remain future and unavailable.
@@ -162,3 +162,17 @@ A separately authorized real IG Demo close remains operational validation, not a
 prerequisite that automated tests may manufacture. Production/live, shorts, partial
 close, amendments, working orders, account switching, automatic retry, and AI or
 dashboard exit authority remain future/prohibited.
+
+# Milestone 11 - Software Validated
+
+Validated with deterministic and mocked inputs: six allowlisted FOREX instruments;
+5-minute, 15-minute, and 1-hour completed-bar evaluation; immutable cost-adjusted
+candidates; operational read-only evidence provider; persistent completed-bar
+scheduling and fair bounded catch-up; authoritative exposure; strategy validation
+states; duplicate/correlation suppression; deterministic ranking; persistent
+cycle/evaluation idempotency; exclusive process locking; durable submitted-order
+limits and campaign safety halts; Risk-only approval/sizing; controlled-execution and
+lifecycle composition; runtime schema-v4 journal evidence; inactivity diagnostics;
+and GET-only Operations Center projections. Demo Exploration and campaign operation
+remain disabled by default. Real multi-instrument IG Demo scanning, order execution,
+and closing remain operationally unvalidated and must never be manufactured or forced.

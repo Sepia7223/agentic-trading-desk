@@ -307,7 +307,9 @@ class IGDemoClient:
         try:
             normalized_resolution = PriceResolution(resolution)
         except ValueError as error:
-            raise IGConfigurationError("resolution must be DAY, HOUR, or HOUR_4") from error
+            raise IGConfigurationError(
+                "resolution must be MINUTE_5, MINUTE_15, HOUR, HOUR_4, or DAY"
+            ) from error
 
         requested_points = max_points or self._broker_settings.max_historical_price_points
         if not 1 <= requested_points <= self._broker_settings.max_historical_price_points:

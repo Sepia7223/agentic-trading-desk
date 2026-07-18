@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import signal
 import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -56,6 +57,7 @@ from trading_desk.execution.models import (
     ExecutionResult,
     OperatorConfirmation,
 )
+from trading_desk.execution.opportunity import ControlledOpportunityAuthority
 from trading_desk.execution.preflight import run_preflight
 from trading_desk.execution.reconciliation import reconcile_position
 from trading_desk.execution.state import AutomatedDemoStateStore
@@ -97,11 +99,41 @@ from trading_desk.lifecycle.models import (
     LifecycleRiskState,
     StrategyExitState,
 )
+from trading_desk.lifecycle.monitor import PersistentPositionLifecycleMonitor
 from trading_desk.lifecycle.runtime import create_demo_position_exit_adapter
 from trading_desk.lifecycle.state import LifecycleStateStore, update_state
 from trading_desk.operations.config import OperationsConfiguration
 from trading_desk.operations.health import StartupJournalHealth
 from trading_desk.operations.service import OperationsService
+from trading_desk.opportunity.campaign import (
+    DemoCampaignService,
+    DemoCampaignStateStore,
+    campaign_report,
+)
+from trading_desk.opportunity.config import (
+    DemoCampaignConfiguration,
+    DemoExplorationConfiguration,
+    MarketUniverse,
+    OpportunityEngineConfiguration,
+)
+from trading_desk.opportunity.diagnostics import ActivityCounters, diagnose_inactivity
+from trading_desk.opportunity.engine import OpportunityEngine
+from trading_desk.opportunity.exposure import OperationalExposureProvider
+from trading_desk.opportunity.journal import OpportunityJournal
+from trading_desk.opportunity.ledger import DemoTradeLedger
+from trading_desk.opportunity.lifecycle import (
+    OperationalLifecycleContextProvider,
+    OperationalLifecyclePort,
+    enabled_lifecycle_configuration,
+)
+from trading_desk.opportunity.operational import OperationalOpportunityEvidenceProvider
+from trading_desk.opportunity.orchestrator import OpportunityOrchestrator
+from trading_desk.opportunity.runtime import (
+    AutonomousOpportunityRunner,
+    CompletedBarSchedulerService,
+)
+from trading_desk.opportunity.service import OpportunityCycleResult, OpportunityCycleService
+from trading_desk.opportunity.state import OpportunityStateStore
 from trading_desk.portfolio import (
     InMemoryPortfolioRepository,
     MarketQuote,
@@ -384,11 +416,72 @@ def build_parser() -> argparse.ArgumentParser:
     operations_run.add_argument("--port", type=int, default=8000)
     operations_run.add_argument("--journal", required=True)
     operations_run.add_argument("--frontend")
+
+    opportunity = subcommands.add_parser(
+        "opportunity", help="Local deterministic opportunity analysis"
+    )
+    opportunity_commands = opportunity.add_subparsers(dest="opportunity_command", required=True)
+    opportunity_commands.add_parser("validate-config")
+    for name in ("scan-once", "rank-once"):
+        command = opportunity_commands.add_parser(name)
+        _add_opportunity_runtime_arguments(command, execution=False)
+    opportunity_commands.add_parser("diagnostics")
+
+    exploration = subcommands.add_parser("demo-exploration", help="Bounded Demo policy")
+    exploration_commands = exploration.add_subparsers(dest="exploration_command", required=True)
+    for name in ("run-cycle", "run"):
+        command = exploration_commands.add_parser(name)
+        command.add_argument("--enable-demo-exploration", action="store_true")
+        command.add_argument("--enable-opportunity-engine", action="store_true")
+        command.add_argument("--enable-execution", action="store_true")
+        _add_opportunity_runtime_arguments(command, execution=True)
+    exploration_commands.add_parser("status")
+
+    campaign = subcommands.add_parser("demo-campaign", help="Reporting-only Demo campaign")
+    campaign_commands = campaign.add_subparsers(dest="campaign_command", required=True)
+    for name in ("start", "status", "report"):
+        command = campaign_commands.add_parser(name)
+        command.add_argument("--campaign-state", default=".trading-desk/demo-campaign.json")
+        command.add_argument("--ledger", default=".trading-desk/demo-trades.json")
+        command.add_argument("--journal", default=".trading-desk/trade-journal.sqlite3")
+        if name == "start":
+            command.add_argument("--enable-demo-campaign", action="store_true")
     return parser
+
+
+def _add_opportunity_runtime_arguments(
+    command: argparse.ArgumentParser, *, execution: bool
+) -> None:
+    command.add_argument("--economic-calendar", required=True)
+    command.add_argument("--holiday-calendar", required=True)
+    command.add_argument("--state-file", default=".trading-desk/opportunity-state.json")
+    command.add_argument("--journal", default=".trading-desk/trade-journal.sqlite3")
+    if not execution:
+        command.add_argument("--enable-opportunity-engine", action="store_true")
+    else:
+        command.add_argument("--campaign-state", default=".trading-desk/demo-campaign.json")
+        command.add_argument("--ledger", default=".trading-desk/demo-trades.json")
+        command.add_argument(
+            "--lifecycle-state", default=".trading-desk/demo-position-lifecycle.json"
+        )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command in {"opportunity", "demo-exploration", "demo-campaign"}:
+        _print_opportunity_header()
+        try:
+            return _run_opportunity_command(args)
+        except (
+            ExecutionError,
+            IGError,
+            JournalError,
+            OSError,
+            ValidationError,
+            ValueError,
+        ) as error:
+            print(f"Opportunity error: {error}", file=sys.stderr)
+            return 2
     if args.command == "backtest":
         _print_backtest_header()
         try:
@@ -476,6 +569,351 @@ def _print_safety_header() -> None:
     print("Environment: DEMO")
     print("Mode: READ_ONLY")
     print("Execution: UNAVAILABLE")
+
+
+def _print_opportunity_header() -> None:
+    print("Environment: DEMO")
+    print("Opportunity Engine: DISABLED BY DEFAULT")
+    print("Live trading: UNAVAILABLE")
+    print("Risk authority: REQUIRED")
+
+
+def _run_opportunity_command(args: argparse.Namespace) -> int:
+    engine = OpportunityEngineConfiguration()
+    universe = MarketUniverse()
+    if args.command == "opportunity":
+        if args.opportunity_command == "validate-config":
+            print(f"Markets: {len(universe.markets)}")
+            print("Timeframes: 5MINUTE, 15MINUTE, HOUR")
+            print(f"Configuration: {engine.configuration_fingerprint}")
+        elif args.opportunity_command in {"scan-once", "rank-once"}:
+            return asyncio.run(_run_read_only_opportunity_cycle(args))
+        else:
+            diagnostic = diagnose_inactivity(datetime.now(UTC), "ON_DEMAND", ActivityCounters())
+            print(f"Bottleneck: {diagnostic.dominant_bottleneck.value}")
+            print("Automatic threshold changes: unavailable")
+        return 0
+    if args.command == "demo-exploration":
+        if args.exploration_command == "status":
+            state = OpportunityStateStore(Path(".trading-desk/opportunity-state.json")).load()
+            print(f"Entry halted: {'yes' if state.entries_halted else 'no'}")
+            print(f"Last cycle: {state.last_cycle_timestamp or 'unavailable'}")
+            print(f"Missed evaluations: {state.missed_evaluation_count}")
+            return 0
+        return asyncio.run(_run_demo_exploration(args))
+    return asyncio.run(_run_demo_campaign(args))
+
+
+async def _run_read_only_opportunity_cycle(args: argparse.Namespace) -> int:
+    if not args.enable_opportunity_engine:
+        raise ValueError("opportunity scan requires --enable-opportunity-engine")
+    engine_configuration = OpportunityEngineConfiguration(enabled=True)
+    universe = MarketUniverse()
+    settings = AppSettings.from_environment()
+    if settings.safety.operating_mode is not OperatingMode.READ_ONLY:
+        raise ValueError("read-only opportunity commands require READ_ONLY mode")
+    calendar = LocalJSONEconomicCalendar(Path(args.economic_calendar))
+    holidays = LocalJSONHolidayCalendar(Path(args.holiday_calendar))
+    context_provider = OperationalCandidateContextProvider(calendar, holidays)
+    state_store = OpportunityStateStore(Path(args.state_file))
+    repository = _opportunity_repository(Path(args.journal))
+    try:
+        journal = OpportunityJournal(DurableJournalWriter(repository))
+        async with IGDemoClient(settings) as broker:
+            exposure = await OperationalExposureProvider(broker, universe).snapshot(
+                datetime.now(UTC)
+            )
+            provider = OperationalOpportunityEvidenceProvider(
+                broker,
+                context_provider,
+                holding_epics=exposure.existing_epics,
+                maximum_history_points=min(settings.broker.max_historical_price_points, 500),
+            )
+            service = OpportunityCycleService(
+                OpportunityEngine(engine_configuration, universe=universe),
+                provider,
+                state_store,
+                journal,
+            )
+            result = await service.run_cycle(
+                datetime.now(UTC),
+                existing_epics=exposure.existing_epics,
+                occupied_correlation_groups=exposure.occupied_correlation_groups,
+                recent_entries=exposure.recently_closed,
+                current_position_count=exposure.current_position_count,
+            )
+    finally:
+        repository.close()
+    _print_opportunity_cycle(result, ranked=args.opportunity_command == "rank-once")
+    print("Risk submissions: 0")
+    print("Broker mutation: unavailable in read-only scan")
+    return 0
+
+
+def _create_controlled_opportunity_authority(
+    broker: IGDemoExecutionAdapter,
+    ledger: DemoTradeLedger,
+    exploration_configuration: DemoExplorationConfiguration,
+) -> ControlledOpportunityAuthority:
+    return ControlledOpportunityAuthority(broker, ledger, exploration_configuration)
+
+
+async def _run_demo_exploration(args: argparse.Namespace) -> int:
+    if not (
+        args.enable_opportunity_engine and args.enable_demo_exploration and args.enable_execution
+    ):
+        raise ValueError(
+            "Demo Exploration requires engine, exploration, and execution enable switches"
+        )
+    engine_configuration = OpportunityEngineConfiguration(enabled=True)
+    exploration_configuration = DemoExplorationConfiguration(enabled=True)
+    universe = MarketUniverse()
+    campaign_store = DemoCampaignStateStore(Path(args.campaign_state))
+    campaign = campaign_store.load()
+    if campaign.status != "ACTIVE":
+        raise ValueError("an active persisted Demo campaign is required")
+    lifecycle_store = LifecycleStateStore(Path(args.lifecycle_state))
+    lifecycle_state = lifecycle_store.load()
+    calendar = LocalJSONEconomicCalendar(Path(args.economic_calendar))
+    holiday_source = LocalJSONHolidayCalendar(Path(args.holiday_calendar))
+    context_provider = OperationalCandidateContextProvider(calendar, holiday_source)
+    settings = AppSettings.from_environment().model_copy(
+        update={
+            "safety": SafetySettings(
+                operating_mode=OperatingMode.CONTROLLED_EXECUTION,
+                live_trading_allowed=False,
+                automatic_execution_enabled=True,
+            )
+        }
+    )
+    state_store = OpportunityStateStore(Path(args.state_file))
+    ledger = DemoTradeLedger(Path(args.ledger))
+    repository = _opportunity_repository(Path(args.journal))
+    try:
+        journal = OpportunityJournal(DurableJournalWriter(repository))
+        async with (
+            IGDemoExecutionAdapter(settings) as broker,
+            create_demo_position_exit_adapter(settings) as exit_broker,
+        ):
+            provider = OperationalOpportunityEvidenceProvider(
+                broker,
+                context_provider,
+                maximum_history_points=min(settings.broker.max_historical_price_points, 500),
+            )
+            cycle = OpportunityCycleService(
+                OpportunityEngine(
+                    engine_configuration,
+                    exploration_configuration,
+                    universe,
+                ),
+                provider,
+                state_store,
+                journal,
+            )
+            lifecycle_context = OperationalLifecycleContextProvider(exit_broker)
+            lifecycle = OperationalLifecyclePort(
+                PersistentPositionLifecycleMonitor(
+                    exit_broker,
+                    lifecycle_context,
+                    lifecycle_store,
+                    enabled_lifecycle_configuration(),
+                ),
+                context_provider=lifecycle_context,
+                ledger=ledger,
+            )
+            authority = _create_controlled_opportunity_authority(
+                broker, ledger, exploration_configuration
+            )
+            campaign_service = DemoCampaignService(
+                broker,
+                campaign_store,
+                DemoCampaignConfiguration(enabled=True),
+                journal=journal,
+                ledger=ledger,
+            )
+            orchestrator = OpportunityOrchestrator(
+                cycle,
+                authority,
+                authority,
+                lifecycle,
+                exposure=OperationalExposureProvider(broker, universe),
+                ledger=ledger,
+                campaign=campaign_service,
+                journal=journal,
+            )
+            closed_dates = tuple(
+                item.calendar_date.isoformat()
+                for item in holiday_source.snapshot().entries
+                if item.impact.value == "HOLIDAY"
+            )
+            scheduler = CompletedBarSchedulerService(
+                universe,
+                state_store,
+                maximum_catch_up_bars=exploration_configuration.maximum_catch_up_bars,
+                closed_dates=closed_dates,
+            )
+            if args.exploration_command == "run-cycle":
+                now = datetime.now(UTC)
+                due = scheduler.due(now)
+                if due:
+                    result = await orchestrator.run(
+                        now,
+                        explicit_demo_enable=True,
+                        entry_halted=(campaign.entry_halted or state_store.load().entries_halted),
+                        unresolved_execution_ambiguity=(
+                            bool(lifecycle_state.unresolved_close_states)
+                        ),
+                        reconciliation_mismatch=(bool(lifecycle_state.reconciliation_mismatches)),
+                        scheduled_evaluations=due,
+                    )
+                    _print_opportunity_cycle(result.cycle, ranked=True)
+                    print(f"Risk decisions: {len(result.risk_decision_ids)}")
+                    print(f"Orders submitted: {result.execution_submission_count}")
+                else:
+                    await lifecycle.monitor(now)
+                    print("Due evaluations: 0")
+                    print("Lifecycle monitoring: completed")
+                    print("Orders submitted: 0")
+            else:
+                stop = asyncio.Event()
+                _install_shutdown_handlers(stop)
+                health = await AutonomousOpportunityRunner(
+                    orchestrator,
+                    scheduler,
+                    lifecycle,
+                    exploration_configuration,
+                    Path(args.state_file).with_name("opportunity-runner.json"),
+                ).run(stop, explicit_demo_enable=True)
+                print(f"Cycles completed: {health.cycles_completed}")
+                print(f"Lifecycle cycles: {health.lifecycle_cycles_completed}")
+                print(f"Missed evaluations: {health.missed_evaluations}")
+    finally:
+        repository.close()
+    return 0
+
+
+async def _run_demo_campaign(args: argparse.Namespace) -> int:
+    if args.campaign_command == "start" and not args.enable_demo_campaign:
+        raise ValueError("campaign start requires --enable-demo-campaign")
+    configuration = DemoCampaignConfiguration(enabled=True)
+    store = DemoCampaignStateStore(Path(args.campaign_state))
+    ledger = DemoTradeLedger(Path(args.ledger))
+    settings = AppSettings.from_environment()
+    if settings.safety.operating_mode is not OperatingMode.READ_ONLY:
+        raise ValueError("campaign account snapshots require READ_ONLY mode")
+    repository = _opportunity_repository(Path(args.journal))
+    try:
+        journal = OpportunityJournal(DurableJournalWriter(repository))
+        async with IGDemoClient(settings) as broker:
+            service = DemoCampaignService(
+                broker,
+                store,
+                configuration,
+                journal=journal,
+            )
+            now = datetime.now(UTC)
+            if args.campaign_command == "start":
+                snapshot = await service.start(
+                    "demo-campaign",
+                    "Thirty-day Demo campaign",
+                    now,
+                )
+            else:
+                snapshot = await service.refresh(now, ledger.load().records)
+    finally:
+        repository.close()
+    if args.campaign_command == "report":
+        report = campaign_report(snapshot, ledger.load().records)
+        _print_campaign_report(report)
+    else:
+        _print_campaign_status(snapshot, configuration)
+    return 0
+
+
+def _opportunity_repository(path: Path) -> SQLiteJournalRepository:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return SQLiteJournalRepository(JournalConfiguration(database_path=path))
+
+
+def _print_opportunity_cycle(result: OpportunityCycleResult, *, ranked: bool) -> None:
+    counters = result.diagnostic.counters
+    print(f"Cycle ID: {result.cycle_id}")
+    print(f"Cycle timestamp: {result.cycle_timestamp.isoformat()}")
+    print(f"Markets scanned: {counters.markets_scanned}")
+    print(f"Instrument/timeframes evaluated: {counters.instrument_timeframes_evaluated}")
+    print(f"Strategy evaluations: {counters.strategy_evaluations}")
+    print(f"Candidates created: {counters.candidates_created}")
+    print(f"Eligible candidates: {len(result.ranking.ordered_candidate_ids)}")
+    print(f"Rejected candidates: {len(result.ranking.rejected_candidate_ids)}")
+    print(f"Top-ranked candidates: {len(result.ranking.selected_candidate_ids)}")
+    print(f"Dominant bottleneck: {result.diagnostic.dominant_bottleneck.value}")
+    if result.skipped_evaluation_ids:
+        print(f"Skipped evaluations: {len(result.skipped_evaluation_ids)}")
+    if ranked:
+        by_id = {item.candidate_id: item for item in result.candidates}
+        for rank, candidate_id in enumerate(result.ranking.ordered_candidate_ids, start=1):
+            item = by_id[candidate_id]
+            reason = ",".join(value.value for value in item.rejection_reasons) or "none"
+            print(
+                f"{rank}. {item.instrument_id} | {item.timeframe.value} | "
+                f"{item.strategy_id} | {item.regime} | {item.confidence_label.value} | "
+                f"score={item.opportunity_score} | net_ev={item.net_expected_value} | "
+                f"cost={item.costs.total_estimated_cost} | {item.status.value} | {reason}"
+            )
+
+
+def _print_campaign_status(snapshot, configuration):  # type: ignore[no-untyped-def]
+    print(f"Campaign: {snapshot.campaign_name}")
+    print(f"Status: {snapshot.status}")
+    print(f"Starting balance: {snapshot.starting_balance}")
+    print(f"Current balance: {snapshot.current_balance}")
+    print(f"Current equity: {snapshot.current_equity}")
+    print(f"Realized P&L: {snapshot.realized_pnl}")
+    print(f"Unrealized P&L: {snapshot.unrealized_pnl}")
+    print(f"Return: {snapshot.return_percent}%")
+    print(
+        f"Closed trades: {snapshot.closed_trade_count}/{configuration.minimum_closed_trade_target}"
+    )
+    print(f"Entry halted: {'yes' if snapshot.entry_halted else 'no'}")
+    print(f"Safety incidents: {snapshot.execution_incidents + snapshot.reconciliation_incidents}")
+    print(f"Stretch objective progress: {snapshot.stretch_objective_progress_percent}%")
+    print("Stretch objective: reporting only")
+
+
+def _print_campaign_report(report):  # type: ignore[no-untyped-def]
+    for label, value in (
+        ("Starting balance", report.starting_balance),
+        ("Current balance", report.current_balance),
+        ("Current equity", report.current_equity),
+        ("Realized P&L", report.realized_pnl),
+        ("Unrealized P&L", report.unrealized_pnl),
+        ("Return percent", report.return_percent),
+        ("Maximum drawdown percent", report.maximum_drawdown_percent),
+        ("Submitted trades", report.trade_count),
+        ("Closed trades", report.closed_trades),
+        ("Wins", report.wins),
+        ("Losses", report.losses),
+        ("Win rate", report.win_rate),
+        ("Expectancy", report.expectancy),
+        ("Profit factor", report.profit_factor),
+        ("Estimated costs", report.estimated_costs),
+        ("Observed costs", report.observed_costs),
+        ("Uptime percent", report.uptime_percent),
+    ):
+        print(f"{label}: {value if value is not None else 'unavailable'}")
+
+
+def _install_shutdown_handlers(stop: asyncio.Event) -> None:
+    loop = asyncio.get_running_loop()
+
+    def request_stop(*_: object) -> None:
+        loop.call_soon_threadsafe(stop.set)
+
+    for signum in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(signum, request_stop)
+        except (NotImplementedError, RuntimeError):
+            signal.signal(signum, request_stop)
 
 
 def _print_backtest_header() -> None:
