@@ -364,3 +364,20 @@ account, position, order, or working order.
 - Campaign objectives are reporting only. Hard daily-loss, drawdown, consecutive-loss,
   execution-incident, and reconciliation-incident thresholds persist an entry halt;
   they never stop monitoring, reconciliation, or governed exits.
+
+## Multi-Regime Strategy Governance
+
+- Portfolio evaluators consume immutable cutoff-safe market/context records only. They
+  must not import broker, HTTP, Risk, execution, credentials, AI, or dashboard modules.
+- Decisions are `CANDIDATE`, `REJECT`, `INELIGIBLE_REGIME`, `INSUFFICIENT_DATA`, or
+  `STALE_DATA`. Direction is long only. Results contain no quantity, leverage,
+  monetary risk, or execution command.
+- Shared indicator definitions are canonical and versioned. Observations after the
+  current or higher-timeframe evaluation cutoff are prohibited.
+- Final-test data is locked before exposure and never selects parameters. Walk-forward
+  windows are chronological; failed windows and unstable regions remain visible.
+- Promotion is never automatic. A complete fingerprinted artifact, passed gates, and
+  explicit promotion record are mandatory. Corrupt or incomplete artifacts fail closed.
+- Research-only strategies can be evaluated and journaled but cannot reach Risk.
+  Strategy breakers stop new entries only and never disable lifecycle exits.
+- Synthetic fixtures validate mechanics only and are not profitability or promotion evidence.

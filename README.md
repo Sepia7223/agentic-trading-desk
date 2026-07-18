@@ -703,3 +703,36 @@ Demo Exploration daily maximum; ambiguous submissions consume a slot. The standa
 automated Demo smoke runner keeps its independent one-order-per-day limit. Automated
 tests use deterministic or mocked broker inputs; no real IG Demo scan, order, or close
 was performed for this correction.
+
+## Milestone 12 Multi-Regime Portfolio
+
+**Implemented:** a common immutable evaluator contract now supports the preserved
+`trend-regime-v1` baseline plus deterministic long-only trend-pullback,
+volatility-breakout, and lower-range mean-reversion evaluators. Shared ATR, range, and
+slope definitions use completed observations only. Results are cutoff-stamped and
+fingerprinted, with explicit evidence and rejection reasons but no quantity or broker
+instruction.
+
+**Governed:** states are `RESEARCH_ONLY`, `BACKTEST_VALIDATED`,
+`DEMO_EXPLORATION_ENABLED`, and `DISABLED`. Promotion requires an integrity-checked
+artifact and explicit human-authored decision. Backtest completion, AI output,
+activity targets, and dashboard actions cannot promote a strategy. Per-strategy
+persistent circuit breakers halt new entries only; lifecycle exits remain active.
+
+**Current state:** `trend-regime-v1` retains its accepted Demo-exploration lineage.
+The three new families remain `RESEARCH_ONLY`: no approved historical dataset is
+stored in this repository, so synthetic tests are mechanics evidence, not promotion
+evidence. Their artifact packages record `NOT_RUN`, missing gates, and
+`REMAIN_RESEARCH_ONLY`.
+
+```bash
+python -m trading_desk.cli strategy list
+python -m trading_desk.cli strategy describe trend-pullback-v1
+python -m trading_desk.cli strategy validate-config
+python -m trading_desk.cli strategy promotion-status
+```
+
+The Operations Center adds GET-only validation, performance, regime, portfolio-
+contribution, and circuit-breaker views. Live remains technically unavailable; Risk
+alone sizes and approves, controlled IG Demo execution alone opens, and the lifecycle
+engine alone closes positions.

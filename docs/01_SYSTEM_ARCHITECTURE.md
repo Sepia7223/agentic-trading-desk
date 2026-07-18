@@ -397,3 +397,12 @@ unfinished bar, and preserves context/router/strategy fingerprints. The orchestr
 loads authoritative positions before filtering and stops new Risk submissions when
 exposure is unknown. Durable campaign and submitted-order ledgers enforce limits
 across restart.
+
+## Milestone 12 Strategy Flow
+
+`Completed Market Data -> Immutable Evaluation Context -> Regime Eligibility ->
+Independent Strategy Evaluators -> Router -> Opportunity Ranking -> Risk`. Evaluators
+cannot call downstream services. Only `DEMO_EXPLORATION_ENABLED` results may become
+Opportunity candidates. Validation is chronological across development, validation,
+locked final-test, stress, robustness, and portfolio contribution. Promotion is an
+offline explicit act; the dashboard has no reverse command path.

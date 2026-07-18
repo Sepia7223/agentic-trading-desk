@@ -165,6 +165,26 @@ def create_operations_app(
     async def strategy_leaderboard():  # type: ignore[no-untyped-def]
         return service.opportunity_breakdown("strategy_id")
 
+    @app.get("/api/v1/strategies/validation-matrix")
+    async def strategy_validation_matrix():  # type: ignore[no-untyped-def]
+        return service.strategy_validation_matrix()
+
+    @app.get("/api/v1/strategies/performance-comparison")
+    async def strategy_performance_comparison():  # type: ignore[no-untyped-def]
+        return service.strategy_comparison()
+
+    @app.get("/api/v1/strategies/regime-matrix")
+    async def strategy_regime_matrix():  # type: ignore[no-untyped-def]
+        return service.strategy_regime_matrix()
+
+    @app.get("/api/v1/strategies/portfolio-contribution")
+    async def strategy_portfolio_contribution():  # type: ignore[no-untyped-def]
+        return service.strategy_portfolio_contribution()
+
+    @app.get("/api/v1/strategies/circuit-breakers")
+    async def strategy_circuit_breakers():  # type: ignore[no-untyped-def]
+        return service.strategy_circuit_breakers()
+
     @app.get("/api/v1/instrument-performance")
     async def instrument_performance():  # type: ignore[no-untyped-def]
         return service.opportunity_breakdown("instrument_id")

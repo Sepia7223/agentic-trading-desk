@@ -340,13 +340,13 @@ def default_strategy_policies() -> tuple[StrategyPolicy, ...]:
             frames,
         ),
         create_strategy_policy(
-            "volatility-breakout-v1",
+            "volatility-breakout",
             StrategyFamily.VOLATILITY_BREAKOUT,
             (StrategyValidationState.RESEARCH_ONLY,),
             frames,
         ),
         create_strategy_policy(
-            "range-mean-reversion-v1",
+            "range-mean-reversion",
             StrategyFamily.RANGE_MEAN_REVERSION,
             (StrategyValidationState.RESEARCH_ONLY,),
             frames,

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
+from typing import Protocol
 
 from trading_desk.ig.models import Account, Direction, MarketStatus, OpenPosition
 from trading_desk.lifecycle.config import LifecycleConfiguration
@@ -21,9 +22,21 @@ from trading_desk.lifecycle.monitor import PersistentPositionLifecycleMonitor
 from trading_desk.opportunity.ledger import DemoTradeLedger, DemoTradeStatus
 
 
+class StrategyInvalidationProvider(Protocol):
+    async def evaluate(
+        self, snapshot: DemoPositionSnapshot, now: datetime
+    ) -> StrategyExitState: ...
+
+
 class OperationalLifecycleContextProvider:
-    def __init__(self, broker) -> None:  # type: ignore[no-untyped-def]
+    def __init__(
+        self,
+        broker,  # type: ignore[no-untyped-def]
+        *,
+        invalidation_provider: StrategyInvalidationProvider | None = None,
+    ) -> None:
         self.broker = broker
+        self._invalidation_provider = invalidation_provider
         self._accounts: tuple[Account, ...] = ()
         self.snapshots_by_position: dict[str, DemoPositionSnapshot] = {}
 
@@ -47,8 +60,9 @@ class OperationalLifecycleContextProvider:
     async def strategy_exit(
         self, snapshot: DemoPositionSnapshot, now: datetime
     ) -> StrategyExitState:
-        del snapshot, now
-        return StrategyExitState.HOLD
+        if self._invalidation_provider is None:
+            return StrategyExitState.HOLD
+        return await self._invalidation_provider.evaluate(snapshot, now)
 
     async def _snapshot(self, position: OpenPosition, now: datetime) -> DemoPositionSnapshot:
         if position.direction is not Direction.BUY:

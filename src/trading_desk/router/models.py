@@ -18,6 +18,7 @@ from trading_desk.context.models import (
     VolatilityState,
 )
 from trading_desk.router.fingerprints import fingerprint
+from trading_desk.strategy.contracts import StrategyEvaluationResult
 from trading_desk.strategy.models import TradeCandidate
 
 
@@ -26,10 +27,13 @@ class RouterModel(BaseModel):
 
 
 class ValidationStatus(StrEnum):
-    VALIDATED = "VALIDATED"
     RESEARCH_ONLY = "RESEARCH_ONLY"
+    BACKTEST_VALIDATED = "BACKTEST_VALIDATED"
+    DEMO_EXPLORATION_ENABLED = "DEMO_EXPLORATION_ENABLED"
     DISABLED = "DISABLED"
-    REJECTED = "REJECTED"
+    # Compatibility aliases preserve Milestone 11 callers and journal lineage.
+    VALIDATED = "DEMO_EXPLORATION_ENABLED"
+    REJECTED = "DISABLED"
 
 
 class RouteStatus(StrEnum):
@@ -78,6 +82,12 @@ class StrategyDescriptor(RouterModel):
     maximum_spread_bps: Decimal = Field(gt=0)
     configuration_fingerprint: str = Field(min_length=64, max_length=64)
     validation_status: ValidationStatus
+    strategy_code_fingerprint: str = Field(default="0" * 64, min_length=64, max_length=64)
+    indicator_definition_version: str = "portfolio-indicators-v1"
+    validation_report_id: str | None = None
+    validation_dataset_fingerprint: str | None = Field(default=None, min_length=64, max_length=64)
+    promotion_timestamp: datetime | None = None
+    promotion_authority: str | None = None
 
     @model_validator(mode="after")
     def validate_fingerprint(self) -> Self:
@@ -134,14 +144,20 @@ class StrategyRouterDecision(RouterModel):
 class RoutedStrategyResult(RouterModel):
     decision: StrategyRouterDecision
     candidate: TradeCandidate | None
+    portfolio_result: StrategyEvaluationResult | None = None
     research_results: tuple[ResearchStrategyResult, ...] = ()
 
     @model_validator(mode="after")
     def candidate_matches_route(self) -> Self:
-        if self.candidate is not None and self.decision.selected_strategy_id != "trend-regime-v1":
-            raise ValueError("candidate may only come from the validated trend strategy")
         if self.decision.route_status is not RouteStatus.STRATEGY_SELECTED and self.candidate:
             raise ValueError("non-selected routes cannot produce candidates")
+        if (
+            self.decision.route_status is not RouteStatus.STRATEGY_SELECTED
+            and self.portfolio_result
+        ):
+            raise ValueError("non-selected routes cannot produce portfolio results")
+        if self.candidate is not None and self.portfolio_result is not None:
+            raise ValueError("a routed result has one strategy output")
         if any(item.executable for item in self.research_results):
             raise ValueError("research results can never be executable")
         return self

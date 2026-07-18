@@ -48,3 +48,33 @@ export const InactivityDiagnostics = () => (
 export const DemoCampaign = () => (
   <JsonView title="Demo Campaign" endpoint="/api/v1/demo-campaign" />
 );
+export const StrategyValidationMatrix = () => (
+  <JsonView
+    title="Strategy Validation Matrix"
+    endpoint="/api/v1/strategies/validation-matrix"
+  />
+);
+export const StrategyPerformanceComparison = () => (
+  <JsonView
+    title="Strategy Performance Comparison"
+    endpoint="/api/v1/strategies/performance-comparison"
+  />
+);
+export const StrategyRegimeMatrix = () => (
+  <JsonView
+    title="Strategy-Regime Matrix"
+    endpoint="/api/v1/strategies/regime-matrix"
+  />
+);
+export const StrategyPortfolioContribution = () => (
+  <JsonView
+    title="Portfolio Contribution"
+    endpoint="/api/v1/strategies/portfolio-contribution"
+  />
+);
+export const StrategyCircuitBreakers = () => (
+  <JsonView
+    title="Strategy Circuit Breakers"
+    endpoint="/api/v1/strategies/circuit-breakers"
+  />
+);

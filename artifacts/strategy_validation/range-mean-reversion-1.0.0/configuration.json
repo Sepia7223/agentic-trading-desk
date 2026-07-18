@@ -1,0 +1,6 @@
+{
+  "strategy_code_fingerprint": "d1061c190ec552c3664ed2fc7497965353d7be0a688232ad70c76d515aab8227",
+  "strategy_configuration_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+  "strategy_id": "range-mean-reversion",
+  "strategy_version": "1.0.0"
+}

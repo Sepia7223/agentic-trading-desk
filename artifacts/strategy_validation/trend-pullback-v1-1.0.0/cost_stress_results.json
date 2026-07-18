@@ -1,0 +1,19 @@
+{
+  "failed_gates": [
+    "APPROVED_DATASET_UNAVAILABLE",
+    "MINIMUM_CLOSED_TRADES",
+    "POSITIVE_EXPECTANCY",
+    "WALK_FORWARD_EVIDENCE",
+    "COST_STRESS_EVIDENCE",
+    "ROBUSTNESS_EVIDENCE",
+    "PORTFOLIO_CONTRIBUTION_EVIDENCE"
+  ],
+  "required_multipliers": [
+    "1.00",
+    "1.25",
+    "1.50",
+    "2.00"
+  ],
+  "status": "NOT_RUN",
+  "synthetic_data_promotional": false
+}

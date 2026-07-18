@@ -16,8 +16,10 @@ from trading_desk.router.models import (
 from trading_desk.router.registry import StrategyRegistry
 from trading_desk.router.research import evaluate_research_strategy
 from trading_desk.router.selection import select_strategy
+from trading_desk.strategy.contracts import evaluation_context
 from trading_desk.strategy.models import StrategyContext, StrategyMarketData, TradeCandidate
 from trading_desk.strategy.pipeline import RegimeAwareStrategyPipeline
+from trading_desk.strategy.portfolio_registry import PortfolioStrategyRegistry
 
 
 class StrategyRouter:
@@ -52,7 +54,8 @@ class StrategyRouter:
             item.strategy_id
             for item in assessments
             if item.eligible
-            and by_id[item.strategy_id].validation_status is ValidationStatus.VALIDATED
+            and by_id[item.strategy_id].validation_status
+            is ValidationStatus.DEMO_EXPLORATION_ENABLED
         )
         research = tuple(
             item.strategy_id
@@ -115,9 +118,26 @@ class StrategyRouter:
             execution_halted=execution_halted,
         )
         candidate = None
+        portfolio_result = None
         if decision.selected_strategy_id == "trend-regime-v1":
             candidate = (pipeline or RegimeAwareStrategyPipeline()).analyze_latest(
                 market_data, strategy_context
+            )
+        elif decision.selected_strategy_id:
+            evaluator = PortfolioStrategyRegistry().require(decision.selected_strategy_id)
+            portfolio_result = evaluator.evaluate(
+                context=evaluation_context(
+                    evaluation_timestamp=context_snapshot.evaluation_timestamp,
+                    instrument_id=context_snapshot.instrument,
+                    epic=context_snapshot.epic,
+                    timeframe=context_snapshot.timeframe,
+                    completed_bar_timestamp=context_snapshot.data_cutoff_timestamp,
+                    market_data=market_data,
+                    higher_timeframe_data=None,
+                    market_context=context_snapshot,
+                    existing_position=strategy_context.holding,
+                    strategy_configuration_fingerprint=evaluator.strategy_fingerprint,
+                )
             )
         research_results = tuple(
             evaluate_research_strategy(identifier, context_snapshot, market_data)
@@ -126,6 +146,7 @@ class StrategyRouter:
         return RoutedStrategyResult(
             decision=decision,
             candidate=candidate,
+            portfolio_result=portfolio_result,
             research_results=research_results,
         )
 

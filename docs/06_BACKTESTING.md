@@ -158,3 +158,22 @@ retain completed-bar timing, chronological splits, final-test isolation, transac
 costs, Risk-adjusted results, and instrument/regime/timeframe attribution. Research-only
 families cannot reach Risk until a separately reviewed backtest promotion changes their
 fingerprinted validation policy.
+
+## Milestone 12 Validation Protocol
+
+Evaluation order is development, validation, locked final test, portfolio combination,
+then Demo-exploration review. Final-test data is sealed before exposure and cannot
+select parameters, metrics, costs, or Risk policy. Walk-forward windows preserve time
+order, select parameters inside training only, retain failed forward windows, report
+regime distribution, and expose parameter instability.
+
+Required evidence includes the full return, win/loss, expectancy, profit-factor,
+drawdown, duration, risk-adjusted, cost, turnover, exposure, rejection, and conversion
+metrics. Cost scenarios are 1.00x, 1.25x, 1.50x, and 2.00x observed assumptions.
+Execution stress includes adverse price increments and one-completed-bar delay.
+Parameter, timeframe, instrument, period, regime, missing-bar, and volatility-shift
+tests are represented explicitly and cannot hide failed regions.
+
+Artifact packages are SHA-256 sealed and corruption fails closed. Current new-family
+packages state `NOT_RUN` because there is no approved historical dataset. Their
+synthetic tests are not backtest, final-test, profitability, or promotion evidence.
