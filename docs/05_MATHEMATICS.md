@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -160,3 +160,11 @@ rolling mean, and realized volatility is the population standard deviation of ca
 simple returns. Percentile ranks use only values observed through `t`. Trend labels
 interpret, but do not alter, the existing Kalman slope and HMM semantic regime.
 Context and configuration identities are SHA-256 hashes of canonical sorted data.
+
+## Milestone 11 Opportunity Mathematics
+
+Gross expected value is `p_win * average_gain - p_loss * average_loss`. Net expected
+value subtracts fresh spread, slippage, commission, funding, uncertainty, low-liquidity,
+and event-risk costs. Decimal score components are bounded and weighted to exactly one.
+Stable SHA-256 identities cover configuration, evidence, candidates, rankings, cycles,
+diagnostics, campaign snapshots, and persisted state.

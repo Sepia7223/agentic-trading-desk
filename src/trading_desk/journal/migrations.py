@@ -7,9 +7,15 @@ from datetime import UTC, datetime
 
 from trading_desk.journal.errors import JournalSchemaError, UnsupportedSchemaError
 from trading_desk.journal.fingerprints import fingerprint
-from trading_desk.journal.schema import SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_VERSION
+from trading_desk.journal.schema import (
+    SCHEMA_V1,
+    SCHEMA_V2,
+    SCHEMA_V3,
+    SCHEMA_V4,
+    SCHEMA_VERSION,
+)
 
-MIGRATIONS = {1: SCHEMA_V1, 2: SCHEMA_V2, 3: SCHEMA_V3}
+MIGRATIONS = {1: SCHEMA_V1, 2: SCHEMA_V2, 3: SCHEMA_V3, 4: SCHEMA_V4}
 
 
 def database_version(connection: sqlite3.Connection) -> int:

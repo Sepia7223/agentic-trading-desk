@@ -40,9 +40,10 @@ ig-trader = "trading_desk.cli:main"
 packages = ["src/trading_desk"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q --basetemp=.trading-desk/pytest-temp"
 testpaths = ["tests"]
 pythonpath = ["src"]
+cache_dir = ".trading-desk/pytest-cache"
 
 [tool.ruff]
 line-length = 100

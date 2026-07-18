@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -192,3 +192,10 @@ AI may review immutable completed lifecycle evidence after the fact. It cannot t
 or confirm an exit, select quantity, alter precedence, change stop/target, clear a
 persistent halt, submit/retry a close, reconcile broker state, or mutate source
 records. Deterministic lifecycle completion does not depend on an AI provider.
+
+## Milestone 11 Boundary
+
+AI does not generate opportunity scores, expected values, rankings, strategy promotion,
+activity-target changes, campaign decisions, Risk requests, or execution actions. An AI
+outage cannot stop deterministic scanning, Risk, controlled execution, or lifecycle
+monitoring. Opportunity evidence may be reviewed only after immutable journaling.

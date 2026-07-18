@@ -102,6 +102,14 @@ from trading_desk.lifecycle.state import LifecycleStateStore, update_state
 from trading_desk.operations.config import OperationsConfiguration
 from trading_desk.operations.health import StartupJournalHealth
 from trading_desk.operations.service import OperationsService
+from trading_desk.opportunity.campaign import campaign_snapshot
+from trading_desk.opportunity.config import (
+    DemoCampaignConfiguration,
+    DemoExplorationConfiguration,
+    MarketUniverse,
+    OpportunityEngineConfiguration,
+)
+from trading_desk.opportunity.diagnostics import ActivityCounters, diagnose_inactivity
 from trading_desk.portfolio import (
     InMemoryPortfolioRepository,
     MarketQuote,
@@ -384,11 +392,39 @@ def build_parser() -> argparse.ArgumentParser:
     operations_run.add_argument("--port", type=int, default=8000)
     operations_run.add_argument("--journal", required=True)
     operations_run.add_argument("--frontend")
+
+    opportunity = subcommands.add_parser(
+        "opportunity", help="Local deterministic opportunity analysis"
+    )
+    opportunity_commands = opportunity.add_subparsers(dest="opportunity_command", required=True)
+    opportunity_commands.add_parser("validate-config")
+    opportunity_commands.add_parser("scan-once")
+    opportunity_commands.add_parser("rank-once")
+    opportunity_commands.add_parser("diagnostics")
+
+    exploration = subcommands.add_parser("demo-exploration", help="Bounded Demo policy")
+    exploration_commands = exploration.add_subparsers(dest="exploration_command", required=True)
+    for name in ("run-cycle", "run"):
+        command = exploration_commands.add_parser(name)
+        command.add_argument("--enable-demo-exploration", action="store_true")
+    exploration_commands.add_parser("status")
+
+    campaign = subcommands.add_parser("demo-campaign", help="Reporting-only Demo campaign")
+    campaign_commands = campaign.add_subparsers(dest="campaign_command", required=True)
+    for name in ("start", "status", "report"):
+        campaign_commands.add_parser(name)
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command in {"opportunity", "demo-exploration", "demo-campaign"}:
+        _print_opportunity_header()
+        try:
+            return _run_opportunity_command(args)
+        except (OSError, ValidationError, ValueError) as error:
+            print(f"Opportunity error: {error}", file=sys.stderr)
+            return 2
     if args.command == "backtest":
         _print_backtest_header()
         try:
@@ -476,6 +512,58 @@ def _print_safety_header() -> None:
     print("Environment: DEMO")
     print("Mode: READ_ONLY")
     print("Execution: UNAVAILABLE")
+
+
+def _print_opportunity_header() -> None:
+    print("Environment: DEMO")
+    print("Opportunity Engine: DISABLED BY DEFAULT")
+    print("Live trading: UNAVAILABLE")
+    print("Risk authority: REQUIRED")
+
+
+def _run_opportunity_command(args: argparse.Namespace) -> int:
+    engine = OpportunityEngineConfiguration()
+    exploration = DemoExplorationConfiguration()
+    campaign = DemoCampaignConfiguration()
+    universe = MarketUniverse()
+    if args.command == "opportunity":
+        if args.opportunity_command == "validate-config":
+            print(f"Markets: {len(universe.markets)}")
+            print("Timeframes: 5MINUTE, 15MINUTE, HOUR")
+            print(f"Configuration: {engine.configuration_fingerprint}")
+        elif args.opportunity_command in {"scan-once", "rank-once"}:
+            print("Candidates: 0")
+            print("Risk submissions: 0")
+            print("Reason: OPPORTUNITY_ENGINE_DISABLED")
+        else:
+            diagnostic = diagnose_inactivity(datetime.now(UTC), "ON_DEMAND", ActivityCounters())
+            print(f"Bottleneck: {diagnostic.dominant_bottleneck.value}")
+            print("Automatic threshold changes: unavailable")
+        return 0
+    if args.command == "demo-exploration":
+        enabled = bool(exploration.enabled and getattr(args, "enable_demo_exploration", False))
+        print(f"Configured: {'yes' if exploration.enabled else 'no'}")
+        print(f"Explicitly enabled: {'yes' if enabled else 'no'}")
+        print("Orders submitted: 0")
+        return 0
+    snapshot = campaign_snapshot(
+        campaign_id="demo-campaign",
+        campaign_name="Thirty-day Demo campaign",
+        started_at=datetime.now(UTC),
+        observed_at=datetime.now(UTC),
+        current_balance=campaign.starting_balance_reference,
+        current_equity=campaign.starting_balance_reference,
+        maximum_equity=campaign.starting_balance_reference,
+        daily_pnl=Decimal("0"),
+        weekly_drawdown_percent=Decimal("0"),
+        consecutive_losses=0,
+        configuration=campaign,
+    )
+    print(f"Configured: {'yes' if campaign.enabled else 'no'}")
+    print(f"Starting balance reference: {snapshot.starting_balance}")
+    print(f"Entry halted: {'yes' if snapshot.entry_halted else 'no'}")
+    print("Stretch objective: reporting only")
+    return 0
 
 
 def _print_backtest_header() -> None:

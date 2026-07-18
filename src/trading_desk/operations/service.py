@@ -267,6 +267,51 @@ class OperationsService:
         next_offset = offset + limit if offset + limit < len(records) else None
         return SearchResult(records=page, total_matches=len(records), next_offset=next_offset)
 
+    def opportunity_records(self, *, limit: int = 100) -> SearchResult:
+        types = {
+            JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED.value,
+            JournalRecordType.OPPORTUNITY_REJECTED.value,
+            JournalRecordType.OPPORTUNITY_SELECTED.value,
+            JournalRecordType.OPPORTUNITY_RISK_REJECTED.value,
+            JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED.value,
+        }
+        records = tuple(item for item in self.all_records() if item.record_type in types)
+        page = records[-limit:]
+        return SearchResult(records=page, total_matches=len(records), next_offset=None)
+
+    def opportunity_activity(self) -> dict[str, object]:
+        records = self.all_records()
+        counts = {
+            name: sum(1 for item in records if item.record_type == record_type.value)
+            for name, record_type in {
+                "cycles": JournalRecordType.OPPORTUNITY_CYCLE_COMPLETED,
+                "candidates": JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED,
+                "selected": JournalRecordType.OPPORTUNITY_SELECTED,
+                "risk_rejections": JournalRecordType.OPPORTUNITY_RISK_REJECTED,
+                "execution_approvals": JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED,
+            }.items()
+        }
+        return {"environment": "DEMO", "authority": "READ ONLY", **counts}
+
+    def opportunity_breakdown(self, field: str) -> tuple[dict[str, object], ...]:
+        counts: dict[str, int] = {}
+        for record in self.opportunity_records(
+            limit=self.configuration.maximum_replay_records
+        ).records:
+            value = record.payload.get(field)
+            label = str(value) if value not in (None, "") else "UNKNOWN"
+            counts[label] = counts.get(label, 0) + 1
+        return tuple({"label": label, "records": count} for label, count in sorted(counts.items()))
+
+    def inactivity_diagnostics(self, *, limit: int = 100) -> SearchResult:
+        return self.records(
+            record_type=JournalRecordType.INACTIVITY_DIAGNOSTIC_CREATED, limit=limit
+        )
+
+    def demo_campaign(self):  # type: ignore[no-untyped-def]
+        halted = self.latest(JournalRecordType.DEMO_CAMPAIGN_HALTED)
+        return halted or self.latest(JournalRecordType.DEMO_CAMPAIGN_SNAPSHOT_CREATED)
+
     def configuration_view(self) -> dict[str, object]:
         return {
             "environment": self.configuration.environment,

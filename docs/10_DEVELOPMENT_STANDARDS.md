@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -176,3 +176,11 @@ submission, confirmation, reconciliation, persistence, scheduler, journal, opera
 security, and mocked end-to-end tests. Tests must prove one-attempt behavior, no close
 retry, persistent halt, full-close-only `SELL` mapping, GET-only dashboard authority,
 and absence of live, short, amendment, AI, or journal-to-broker paths.
+
+## Milestone 11 Standards
+
+Opportunity modules must remain Decimal-based, immutable, strict, deterministic, and
+free of broker/HTTP/credential dependencies. Tests cover the universe, configuration,
+models, cost/EV scoring, suppression, ranking, persistence, orchestration, journal,
+campaign, operations APIs, frontend, and static safety scans. All new Operations routes
+must be GET-only and all mutation ambiguity remains one-attempt/no-retry.

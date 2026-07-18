@@ -1,6 +1,6 @@
 """Versioned SQLite schema for append-only journal evidence."""
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS journal_metadata (
@@ -99,4 +99,9 @@ END;
 SCHEMA_V3 = """
 INSERT OR REPLACE INTO journal_metadata(key, value)
 VALUES ('supported_record_types_version', 'demo-position-lifecycle-v1');
+"""
+
+SCHEMA_V4 = """
+INSERT OR REPLACE INTO journal_metadata(key, value)
+VALUES ('supported_record_types_version', 'multi-instrument-opportunity-v1');
 """

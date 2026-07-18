@@ -327,3 +327,25 @@ account, position, order, or working order.
   call the close adapter. Operations Center lifecycle routes remain GET-only.
 - Tests use mock transport. Never inspect `.env`, expose OAuth values, or perform a
   real Demo close without separate operator authorization and an existing position.
+
+## Opportunity Engine Boundary
+
+- `trading_desk.opportunity` is deterministic and provider-neutral. It must not import
+  broker adapters, HTTP mutation clients, credential providers, AI execution paths, or
+  dashboard command services.
+- The governed universe is immutable during a cycle. Unknown or arbitrary epics,
+  disabled markets, unfinished/stale bars, missing evidence, non-positive net expected
+  value, and research-only strategies fail closed.
+- Candidate direction is long only. Opportunity output contains no quantity and cannot
+  raise Risk limits. A risk multiplier is a reduction recommendation only.
+- Persistent evaluation identity is instrument + timeframe + completed-bar timestamp +
+  strategy fingerprint. Do not replace it with wall-clock cycle identity.
+- Strategy promotion requires both `BACKTEST_VALIDATED` and
+  `DEMO_EXPLORATION_ENABLED`; never promote to increase activity.
+- Demo Exploration is disabled by default, requires an explicit enable flag, and is
+  technically unavailable outside DEMO. Activity and stretch targets are diagnostic,
+  never entry rules.
+- Risk alone approves and sizes. Controlled execution alone opens; lifecycle alone
+  closes. Ambiguous mutation is never retried.
+- Journal every evaluation lineage. Operations APIs remain GET-only and WebSockets
+  server-to-client. Dashboard, AI, and Journal have no trade authority.

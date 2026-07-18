@@ -1,4 +1,5 @@
 ---
+current_validated_milestone: 11
 title: Trade Journal, Review & Memory
 document: 13_TRADE_JOURNAL_AND_MEMORY
 version: 1.0.0
@@ -545,3 +546,12 @@ preflights, close requests/submissions/confirmations/reconciliations, closure, b
 and halted states, post-trade review, and Paper/Demo comparison. Lifecycle source
 records retain their own hash chain and are wrapped in the global append-only journal
 with parent linkage. The journal is evidence only and cannot call the close adapter.
+
+## Milestone 11 Opportunity Evidence
+
+Schema v4 records opportunity cycle start/completion/failure, universe loading,
+instrument and strategy evaluation, candidate/cost/score outcomes, rejection and
+suppression, ranking and selection, Risk submission/rejection, execution approval,
+inactivity diagnostics, and Demo campaign state/halt events. Parent IDs preserve market
+context, evidence, candidate, ranking, Risk, execution, and campaign lineage. Records
+remain append-only, sanitized, replayable, and incapable of triggering execution.

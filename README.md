@@ -642,3 +642,34 @@ credentials, a current broker position match, persistent state, and a durable jo
 Live trading, production hosts, shorts, partial closes, amendments, working orders,
 account switching, ambiguous-close retry, AI-triggered exits, and dashboard-triggered
 exits remain prohibited.
+
+## Milestone 11 Opportunity Engine
+
+The disabled-by-default Opportunity Engine scans a strict six-market FOREX universe
+(`EUR/USD`, `GBP/USD`, `USD/JPY`, `AUD/USD`, `USD/CAD`, and `EUR/JPY`) on completed
+5-minute, 15-minute, and 1-hour bars. It creates immutable long-only candidates,
+includes non-zero spread, slippage, commission, funding, uncertainty, liquidity, and
+event costs, calculates net expected value, suppresses duplicates/correlation, and
+ranks at most three candidates for Risk per cycle.
+
+Only `trend-regime-v1` is both `BACKTEST_VALIDATED` and
+`DEMO_EXPLORATION_ENABLED`. Trend pullback, volatility breakout, and range mean
+reversion remain `RESEARCH_ONLY` and cannot reach Risk. Risk remains the sole
+approval and quantity authority. Only controlled IG Demo execution can open a
+position, and only the lifecycle subsystem can close one.
+
+```bash
+python -m trading_desk.cli opportunity validate-config
+python -m trading_desk.cli opportunity scan-once
+python -m trading_desk.cli opportunity diagnostics
+python -m trading_desk.cli demo-exploration status
+python -m trading_desk.cli demo-campaign report
+```
+
+Demo Exploration and the 30-day campaign are disabled by default and technically
+DEMO-only. The 100/250 closed-trade objectives and the 20,000-to-40,000 stretch
+objective are diagnostics/reporting only. They cannot force a trade, lower a
+threshold, increase size, bypass Risk, or enable Live. The Operations Center adds
+GET-only Opportunity, Activity, Strategy, Instrument, Regime, Inactivity, and Demo
+Campaign views. Automated tests use deterministic or mocked inputs; no real IG Demo
+trade was performed for Milestone 11.

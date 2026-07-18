@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 document: 00_ENGINEERING_BLUEPRINT
 owner: Agentic Trading Desk Project
 repository: agentic-trading-desk
@@ -467,3 +467,11 @@ monitoring, exit evaluation, exact preflight, one close attempt, confirmation,
 reconciliation, durable journaling, read-only operations projection, and post-trade
 review. Authority remains isolated in the lifecycle engine. Live, short, partial,
 amendment, retry, AI-exit, and dashboard-exit capabilities remain prohibited.
+
+## Milestone 11 Validated Boundary
+
+The deterministic Opportunity Engine scans six allowlisted FOREX markets across
+completed 5-minute, 15-minute, and 1-hour bars. It estimates non-zero costs, computes
+net expected value, suppresses duplicate/correlated exposure, and ranks at most three
+candidates for Risk. It has no broker authority. Demo Exploration and the reporting
+campaign are disabled by default and Live remains technically unavailable.

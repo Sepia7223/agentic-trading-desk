@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -150,3 +150,11 @@ same adverse-first ambiguity principle used by backtesting and Paper Portfolio.
 Paper fills remain simulation evidence and are never overwritten by Demo broker
 results. Matching exits may produce a separate analytical comparison of time, price,
 costs, P&L, holding period, and reason.
+
+## Milestone 11 Promotion Rule
+
+Multi-instrument activity does not validate a strategy. Every executable family must
+retain completed-bar timing, chronological splits, final-test isolation, transaction
+costs, Risk-adjusted results, and instrument/regime/timeframe attribution. Research-only
+families cannot reach Risk until a separately reviewed backtest promotion changes their
+fingerprinted validation policy.

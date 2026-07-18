@@ -1,6 +1,6 @@
 ---
 architecture_review_required: true
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 document: 01_SYSTEM_ARCHITECTURE
@@ -385,3 +385,10 @@ capital preservation before Risk. The provider has no broker mutation dependency
 Dedicated Demo Close Adapter -> Confirmation -> Reconciliation -> Durable Journal ->
 Operations Center -> Post-Trade Review`. No Strategy, Risk, AI, Paper, Journal, or
 dashboard component can skip the lifecycle engine and reach broker close mutation.
+
+## Milestone 11 Opportunity Flow
+
+`Completed Market Evidence -> Context/Router -> Opportunity Cost/EV/Score ->
+Duplicate/Correlation Filter -> Bounded Ranking -> Risk -> Controlled Demo Execution ->
+Lifecycle -> Journal -> GET-only Operations Center`. Opportunity code reaches Risk
+through typed models only and cannot import broker mutation dependencies.

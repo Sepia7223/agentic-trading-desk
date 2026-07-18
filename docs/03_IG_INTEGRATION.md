@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -215,3 +215,11 @@ version 1 for a full offsetting long-position close and existing
 `dealId`, `SELL`, full `size`, `MARKET`, and `FILL_OR_KILL`. Current positions are
 re-read before submission and after confirmation. No production host, redirects,
 amendments, working orders, account switching, shorts, or mutation retry is allowed.
+
+## Milestone 11 Broker Boundary
+
+The Opportunity Engine adds no HTTP or broker endpoint. Its six configured epics are
+allowlist data, never user-selected mutation targets. Selected candidates still pass
+through Risk, the existing canonical Demo gateway preflight, one-attempt controlled
+execution, confirmation, reconciliation, and lifecycle. No real Milestone 11 Demo
+campaign order was submitted.

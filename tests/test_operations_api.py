@@ -37,6 +37,13 @@ READ_ENDPOINTS = (
     f"/api/v1/replay?cutoff_at={NOW.isoformat().replace('+', '%2B')}",
     "/api/v1/search?q=EUR",
     "/api/v1/performance",
+    "/api/v1/opportunities",
+    "/api/v1/activity",
+    "/api/v1/strategy-leaderboard",
+    "/api/v1/instrument-performance",
+    "/api/v1/regime-performance",
+    "/api/v1/inactivity-diagnostics",
+    "/api/v1/demo-campaign",
     "/api/v1/configuration",
     "/api/v1/exports",
 )

@@ -142,6 +142,26 @@ test.beforeEach(async ({ page }) => {
         ],
       };
     }
+    if (url.includes("/opportunities")) {
+      body = {
+        records: [
+          {
+            journal_record_id: "opportunity-journal-1",
+            source_record_id: "candidate-1",
+            source_parent_ids: ["context-1"],
+            record_type: "OPPORTUNITY_CANDIDATE_CREATED",
+            effective_at: now,
+            instrument: "EUR/USD",
+            epic: "CS.D.EURUSD.CFD.IP",
+            strategy_variant: "trend-regime-v1",
+            environment: "DEMO",
+            payload: { status: "ELIGIBLE", score: "86.2" },
+            record_fingerprint: "c".repeat(64),
+          },
+        ],
+        total_matches: 1,
+      };
+    }
     await route.fulfill({ json: body });
   });
 });
@@ -223,4 +243,36 @@ test("operator traces no-trade evidence and separates Paper from Demo", async ({
   await expect(page.getByText("IG Demo positions")).toBeVisible();
   await expect(page.getByText("CURRENT_PORTFOLIO_STATE")).toBeVisible();
   await expect(page.getByText("LATEST_RECONCILED_DEMO_STATE")).toBeVisible();
+});
+
+test("operator reviews opportunities without mutation controls", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Opportunities" }).click();
+  await expect(page.getByText("Opportunity Board")).toBeVisible();
+  await expect(page.getByText("OPPORTUNITY_CANDIDATE_CREATED")).toBeVisible();
+  await expect(page.getByText("EUR/USD")).toBeVisible();
+  for (const pageName of [
+    "Activity Dashboard",
+    "Strategy Leaderboard",
+    "Instrument Performance",
+    "Regime Performance",
+    "Inactivity Diagnostics",
+    "Demo Campaign",
+  ]) {
+    await page.getByRole("button", { name: pageName }).click();
+    await expect(
+      page.getByRole("heading", { name: pageName, level: 1 }),
+    ).toBeVisible();
+  }
+  await expect(
+    page.getByRole("button", {
+      name: /buy|sell|close|override|enable strategy/i,
+    }),
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: "test-results/opportunity-board.png",
+    fullPage: true,
+  });
 });

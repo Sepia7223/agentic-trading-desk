@@ -1,5 +1,5 @@
 ---
-current_validated_milestone: 9
+current_validated_milestone: 11
 depends_on:
 - 00_ENGINEERING_BLUEPRINT.md
 - 01_SYSTEM_ARCHITECTURE.md
@@ -646,3 +646,36 @@ complete.
 - **Accepted:** Paper and Demo exits remain separate immutable evidence.
 - **Accepted:** AI and the dashboard may review but cannot trigger lifecycle mutation.
 - **Accepted:** real Demo close validation is separately authorized and never manufactured.
+
+# Milestone 11 Decisions
+
+## ADR-058 --- Activity Targets Are Diagnostic Objectives
+
+**Status:** Accepted
+
+Evaluation, candidate, and closed-trade targets can identify an inactivity bottleneck
+and recommend human review. They never force an entry, change a threshold, promote a
+strategy, increase exposure, or weaken Risk.
+
+## ADR-059 --- Demo Exploration Is Technically Unavailable for Live
+
+**Status:** Accepted
+
+The configuration schema accepts only `DEMO`, defaults disabled, and requires a second
+explicit CLI enable signal before candidates may reach Risk. No production host or
+Live-mode branch is present.
+
+## ADR-060 --- Opportunity Analysis Has No Broker Authority
+
+**Status:** Accepted
+
+The Opportunity package depends only on typed evidence and authority-neutral models.
+It maps selected candidates one way into Risk. Risk-approved intents alone may enter
+controlled execution, while lifecycle monitoring remains independently authoritative.
+
+## ADR-061 --- Completed-Bar Identity Is Persisted
+
+**Status:** Accepted
+
+Instrument, timeframe, completed-bar timestamp, and strategy fingerprint form the
+restart-safe evaluation key. Cycle timestamps cannot make the same bar appear new.

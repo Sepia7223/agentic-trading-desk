@@ -16,6 +16,7 @@ from trading_desk.execution.fingerprints import fingerprint
 class ExecutionMode(StrEnum):
     MANUAL_CONFIRMED = "MANUAL_CONFIRMED"
     AUTOMATED_DEMO = "AUTOMATED_DEMO"
+    DEMO_EXPLORATION = "DEMO_EXPLORATION"
 
 
 class ExecutionConfiguration(BaseModel):
