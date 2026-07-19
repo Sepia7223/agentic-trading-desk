@@ -73,8 +73,9 @@ class RangeMeanReversionEvaluator:
             abs(linear_slope(closes[:-1], cfg.trend_window) / atr) if atr else Decimal("999")
         )
         recovery = (closes[-1] - lows[-1]) / width if width else Decimal("0")
+        width_atr = width / atr if atr else Decimal("999")
         reasons: list[str] = []
-        if width <= 0 or width / atr > cfg.maximum_range_width_atr:
+        if width <= 0 or width_atr > cfg.maximum_range_width_atr:
             reasons.append("UNSTABLE_RANGE_WIDTH")
         if normalized_slope > cfg.maximum_normalized_slope:
             reasons.append("DIRECTIONAL_TREND_PRESENT")
@@ -108,7 +109,7 @@ class RangeMeanReversionEvaluator:
                 threshold=cfg.recovery_fraction,
                 passed=recovery >= cfg.recovery_fraction,
             ),
-            StrategyEvidence(name="range_width_atr", value=width / atr),
+            StrategyEvidence(name="range_width_atr", value=width_atr),
         )
         if reasons:
             return strategy_result(

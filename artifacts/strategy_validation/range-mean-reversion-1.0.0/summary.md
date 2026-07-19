@@ -1,3 +1,7 @@
-# range-mean-reversion 1.0.0
+# range-mean-reversion 1.0.0 validation summary
 
-State: RESEARCH_ONLY. No approved historical dataset is present, so validation and promotion were not performed. Synthetic tests verify mechanics only and are not promotion evidence.
+- Decision: REMAIN_RESEARCH_ONLY (approver: Sepia7223, automatic: false)
+- Validation trades: 185
+- Failed gates: POSITIVE_EXPECTANCY, MINIMUM_PROFIT_FACTOR, MAXIMUM_CONSECUTIVE_LOSSES, WALK_FORWARD_CONSISTENCY, COST_STRESS_SENSITIVITY, REGIME_COVERAGE, RISK_ADJUSTED_RETURN
+- Dataset fingerprint: 5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d
+- Sealed at: 2026-07-19T07:23:20.129570+00:00

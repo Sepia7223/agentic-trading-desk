@@ -1,54 +1,54 @@
 {
-  "artifact_id": "143bc8584e65f547c50ad4c45fa147c9ef875da0b60f3f811f5acc740df76d55",
+  "artifact_id": "698e5ee6cbc0cc86594addbfd4eb845105cb14893224fb4d3b6528b5511dbedc",
   "strategy_id": "trend-pullback-v1",
   "strategy_version": "1.0.0",
-  "created_at": "2026-07-18T19:00:00Z",
-  "dataset_fingerprint": "e35b9055ae88d20a38295230ad8660f594ce24d7dc97c0d6f25d5df33e77b238",
+  "created_at": "2026-07-19T07:23:14.246921Z",
+  "dataset_fingerprint": "5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d",
   "configuration_fingerprint": "29fa854e44b72ba17ec1c06aad4b66e87c49304ad8918eb48716fdf353a1f79d",
   "files": [
     [
       "configuration.json",
-      "57b3196c0f43868dc32bcbc35ecd6c4b6ab63382159e98d7553cfc47aacdaebf"
+      "90854059f7accafb24e8b8f152a4bff5e4257e7ba991bd60fe8757480a13596d"
     ],
     [
       "cost_stress_results.json",
-      "1cedbd6441ab7b832c99e1c234d4428ca56d9a09a8e0e4793b2e4ff94138f5c4"
+      "879ff54602d75d5de2419abb23ddeceb5cec4f063721ec99f26ed3fddfc76a0c"
     ],
     [
       "dataset_manifest.json",
-      "89a47dbe3c5714cf4ae2d25394fd3e3319342e66e462a5fc43301a8dae610f81"
+      "fe803cda042da12c5a5dbda5c2126b16ef1343869181f99ed48705b4a8603959"
     ],
     [
       "development_results.json",
-      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+      "ecced87dd562b1f126691da2ede67df3d8ed94bba51d5d780acd2f5de25869e8"
     ],
     [
       "final_test_results.json",
-      "fe0d8fee30c4715ed965d67b03f0cdbf24fcb170f510a0a56f95a5dd969d1f78"
+      "4bf7e17c7e59298431b378a23f72f148fa59d73d4db9531ad98be2fb16e5870b"
     ],
     [
       "portfolio_results.json",
-      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+      "ae867fab1916770700e2a5a884e373774c0c71a9f95afad165bac68a00961fa3"
     ],
     [
       "promotion_decision.json",
-      "8a28feb02bce9020ff942f9270941cf6cd740d9a2ca1ede8774f99e3ec6cb3b3"
+      "9b16dba90553f0650e1ffed71eca0bbfb5272bb37ede8455eec7dcd9a23109c5"
     ],
     [
       "robustness_results.json",
-      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+      "7e18cc08c895a1b4fa04ceb61a18c5654ba27ac6d9b18a8b34238ad5c54c11c7"
     ],
     [
       "summary.md",
-      "b0d53af3ae3c8f1fe2cc5d4ad9bcccc0ff959532f277b77d0b133bb8aa938ce9"
+      "4af8930ef3b0c4b1fb0eed7f51d3e65ab825d0a44ac54d50a3acffffcf0ce251"
     ],
     [
       "validation_results.json",
-      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+      "a642e5c2c5eaab1ed1e5ab00a09f16491c1feda133be57f409429133cff41ad7"
     ],
     [
       "walk_forward_results.json",
-      "5fb0afa53983fba8aaf939323f782009db55ea36ba608dadb0200b319b923515"
+      "31ff806c792ac8f5d6e08f69043d2db5566987ffee6927f4139dd3ecf3c092bd"
     ]
   ],
   "complete": true

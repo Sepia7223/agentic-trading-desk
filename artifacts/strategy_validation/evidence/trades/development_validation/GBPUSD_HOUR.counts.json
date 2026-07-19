@@ -1,0 +1,66 @@
+{
+  "bars": 46729,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 2,
+      "evaluation_count": 35983,
+      "forced_exit_count": 0,
+      "rejection_count": 35981,
+      "rejection_reasons": {
+        "BREAKOUT_OR_VOLATILITY_BLOCK": 2,
+        "DIRECTIONAL_TREND_PRESENT": 889,
+        "EXCESSIVE_SPREAD": 72,
+        "INVALID_MARKET_CONTEXT": 22371,
+        "INVALID_REWARD_RISK": 2739,
+        "LIQUIDITY_INELIGIBLE": 2883,
+        "NOT_AT_LOWER_RANGE_REGION": 2643,
+        "STABLE_RANGE_REQUIRED": 10799,
+        "UNSTABLE_RANGE_WIDTH": 412,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 2001
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 2
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 219,
+      "evaluation_count": 34267,
+      "forced_exit_count": 0,
+      "rejection_count": 34048,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 10484,
+        "DISORDERLY_VOLATILITY": 20,
+        "ENTRY_TOO_EXTENDED": 121,
+        "EXCESSIVE_SPREAD": 72,
+        "INVALID_MARKET_CONTEXT": 22119,
+        "LIQUIDITY_INELIGIBLE": 2755,
+        "PULLBACK_DEPTH_INVALID": 968,
+        "RECOVERY_NOT_CONFIRMED": 723,
+        "TREND_TOO_WEAK": 569
+      },
+      "session_closed_skips": 1378,
+      "trade_count": 219
+    },
+    "volatility-breakout": {
+      "candidate_count": 1,
+      "evaluation_count": 35973,
+      "forced_exit_count": 0,
+      "rejection_count": 35972,
+      "rejection_reasons": {
+        "BREAKOUT_TOO_EXTENDED": 2,
+        "CONFIRMED_EXPANSION_REQUIRED": 13592,
+        "CONSOLIDATION_TOO_WIDE": 10,
+        "EXCESSIVE_SPREAD": 72,
+        "INVALID_MARKET_CONTEXT": 22370,
+        "LIQUIDITY_INELIGIBLE": 2882
+      },
+      "session_closed_skips": 1438,
+      "trade_count": 1
+    }
+  },
+  "finished_at": "2026-07-19T06:11:22.433131+00:00",
+  "pair": "GBPUSD",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T05:47:53.258681+00:00",
+  "timeframe": "HOUR",
+  "trades_fingerprint": "0f9130abaf7428b0db15317f5df497305325a0c138f4acf955df58808a2d06bb"
+}

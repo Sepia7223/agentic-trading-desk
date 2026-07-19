@@ -64,8 +64,9 @@ class VolatilityBreakoutEvaluator:
         )
         current_range = highs[-1] - lows[-1]
         expansion = current_range / mean(recent_ranges) if mean(recent_ranges) else Decimal("0")
+        width_atr = width / atr if atr else Decimal("999")
         reasons: list[str] = []
-        if width / atr > cfg.maximum_consolidation_width_atr:
+        if width_atr > cfg.maximum_consolidation_width_atr:
             reasons.append("CONSOLIDATION_TOO_WIDE")
         if breakout < atr * cfg.minimum_breakout_atr or closes[-1] <= upper:
             reasons.append("BREAKOUT_NOT_CONFIRMED_ON_CLOSE")
@@ -80,7 +81,7 @@ class VolatilityBreakoutEvaluator:
         if stop <= 0 or risk <= 0 or (target - entry) / risk < cfg.minimum_reward_to_risk:
             reasons.append("INVALID_REWARD_RISK")
         evidence = (
-            StrategyEvidence(name="consolidation_width_atr", value=width / atr),
+            StrategyEvidence(name="consolidation_width_atr", value=width_atr),
             StrategyEvidence(
                 name="breakout_distance_atr",
                 value=chase,

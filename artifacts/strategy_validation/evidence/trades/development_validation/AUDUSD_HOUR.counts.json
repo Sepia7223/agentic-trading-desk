@@ -1,0 +1,66 @@
+{
+  "bars": 46731,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 1,
+      "evaluation_count": 35988,
+      "forced_exit_count": 0,
+      "rejection_count": 35987,
+      "rejection_reasons": {
+        "BREAKOUT_OR_VOLATILITY_BLOCK": 1,
+        "DIRECTIONAL_TREND_PRESENT": 650,
+        "EXCESSIVE_SPREAD": 122,
+        "INVALID_MARKET_CONTEXT": 20859,
+        "INVALID_REWARD_RISK": 2207,
+        "LIQUIDITY_INELIGIBLE": 2934,
+        "NOT_AT_LOWER_RANGE_REGION": 2127,
+        "STABLE_RANGE_REQUIRED": 12875,
+        "UNSTABLE_RANGE_WIDTH": 205,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 1524
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 1
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 311,
+      "evaluation_count": 33380,
+      "forced_exit_count": 0,
+      "rejection_count": 33069,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 10666,
+        "DISORDERLY_VOLATILITY": 21,
+        "ENTRY_TOO_EXTENDED": 106,
+        "EXCESSIVE_SPREAD": 116,
+        "INVALID_MARKET_CONTEXT": 20546,
+        "LIQUIDITY_INELIGIBLE": 2774,
+        "PULLBACK_DEPTH_INVALID": 1080,
+        "RECOVERY_NOT_CONFIRMED": 917,
+        "TREND_TOO_WEAK": 991
+      },
+      "session_closed_skips": 1341,
+      "trade_count": 311
+    },
+    "volatility-breakout": {
+      "candidate_count": 1,
+      "evaluation_count": 35991,
+      "forced_exit_count": 0,
+      "rejection_count": 35990,
+      "rejection_reasons": {
+        "BREAKOUT_TOO_EXTENDED": 17,
+        "CONFIRMED_EXPANSION_REQUIRED": 15108,
+        "CONSOLIDATION_TOO_WIDE": 21,
+        "EXCESSIVE_SPREAD": 122,
+        "INVALID_MARKET_CONTEXT": 20859,
+        "LIQUIDITY_INELIGIBLE": 2934
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 1
+    }
+  },
+  "finished_at": "2026-07-19T06:11:17.869778+00:00",
+  "pair": "AUDUSD",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T05:47:52.851206+00:00",
+  "timeframe": "HOUR",
+  "trades_fingerprint": "17e797558266d5e22fabeaebd709223eed247e3d74bbad2f466d4826b0f96aa3"
+}

@@ -14,7 +14,9 @@ from trading_desk.backtest.execution import (
     create_trade,
     end_of_data_fill,
     fill_pending_order,
+    profit_target_fill,
     protective_stop_fill,
+    resolve_intrabar_ambiguity,
 )
 from trading_desk.backtest.metrics import calculate_drawdowns, calculate_metrics
 from trading_desk.backtest.models import (
@@ -168,17 +170,40 @@ class BacktestEngine:
                     pending_exit_reason = None
 
             if portfolio.position is not None and pending is None:
-                stop_fill = protective_stop_fill(
-                    portfolio.position.entry_fill, bar, index, self.configuration
+                entry_fill = portfolio.position.entry_fill
+                stop_level = entry_fill.fill_price * (
+                    1.0 - self.configuration.protective_stop_bps / 10_000.0
                 )
-                if stop_fill is not None:
-                    fills.append(stop_fill)
+                target_level = (
+                    entry_fill.fill_price * (1.0 + self.configuration.profit_target_bps / 10_000.0)
+                    if self.configuration.profit_target_bps is not None
+                    else float("inf")
+                )
+                outcome = resolve_intrabar_ambiguity(
+                    bar.low_bid,
+                    bar.high_bid,
+                    stop_level,
+                    target_level,
+                    self.configuration.ambiguity_policy,
+                    entry_fill=entry_fill,
+                    bar_index=index,
+                )
+                exit_fill: SimulatedFill | None = None
+                exit_reason: ExitReason | None = None
+                if outcome == "STOP":
+                    exit_fill = protective_stop_fill(entry_fill, bar, index, self.configuration)
+                    exit_reason = ExitReason.PROTECTIVE_STOP
+                elif outcome == "TARGET":
+                    exit_fill = profit_target_fill(entry_fill, bar, index, self.configuration)
+                    exit_reason = ExitReason.PROFIT_TARGET
+                if exit_fill is not None and exit_reason is not None:
+                    fills.append(exit_fill)
                     trade = create_trade(
                         self.configuration.epic,
                         portfolio.position.signal_regime,
-                        portfolio.position.entry_fill,
-                        stop_fill,
-                        ExitReason.PROTECTIVE_STOP,
+                        entry_fill,
+                        exit_fill,
+                        exit_reason,
                         self.configuration,
                     )
                     trades.append(trade)

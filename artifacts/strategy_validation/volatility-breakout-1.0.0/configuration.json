@@ -1,6 +1,20 @@
 {
-  "strategy_code_fingerprint": "776a9292b6b5ce5ed33f4a85d62e569a6c27525de2496b65f4907819e017c7f2",
-  "strategy_configuration_fingerprint": "90c1b6d6b956b398f255d3113997c86c9ae3f48eda5e1b1a43224c2431c6effc",
-  "strategy_id": "volatility-breakout",
-  "strategy_version": "1.0.0"
+  "atr_window": 14,
+  "configuration_fingerprint": "90c1b6d6b956b398f255d3113997c86c9ae3f48eda5e1b1a43224c2431c6effc",
+  "consolidation_window": 20,
+  "long_only": true,
+  "maximum_chase_atr": "0.80",
+  "maximum_consolidation_width_atr": "4",
+  "maximum_holding_bars": 16,
+  "maximum_signal_age_bars": 1,
+  "maximum_spread_bps": "10",
+  "minimum_breakout_atr": "0.10",
+  "minimum_expansion_ratio": "1.15",
+  "minimum_history": 60,
+  "minimum_reward_to_risk": "1.5",
+  "parameter_definition_version": "portfolio-parameters-v1",
+  "schema_version": "portfolio-strategy-config-v1",
+  "stop_buffer_atr": "0.20",
+  "target_r_multiple": "2",
+  "volatility_window": 10
 }

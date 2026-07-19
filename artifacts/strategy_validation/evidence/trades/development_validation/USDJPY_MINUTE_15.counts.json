@@ -1,0 +1,67 @@
+{
+  "bars": 116182,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 19,
+      "evaluation_count": 85031,
+      "forced_exit_count": 0,
+      "rejection_count": 85012,
+      "rejection_reasons": {
+        "DIRECTIONAL_TREND_PRESENT": 3914,
+        "EXCESSIVE_SPREAD": 42,
+        "INVALID_MARKET_CONTEXT": 52044,
+        "INVALID_REWARD_RISK": 9684,
+        "LIQUIDITY_INELIGIBLE": 4915,
+        "NOT_AT_LOWER_RANGE_REGION": 9231,
+        "STABLE_RANGE_REQUIRED": 22849,
+        "UNSTABLE_RANGE_WIDTH": 1086,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 6902
+      },
+      "session_closed_skips": 6063,
+      "trade_count": 19
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 291,
+      "evaluation_count": 82796,
+      "forced_exit_count": 0,
+      "rejection_count": 82505,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 28882,
+        "DISORDERLY_VOLATILITY": 7,
+        "ENTRY_TOO_EXTENDED": 154,
+        "EXCESSIVE_SPREAD": 42,
+        "INVALID_MARKET_CONTEXT": 51765,
+        "LIQUIDITY_INELIGIBLE": 4854,
+        "PULLBACK_DEPTH_INVALID": 1449,
+        "RECOVERY_NOT_CONFIRMED": 916,
+        "TREND_TOO_WEAK": 450
+      },
+      "session_closed_skips": 5978,
+      "trade_count": 291
+    },
+    "volatility-breakout": {
+      "candidate_count": 0,
+      "evaluation_count": 85073,
+      "forced_exit_count": 0,
+      "rejection_count": 85073,
+      "rejection_reasons": {
+        "BREAKOUT_NOT_CONFIRMED_ON_CLOSE": 2,
+        "BREAKOUT_TOO_EXTENDED": 5,
+        "CONFIRMED_EXPANSION_REQUIRED": 33013,
+        "CONSOLIDATION_TOO_WIDE": 11,
+        "EXCESSIVE_SPREAD": 42,
+        "INSUFFICIENT_VOLATILITY_EXPANSION": 1,
+        "INVALID_MARKET_CONTEXT": 52049,
+        "LIQUIDITY_INELIGIBLE": 4915
+      },
+      "session_closed_skips": 6063,
+      "trade_count": 0
+    }
+  },
+  "finished_at": "2026-07-19T07:19:20.407409+00:00",
+  "pair": "USDJPY",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T06:29:43.211309+00:00",
+  "timeframe": "MINUTE_15",
+  "trades_fingerprint": "f3a61922b85473fdbcd7d32dc4acda3980c84961034bd5aaecffe1f3ca8f111d"
+}

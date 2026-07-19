@@ -64,6 +64,7 @@ class BacktestConfiguration(BaseModel):
     guaranteed_stop_premium: float = Field(default=0.0, ge=0)
     maximum_holding_bars: int = Field(default=20, ge=1)
     protective_stop_bps: float = Field(default=500.0, gt=0)
+    profit_target_bps: float | None = Field(default=None, gt=0)
     ambiguity_policy: IntrabarAmbiguityPolicy = IntrabarAmbiguityPolicy.ADVERSE_FIRST
     maximum_execution_delay_bars: int = Field(default=1, ge=1)
     entry_fill_mode: FillPriceMode = FillPriceMode.NEXT_OPEN
@@ -89,6 +90,7 @@ class BacktestConfiguration(BaseModel):
         "overnight_funding_bps_per_day",
         "guaranteed_stop_premium",
         "protective_stop_bps",
+        "profit_target_bps",
         "annualization_factor",
     )
     @classmethod

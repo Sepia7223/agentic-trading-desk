@@ -75,6 +75,12 @@ def default_strategies() -> tuple[StrategyDescriptor, ...]:
             "trend-pullback-v1",
             ValidationStatus.RESEARCH_ONLY,
             strategy_code_fingerprint=fingerprint("trend-pullback-v1:1.0.0"),
+            validation_report_id=(
+                "48f60c07c11fc93994815318827f79173babaf47ea9df3a4a54463b44e3fc130"
+            ),
+            validation_dataset_fingerprint=(
+                "5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d"
+            ),
         ),
         _descriptor(
             "range-mean-reversion",
@@ -82,6 +88,12 @@ def default_strategies() -> tuple[StrategyDescriptor, ...]:
             strategy_code_fingerprint=fingerprint("range-mean-reversion:1.0.0"),
             eligible_trend_states=(TrendState.RANGE,),
             eligible_volatility_states=(VolatilityState.LOW, VolatilityState.NORMAL),
+            validation_report_id=(
+                "b307e0c6abcb0d5bb8c6e40656ee805fb2cd3da0aa7ff42c871d70f4da69db3d"
+            ),
+            validation_dataset_fingerprint=(
+                "5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d"
+            ),
         ),
         _descriptor(
             "volatility-breakout",
@@ -89,6 +101,12 @@ def default_strategies() -> tuple[StrategyDescriptor, ...]:
             strategy_code_fingerprint=fingerprint("volatility-breakout:1.0.0"),
             eligible_volatility_states=(VolatilityState.COMPRESSION, VolatilityState.EXPANSION),
             eligible_trend_states=tuple(TrendState),
+            validation_report_id=(
+                "dfc9707a43d12f16a03dbb494a91b894995a4ab220e9076b68006aab05f3e4c6"
+            ),
+            validation_dataset_fingerprint=(
+                "5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d"
+            ),
         ),
         _descriptor(
             "post-news-continuation",

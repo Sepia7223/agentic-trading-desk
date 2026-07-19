@@ -153,3 +153,51 @@ def test_incomplete_higher_timeframe_data_is_rejected() -> None:
     fields["higher_timeframe_data"] = future
     with pytest.raises(ValidationError, match="higher-timeframe"):
         evaluation_context(**fields)
+
+
+@pytest.mark.parametrize(
+    ("evaluator", "context"),
+    [
+        (
+            VolatilityBreakoutEvaluator(),
+            updated_snapshot(
+                breakout_state=BreakoutState.CONFIRMED_UP,
+                volatility_state=VolatilityState.EXPANSION,
+            ),
+        ),
+        (
+            RangeMeanReversionEvaluator(),
+            updated_snapshot(
+                trend_state=TrendState.RANGE,
+                range_state=RangeState.ESTABLISHED,
+                breakout_state=BreakoutState.NONE,
+                volatility_state=VolatilityState.LOW,
+            ),
+        ),
+    ],
+)
+def test_zero_average_true_range_rejects_instead_of_crashing(
+    evaluator,
+    context,  # type: ignore[no-untyped-def]
+) -> None:
+    """Flat quiet-market history (high == low == close) must fail closed.
+
+    Real historical bars can produce a zero ATR; discovered during Milestone 12
+    historical validation when unguarded ``width / atr`` divisions raised
+    ``decimal.DivisionByZero`` mid-simulation.
+    """
+
+    data = portfolio_data("range")
+    flat = tuple(100.0 for _ in data.close_midpoints)
+    frozen = data.model_copy(
+        update={
+            "open_midpoints": flat,
+            "high_midpoints": flat,
+            "low_midpoints": flat,
+            "close_midpoints": flat,
+            "bids": tuple(value - 0.005 for value in flat),
+            "asks": tuple(value + 0.005 for value in flat),
+        }
+    )
+    result = evaluator.evaluate(context=evaluation(frozen, context))
+    assert result.decision is not StrategyDecision.CANDIDATE

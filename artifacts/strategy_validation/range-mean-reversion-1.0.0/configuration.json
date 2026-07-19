@@ -1,6 +1,19 @@
 {
-  "strategy_code_fingerprint": "d1061c190ec552c3664ed2fc7497965353d7be0a688232ad70c76d515aab8227",
-  "strategy_configuration_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
-  "strategy_id": "range-mean-reversion",
-  "strategy_version": "1.0.0"
+  "atr_window": 14,
+  "configuration_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+  "long_only": true,
+  "lower_entry_fraction": "0.25",
+  "maximum_holding_bars": 20,
+  "maximum_normalized_slope": "0.08",
+  "maximum_range_width_atr": "8",
+  "maximum_signal_age_bars": 1,
+  "maximum_spread_bps": "10",
+  "minimum_history": 60,
+  "minimum_reward_to_risk": "1.5",
+  "parameter_definition_version": "portfolio-parameters-v1",
+  "range_window": 30,
+  "recovery_fraction": "0.10",
+  "schema_version": "portfolio-strategy-config-v1",
+  "stop_buffer_atr": "0.25",
+  "trend_window": 20
 }

@@ -1,0 +1,66 @@
+{
+  "bars": 116358,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 13,
+      "evaluation_count": 85219,
+      "forced_exit_count": 0,
+      "rejection_count": 85206,
+      "rejection_reasons": {
+        "DIRECTIONAL_TREND_PRESENT": 2962,
+        "EXCESSIVE_SPREAD": 245,
+        "INVALID_MARKET_CONTEXT": 53209,
+        "INVALID_REWARD_RISK": 8821,
+        "LIQUIDITY_INELIGIBLE": 5404,
+        "NOT_AT_LOWER_RANGE_REGION": 8347,
+        "STABLE_RANGE_REQUIRED": 22795,
+        "UNSTABLE_RANGE_WIDTH": 794,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 6145
+      },
+      "session_closed_skips": 6075,
+      "trade_count": 13
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 396,
+      "evaluation_count": 82409,
+      "forced_exit_count": 0,
+      "rejection_count": 82013,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 26892,
+        "DISORDERLY_VOLATILITY": 11,
+        "ENTRY_TOO_EXTENDED": 171,
+        "EXCESSIVE_SPREAD": 245,
+        "INVALID_MARKET_CONTEXT": 52840,
+        "LIQUIDITY_INELIGIBLE": 5313,
+        "PULLBACK_DEPTH_INVALID": 1665,
+        "RECOVERY_NOT_CONFIRMED": 1088,
+        "TREND_TOO_WEAK": 711
+      },
+      "session_closed_skips": 5914,
+      "trade_count": 396
+    },
+    "volatility-breakout": {
+      "candidate_count": 0,
+      "evaluation_count": 85238,
+      "forced_exit_count": 0,
+      "rejection_count": 85238,
+      "rejection_reasons": {
+        "BREAKOUT_TOO_EXTENDED": 6,
+        "CONFIRMED_EXPANSION_REQUIRED": 32017,
+        "CONSOLIDATION_TOO_WIDE": 10,
+        "EXCESSIVE_SPREAD": 245,
+        "INSUFFICIENT_VOLATILITY_EXPANSION": 1,
+        "INVALID_MARKET_CONTEXT": 53211,
+        "LIQUIDITY_INELIGIBLE": 5405
+      },
+      "session_closed_skips": 6075,
+      "trade_count": 0
+    }
+  },
+  "finished_at": "2026-07-19T07:21:55.929723+00:00",
+  "pair": "AUDUSD",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T06:36:14.613311+00:00",
+  "timeframe": "MINUTE_15",
+  "trades_fingerprint": "bfa780ba70d0290b6e391094c8669728d178b8c4d8e45c5d24c7bd9fbf6a312d"
+}

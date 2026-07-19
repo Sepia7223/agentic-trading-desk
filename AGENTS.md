@@ -392,3 +392,35 @@ account, position, order, or working order.
 - Research-only strategies can be evaluated and journaled but cannot reach Risk.
   Strategy breakers stop new entries only and never disable lifecycle exits.
 - Synthetic fixtures validate mechanics only and are not profitability or promotion evidence.
+
+## Historical Validation Boundary
+
+- `trading_desk.strategy.validation_runner`, `validation_orchestration`, and
+  `validation_cli` are research tooling. They must not import broker adapters,
+  HTTP clients, credentials, Risk, execution, journal writers, or AI providers.
+- The approved dataset is described by a committed, fingerprinted manifest:
+  source, instruments, timeframes, coverage, retrieval time, bar counts,
+  missing-bar policy, timezone, price fields, spread source, cost assumptions,
+  and stage boundaries. Raw price files stay local and uncommitted; every
+  derived bar file is referenced by SHA-256.
+- Simulation is strictly chronological. Entries fill on the next bar's ask
+  side plus adverse slippage; exits fill from the bid side; intrabar
+  stop/target ambiguity is adverse-first; costs are itemized per trade.
+- Context state is built from bounded trailing windows. HMM parameters refit
+  on a fixed causal cadence; between refits the latest strictly-older fit is
+  reused. Model parameters must never see observations after the cutoff.
+- Intraday context classification requires the explicit intraday context
+  configuration: the default `hmm_covariance_floor` is calibrated to daily
+  feature scale and fails closed on every intraday window. Any operational
+  intraday use of the new strategies requires the same reviewed calibration.
+- The final-test partition is technically protected: development and
+  validation simulation never reads bars past the validation end, and
+  final-test simulation requires a pre-existing, fingerprint-verified,
+  immutable lock document created after gate review.
+- Validation gates are predetermined. Failed strategies remain
+  `RESEARCH_ONLY` or become `DISABLED`; artifacts retain failed results.
+  Promotion requires a named human approver and is never automatic.
+- The accepted trend/regime strategy's portfolio-contribution simulation uses
+  its unmodified default configuration on daily bars. Its original acceptance
+  evidence predates this framework and is not equivalent to a Milestone 12
+  validation artifact.
