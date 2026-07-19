@@ -193,6 +193,12 @@ def run_experiment(
                     raise ExperimentCancelled("wall-clock budget exhausted")
                 if not pending:
                     continue
+                print(
+                    f"experiment {specification.experiment_id[:8]}: {pair} {timeframe} "
+                    f"({len(pending)} pending trials, "
+                    f"{int(time.monotonic() - clock_start)}s elapsed)",
+                    flush=True,
+                )
                 bars = load_bars(bars_root / f"{pair}_{timeframe}.csv", epic=epic)
                 if len(bars) > specification.budget.maximum_bars_per_series:
                     raise ExperimentCancelled("series exceeds the bar budget")
