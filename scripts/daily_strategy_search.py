@@ -27,7 +27,11 @@ from trading_desk.strategy.donchian_breakout import DonchianBreakoutEvaluator
 from trading_desk.strategy.models import StrategyBarResolution
 from trading_desk.strategy.portfolio_configuration import DonchianBreakoutConfiguration
 from trading_desk.strategy.validation import calculate_metrics
-from trading_desk.strategy.validation_cli import PAIR_EPICS
+from trading_desk.strategy.validation_cli import (
+    INTRADAY_CONTEXT_CONFIGURATION,
+    INTRADAY_CONTEXT_WINDOW,
+    PAIR_EPICS,
+)
 from trading_desk.strategy.validation_runner import (
     CausalContextBuilder,
     SimulatedStrategy,
@@ -55,20 +59,35 @@ def _dataset_fingerprint() -> str:
     return ""
 
 
-def _simulate_pair(pair: str, config: DonchianBreakoutConfiguration, bars_root: Path):  # type: ignore[no-untyped-def]
+def _timeframe_context(timeframe: str):  # type: ignore[no-untyped-def]
+    if timeframe == "DAY":
+        return StrategyBarResolution.DAY, StrategyConfiguration(), DAY_CONTEXT_WINDOW
+    if timeframe == "HOUR":
+        return (
+            StrategyBarResolution.HOUR,
+            INTRADAY_CONTEXT_CONFIGURATION,
+            INTRADAY_CONTEXT_WINDOW,
+        )
+    raise ValueError(f"unsupported timeframe: {timeframe}")
+
+
+def _simulate_pair(
+    pair: str, config: DonchianBreakoutConfiguration, bars_root: Path, timeframe: str
+):  # type: ignore[no-untyped-def]
     epic, instrument = PAIR_EPICS[pair]
+    resolution, context_config, window = _timeframe_context(timeframe)
     strategy = SimulatedStrategy(
         evaluator=DonchianBreakoutEvaluator(config),
         maximum_holding_bars=config.maximum_holding_bars,
         configuration_fingerprint=config.fingerprint,
     )
-    bars = load_bars(bars_root / f"{pair}_DAY.csv", epic=epic)
+    bars = load_bars(bars_root / f"{pair}_{timeframe}.csv", epic=epic)
     builder = CausalContextBuilder(
         epic=epic,
         instrument=instrument,
-        resolution=StrategyBarResolution.DAY,
-        strategy_configuration=StrategyConfiguration(),
-        window_size=DAY_CONTEXT_WINDOW,
+        resolution=resolution,
+        strategy_configuration=context_config,
+        window_size=window,
     )
     (result,) = simulate_strategies(
         (strategy,),
@@ -77,20 +96,20 @@ def _simulate_pair(pair: str, config: DonchianBreakoutConfiguration, bars_root: 
         costs=SimulationCosts(),
         evaluation_start=DEV_START,
         evaluation_end=VALIDATION_END,
-        trade_prefix=f"{pair}-DAY",
+        trade_prefix=f"{pair}-{timeframe}",
     )
     return result, len(bars)
 
 
 def _run(
-    pairs: list[str], config: DonchianBreakoutConfiguration, bars_root: Path
+    pairs: list[str], config: DonchianBreakoutConfiguration, bars_root: Path, timeframe: str
 ) -> dict[str, object]:
     trades = []
     candidate_count = 0
     rejection_count = 0
     total_bars = 0
     for pair in pairs:
-        result, bar_count = _simulate_pair(pair, config, bars_root)
+        result, bar_count = _simulate_pair(pair, config, bars_root, timeframe)
         trades.extend(result.trades)
         candidate_count += result.candidate_count
         rejection_count += result.rejection_count
@@ -108,7 +127,7 @@ def _run(
     return {
         "schema_version": "daily-research-v1",
         "pairs": pairs,
-        "timeframe": "DAY",
+        "timeframe": timeframe,
         "stage": "development_validation",
         "strategy_id": "donchian-breakout",
         "strategy_version": "1.0.0",
@@ -136,6 +155,7 @@ def _run(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Governed daily strategy search")
     parser.add_argument("--pairs", required=True, help="comma-separated pairs, pooled")
+    parser.add_argument("--timeframe", default="DAY", choices=("DAY", "HOUR"))
     parser.add_argument("--entry-channel", type=int, default=None)
     parser.add_argument("--stop-atr", type=str, default=None)
     parser.add_argument("--bars-root", default="data/validation/bars")
@@ -147,14 +167,14 @@ def main(argv: list[str] | None = None) -> int:
     if args.stop_atr is not None:
         overrides["stop_atr_multiple"] = Decimal(args.stop_atr)
     config = DonchianBreakoutConfiguration(**overrides)
-    record = _run(pairs, config, Path(args.bars_root))
+    record = _run(pairs, config, Path(args.bars_root), args.timeframe)
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     with LEDGER.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
     params = record["parameters"]
     channel = params["entry_channel_window"] if isinstance(params, dict) else "?"
     print(
-        f"{'+'.join(pairs)} DAY donchian ch={channel}: "
+        f"{'+'.join(pairs)} {args.timeframe} donchian ch={channel}: "
         f"trades={record['closed_trades']} win_rate={record['win_rate']} "
         f"expectancy={record['expectancy']} pf={record['profit_factor']} "
         f"maxDD={record['maximum_drawdown']} passes_gates={record['passes_gates']}"
