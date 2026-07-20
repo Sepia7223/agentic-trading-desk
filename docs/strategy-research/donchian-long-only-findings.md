@@ -61,3 +61,40 @@ cost-fragile in FX.
 positive-expectancy result at realistic costs and is preserved in the ledger for
 future reference (e.g., if a short-enabled, lower-cost, or multi-pair-diversified
 variant changes the cost-robustness picture).*
+
+## Short-side test (research-only, price inversion)
+
+After the user chose to enable shorts, the validated long harness was run on a
+price-inverted series (= shorts) as research evidence, without touching the
+production long-only invariant:
+
+| Direction | Pair | Trades | PF | Expectancy | Note |
+|---|---|---|---|---|---|
+| SHORT | USDJPY (uptrend) | 355 | 0.63 | −0.00023 | correctly loses (sanity check passes) |
+| SHORT | AUDUSD (down/range) | 459 | 0.97 | −0.00002 | near break-even |
+
+**Shorts do not rescue Donchian.** The sanity check confirms the short method is
+sound (shorting the USDJPY uptrend loses heavily), but SHORT AUDUSD is only near
+break-even because AUDUSD went up, then down, then ranged — a short-only trend
+strategy loses on the up and range phases. The binding constraint was never
+direction; it is **cost-fragility** (the per-trade trend edge is too thin vs
+hourly costs), which applies equally to shorts. Donchian trend-following has no
+cost-robust edge on these majors in either direction.
+
+## Where shorts and carry actually help (reframed)
+
+The pair-fit research (`established-strategies-and-pair-fit.md`) named the
+cost-robust FX edges as **carry** (directional, long-only-compatible) and, with
+shorts, **mean-reversion** on ranging pairs — NOT trend-following breakout, which
+it ranked third and "not a standalone edge." Two untested high-value avenues
+remain:
+
+1. **Carry-aware modeling (long-only, could fix M12):** the harness charges
+   funding as a cost, but positive-carry longs (USDJPY, EURJPY) should EARN the
+   rate differential. Correct carry-credit modeling could tip the (already
+   positive, cost-fragile) USDJPY long over the cost-stress gate — but it needs
+   real historical swap-rate data, which the price-bar dataset does not contain.
+2. **Mean-reversion with shorts (the shorts-unlocked edge):** a bidirectional
+   mean-reversion strategy on the ranging pairs (EURUSD, USDCAD) is where the
+   research says shorts add value. This is the correct application of the user's
+   short-entry decision — shorts help mean-reversion, not trend-following.
