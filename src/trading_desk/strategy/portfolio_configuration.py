@@ -69,6 +69,30 @@ class RangeMeanReversionConfiguration(GovernedStrategyConfiguration):
         return self
 
 
+class DonchianBreakoutConfiguration(GovernedStrategyConfiguration):
+    """Long-only Donchian channel trend-following with a let-winners-run exit.
+
+    The classic Turtle signal: enter long when price closes above the highest
+    high of the prior ``entry_channel_window`` bars. There is no fixed profit
+    target — the position runs until the trend structure breaks (invalidation)
+    or the maximum holding bound, because trend-following earns its edge from a
+    few large winners. ``assumed_win_probability`` / ``assumed_reward_multiple``
+    are the declared, fingerprinted priors used only for opportunity-engine NEV
+    ranking; realized expectancy is measured by validation, not assumed here.
+    """
+
+    entry_channel_window: int = Field(default=20, ge=10, le=200)
+    breakout_buffer_atr: Decimal = Field(default=Decimal("0.05"), ge=0)
+    stop_atr_multiple: Decimal = Field(default=Decimal("2"), gt=0)
+    maximum_holding_bars: int = Field(default=60, ge=1)
+    # Wide backstop target: the contract requires a target, but the primary exit
+    # is the trailing trend-break invalidation, so this rarely binds — it just
+    # avoids the fixed 2R cap that amputated the earlier families' fat right tail.
+    target_r_multiple: Decimal = Field(default=Decimal("8"), gt=1)
+    assumed_win_probability: Decimal = Field(default=Decimal("0.40"), gt=0, lt=1)
+    assumed_reward_multiple: Decimal = Field(default=Decimal("2.5"), gt=1)
+
+
 class ParameterDefinition(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid", allow_inf_nan=False)
 

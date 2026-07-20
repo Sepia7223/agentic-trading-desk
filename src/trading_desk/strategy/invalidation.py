@@ -74,11 +74,17 @@ def evaluate_invalidation(
         or context.trend_state is not TrendState.RANGE
     ):
         reasons.append("RANGE_INVALIDATED")
+    elif entry.strategy_id == "donchian-breakout" and (
+        context.trend_state not in {TrendState.STRONG_BULL_TREND, TrendState.WEAK_BULL_TREND}
+        or context.breakout_state is BreakoutState.CONFIRMED_DOWN
+    ):
+        reasons.append("TREND_STRUCTURE_BROKEN")
     elif entry.strategy_id not in {
         "trend-regime-v1",
         "trend-pullback-v1",
         "volatility-breakout",
         "range-mean-reversion",
+        "donchian-breakout",
     }:
         return StrategyInvalidationResult(
             decision=InvalidationDecision.UNKNOWN, reasons=("UNKNOWN_STRATEGY_VERSION",)
