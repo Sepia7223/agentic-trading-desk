@@ -30,6 +30,11 @@ from trading_desk.resilience.incidents import (
     IncidentSeverity,
     create_incident,
 )
+from trading_desk.resilience.objectives import (
+    ObjectiveAssessment,
+    RecoveryObjective,
+    assess_objectives,
+)
 from trading_desk.resilience.preflight import (
     OperatingState,
     PreflightReport,
@@ -42,8 +47,22 @@ from trading_desk.resilience.process_lock import (
     ProcessLockError,
     ProcessLockStore,
 )
+from trading_desk.resilience.recovery import (
+    ReconciliationStatus,
+    RecoveryDecision,
+    RecoveryPhase,
+    evaluate_recovery,
+)
+from trading_desk.resilience.retry import (
+    AttemptResult,
+    OperationKind,
+    RetryDecision,
+    RetryPolicy,
+    plan_retry,
+)
 
 __all__ = [
+    "AttemptResult",
     "BackupEntry",
     "BackupManifest",
     "BackupService",
@@ -55,18 +74,29 @@ __all__ = [
     "IncidentSeverity",
     "LockAcquisition",
     "LockOutcome",
+    "ObjectiveAssessment",
     "OperatingState",
+    "OperationKind",
     "PreflightReport",
     "ProcessLock",
     "ProcessLockError",
     "ProcessLockStore",
+    "ReconciliationStatus",
+    "RecoveryDecision",
+    "RecoveryObjective",
+    "RecoveryPhase",
     "RestoreOutcome",
+    "RetryDecision",
+    "RetryPolicy",
+    "assess_objectives",
     "create_incident",
     "evaluate_clock_drift",
     "evaluate_connectivity",
     "evaluate_disk_space",
     "evaluate_integrity",
     "evaluate_memory",
+    "evaluate_recovery",
     "evaluate_timezone",
+    "plan_retry",
     "run_preflight",
 ]
