@@ -158,6 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeframe", default="DAY", choices=("DAY", "HOUR"))
     parser.add_argument("--entry-channel", type=int, default=None)
     parser.add_argument("--stop-atr", type=str, default=None)
+    parser.add_argument("--breakout-buffer", type=str, default=None)
     parser.add_argument("--bars-root", default="data/validation/bars")
     args = parser.parse_args(argv)
     pairs = [p.strip() for p in args.pairs.split(",") if p.strip()]
@@ -166,6 +167,8 @@ def main(argv: list[str] | None = None) -> int:
         overrides["entry_channel_window"] = args.entry_channel
     if args.stop_atr is not None:
         overrides["stop_atr_multiple"] = Decimal(args.stop_atr)
+    if args.breakout_buffer is not None:
+        overrides["breakout_buffer_atr"] = Decimal(args.breakout_buffer)
     config = DonchianBreakoutConfiguration(**overrides)
     record = _run(pairs, config, Path(args.bars_root), args.timeframe)
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
