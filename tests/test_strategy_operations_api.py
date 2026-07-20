@@ -25,3 +25,19 @@ def test_strategy_operations_views_are_sanitized_and_get_only() -> None:
         assert states["trend-pullback-v1"] == "RESEARCH_ONLY"
         assert states["volatility-breakout"] == "RESEARCH_ONLY"
         assert states["range-mean-reversion"] == "RESEARCH_ONLY"
+
+
+def test_portfolio_allocation_view_is_sanitized_and_get_only() -> None:
+    with _client() as client:
+        endpoint = "/api/v1/portfolio-allocation"
+        response = client.get(endpoint)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["authority"] == "READ_ONLY"
+        assert "batches_evaluated" in body
+        assert "decisions_by_strategy" in body
+        text = response.text.lower()
+        assert "password" not in text
+        assert "authorization" not in text
+        for method in ("POST", "PUT", "PATCH", "DELETE"):
+            assert client.request(method, endpoint).status_code == 405

@@ -324,6 +324,28 @@ class OperationsService:
         records = tuple(item for item in self.all_records() if item.record_type in types)
         return {"authority": "READ_ONLY", "records": records, "total_matches": len(records)}
 
+    def portfolio_allocation(self) -> dict[str, object]:
+        """Read-only projection of journaled portfolio batches and decisions."""
+
+        batch_type = JournalRecordType.PORTFOLIO_BATCH_EVALUATED.value
+        decision_type = JournalRecordType.PORTFOLIO_DECISION_CREATED.value
+        records = tuple(
+            item for item in self.all_records() if item.record_type in {batch_type, decision_type}
+        )
+        decisions = tuple(item for item in records if item.record_type == decision_type)
+        by_strategy: dict[str, int] = {}
+        for item in decisions:
+            name = item.strategy_variant or "unknown"
+            by_strategy[name] = by_strategy.get(name, 0) + 1
+        return {
+            "authority": "READ_ONLY",
+            "batches_evaluated": sum(1 for item in records if item.record_type == batch_type),
+            "decisions_recorded": len(decisions),
+            "decisions_by_strategy": dict(sorted(by_strategy.items())),
+            "records": records,
+            "total_matches": len(records),
+        }
+
     def lifecycle(self, *, limit: int = 100, offset: int = 0) -> SearchResult:
         lifecycle_types = {
             JournalRecordType.POSITION_MONITOR_SNAPSHOT.value,
