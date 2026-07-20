@@ -451,3 +451,34 @@ account, position, order, or working order.
   account currency and reconciles the scorecard net to the authoritative net
   P&L. Records whose gross/cost/net do not internally reconcile, or that lack
   required fields, are excluded with an explicit reason. The route is GET-only.
+
+## Operational Resilience Boundary
+
+- `trading_desk.resilience` holds no trading authority and performs no broker,
+  execution, or lifecycle mutation. It imports no ig/execution/lifecycle/api/
+  operations/risk/portfolio/opportunity modules and no HTTP client; an authority
+  scan test enforces this. It decides whether the desk may start, whether new
+  entries are permitted, and records resilience events as immutable evidence.
+- Startup preflight fails closed. An unknown diagnostic reading is FAILED, never
+  healthy. New entries are permitted only from a fully healthy state; durable
+  journal or state corruption forces RECOVERY_REQUIRED with nothing running until
+  a human-cleared restore.
+- Recovery is reconciliation-first. New entries stay blocked until an
+  authoritative reconciliation returns SUCCEEDED; success is never inferred from
+  local intent. A model validator makes it structurally impossible for a recovery
+  decision to permit entries without a succeeded reconciliation. Protective
+  lifecycle monitoring takes priority and runs whenever connectivity is healthy.
+- Ambiguous broker mutations are never retried; they halt and require
+  reconciliation. Only read-only operations retry, under a bounded, capped
+  backoff budget. Transient mutation failures require reconciliation, not retry.
+- Corrupt durable state is quarantined and reported, never silently overwritten.
+  Backups preserve fingerprints and journal hash-chain lineage byte-for-byte, and
+  restore refuses unless every backed-up digest verifies and re-verifies after
+  writing.
+- Exclusive process ownership is enforced by a fingerprinted lock with a
+  heartbeat. A fresh, live foreign lock refuses acquisition; a stale or known-dead
+  lock is taken over with an incident. Ownership is never inferred.
+- Incident evidence is sanitized: incident detail keys that look like credentials
+  or tokens are rejected at the model boundary, so resilience evidence is safe to
+  persist and commit. No credentials or raw broker payloads are ever committed;
+  CI runs secret, authority, and repository-cleanliness scans.

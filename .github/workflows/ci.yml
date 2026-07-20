@@ -37,6 +37,16 @@ jobs:
       - name: Strategy authority scan
         run: python -m pytest tests/test_strategy_portfolio_security.py
 
+      - name: Resilience and analytics authority scan
+        run: >-
+          python -m pytest
+          tests/test_resilience_preflight.py::test_resilience_package_has_no_operational_or_mutation_dependencies
+          tests/test_allocation_engine.py::test_allocation_package_has_no_operational_dependencies
+          tests/test_analytics_ledger_evidence.py::test_analytics_package_has_no_operational_or_mutation_dependencies
+
+      - name: Secret and repository cleanliness scan
+        run: python -m pytest tests/test_repository_hygiene.py
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -78,3 +88,10 @@ jobs:
 
       - name: Check diff whitespace
         run: git diff --check
+
+      - name: Check working tree is clean of build artifacts
+        run: |
+          git clean -ndx | grep -Ev '^Would (skip|remove) (node_modules|\.venv|frontend/node_modules)' > /tmp/untracked || true
+          if [ -s /tmp/untracked ]; then
+            echo "Unexpected build artifacts present:"; cat /tmp/untracked; exit 1
+          fi

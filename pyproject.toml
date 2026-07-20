@@ -65,4 +65,4 @@ packages = ["trading_desk"]
 warn_return_any = true
 warn_unused_configs = true
 no_implicit_optional = true
-check_untyped_defs = false
+check_untyped_defs = true
