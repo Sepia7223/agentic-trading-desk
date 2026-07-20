@@ -184,3 +184,13 @@ free of broker/HTTP/credential dependencies. Tests cover the universe, configura
 models, cost/EV scoring, suppression, ranking, persistence, orchestration, journal,
 campaign, operations APIs, frontend, and static safety scans. All new Operations routes
 must be GET-only and all mutation ambiguity remains one-attempt/no-retry.
+
+## Milestone 12 Verification Standard
+
+Strategy changes require candidate and rejection boundary tests, future-append and
+higher-timeframe leakage tests, deterministic fingerprints, chronological windows,
+locked final-test enforcement, costs, execution stress, portfolio ablations,
+promotion-integrity tests, breaker restart tests, lifecycle-invalidation tests,
+GET-only API/frontend checks, and static authority scans. Never tune against final-test
+output or describe synthetic fixtures as promotion evidence. Material math,
+configuration, regime, stop, target, or instrument changes require a new version.

@@ -475,3 +475,13 @@ completed 5-minute, 15-minute, and 1-hour bars. It estimates non-zero costs, com
 net expected value, suppresses duplicate/correlated exposure, and ranks at most three
 candidates for Risk. It has no broker authority. Demo Exploration and the reporting
 campaign are disabled by default and Live remains technically unavailable.
+
+## Milestone 12 Controlled Portfolio Boundary
+
+**Implemented:** independent deterministic evaluators cover trend, pullback, breakout,
+and stable-range hypotheses through one typed contract. **Software-validated:** cutoff
+enforcement, long-only results, lifecycle governance, artifact integrity, stress
+models, breaker persistence, and read-only projections. **Not promotion-validated:**
+the three new families lack an approved historical dataset and remain
+`RESEARCH_ONLY`. Coverage expands without weakening Risk, execution, lifecycle, or
+capital-preservation authority.
