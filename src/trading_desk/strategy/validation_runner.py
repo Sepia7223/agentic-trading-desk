@@ -62,6 +62,7 @@ RESOLUTION_TIMEFRAMES: dict[StrategyBarResolution, ContextTimeframe] = {
     StrategyBarResolution.MINUTE_5: ContextTimeframe.MINUTE_5,
     StrategyBarResolution.MINUTE_15: ContextTimeframe.MINUTE_15,
     StrategyBarResolution.HOUR: ContextTimeframe.HOUR,
+    StrategyBarResolution.HOUR_4: ContextTimeframe.HOUR_4,
     StrategyBarResolution.DAY: ContextTimeframe.DAY,
 }
 

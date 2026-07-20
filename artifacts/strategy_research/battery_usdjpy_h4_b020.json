@@ -1,0 +1,39 @@
+{
+  "label": "USDJPY-H4-b020",
+  "trades": 155,
+  "expectancy": "-0.0001654845806451612903225806452",
+  "profit_factor": "0.9178655601716086891268333153",
+  "sharpe_ratio": "-0.02680116212977596271255764680",
+  "maximum_drawdown": "0.05738154",
+  "walk_forward_windows_populated": 7,
+  "walk_forward_profitable": 2,
+  "walk_forward_profitable_fraction": "0.2857142857142857142857142857",
+  "window_expectancies": [
+    "-0.0002939352631578947368421052632",
+    "-0.00217935875",
+    "-0.001108825652173913043478260870",
+    "0.0009007771428571428571428571429",
+    "0.001220069",
+    "-0.0003698866666666666666666666667",
+    "-0.001207614285714285714285714286"
+  ],
+  "cost_stress_expectancy": {
+    "1.25": "-0.0002472551451612903225806451613",
+    "1.50": "-0.0003290257096774193548387096774",
+    "2.00": "-0.0004925668387096774193548387097"
+  },
+  "cost_sensitivity": "999",
+  "regimes": [
+    "BEAR_HIGH_VOL",
+    "BULL_LOW_VOL"
+  ],
+  "extended_gate_checks": {
+    "walk_forward_consistency": false,
+    "cost_stress_2x_positive": false,
+    "cost_sensitivity_bounded": false,
+    "regime_coverage": true,
+    "risk_adjusted_positive": false
+  },
+  "all_extended_gates_pass": false,
+  "advisory": "research screen; authoritative gates are the M12 CLI + locked final-test"
+}
