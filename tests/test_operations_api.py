@@ -45,6 +45,7 @@ READ_ENDPOINTS = (
     "/api/v1/inactivity-diagnostics",
     "/api/v1/demo-campaign",
     "/api/v1/configuration",
+    "/api/v1/portfolio-analytics",
     "/api/v1/exports",
 )
 

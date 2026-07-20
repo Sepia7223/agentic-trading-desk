@@ -34,7 +34,9 @@ class MeasureConvention(AnalyticsModel):
 
     schema_version: Literal["analytics-convention-v1"] = "analytics-convention-v1"
     reporting_currency: str = Field(default="USD", min_length=3, max_length=3)
-    returns_definition: Literal["fraction_of_entry_notional"] = "fraction_of_entry_notional"
+    returns_definition: Literal["fraction_of_entry_notional", "account_currency_realized_pnl"] = (
+        "fraction_of_entry_notional"
+    )
     risk_ratio_definition: Literal["per_trade_mean_over_population_stddev"] = (
         "per_trade_mean_over_population_stddev"
     )

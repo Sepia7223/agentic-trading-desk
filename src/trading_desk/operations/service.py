@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from trading_desk.journal.models import JournalQuery, JournalRecordType
 from trading_desk.operations.alerts import derive_alerts
+from trading_desk.operations.analytics_views import build_portfolio_analytics
 from trading_desk.operations.config import OperationsConfiguration
 from trading_desk.operations.decision_trace import build_why_no_trade
 from trading_desk.operations.execution_views import build_execution_lifecycles
@@ -345,6 +346,51 @@ class OperationsService:
             "records": records,
             "total_matches": len(records),
         }
+
+    def portfolio_analytics(self) -> dict[str, object]:
+        """Deterministic read-only P&L attribution reconciled to authoritative trades."""
+
+        records = self.all_records()
+        closed = tuple(
+            item
+            for item in records
+            if item.record_type == JournalRecordType.PAPER_CLOSED_TRADE.value
+        )
+        funnel_records = tuple(
+            item
+            for item in records
+            if item.record_type
+            in {
+                JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED.value,
+                JournalRecordType.STRATEGY_EVALUATED.value,
+                JournalRecordType.OPPORTUNITY_SELECTED.value,
+                JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED.value,
+            }
+        )
+
+        def _count(record_type: JournalRecordType) -> int:
+            return sum(1 for item in records if item.record_type == record_type.value)
+
+        funnel_counts = {
+            "discovered": _count(JournalRecordType.OPPORTUNITY_CANDIDATE_CREATED),
+            "evaluated": _count(JournalRecordType.STRATEGY_EVALUATED),
+            "selected": _count(JournalRecordType.OPPORTUNITY_SELECTED),
+            "execution_approved": _count(JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED),
+            "executed": _count(JournalRecordType.OPPORTUNITY_EXECUTION_APPROVED),
+            "closed": len(closed),
+            "system_halts": _count(JournalRecordType.DEMO_CAMPAIGN_HALTED),
+        }
+        rejection_counts = {
+            "CONTEXT_OR_EVENT": _reason_count(records, ("CONTEXT", "EVENT", "HOLIDAY")),
+            "STRATEGY_OR_REGIME": _reason_count(records, ("STRATEGY", "REGIME")),
+            "STALE_DATA": _reason_count(records, ("STALE", "UNFINISHED")),
+            "COST_OR_SPREAD": _reason_count(records, ("COST", "SPREAD")),
+            "EXPECTED_VALUE": _reason_count(records, ("EXPECTED_VALUE",)),
+            "RISK_REJECTED": _count(JournalRecordType.OPPORTUNITY_RISK_REJECTED),
+            "CORRELATION": _count(JournalRecordType.OPPORTUNITY_CORRELATION_REJECTED),
+            "EXECUTION_PREFLIGHT": _reason_count(records, ("PREFLIGHT",)),
+        }
+        return build_portfolio_analytics(closed, funnel_records, funnel_counts, rejection_counts)
 
     def lifecycle(self, *, limit: int = 100, offset: int = 0) -> SearchResult:
         lifecycle_types = {

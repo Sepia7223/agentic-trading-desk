@@ -424,3 +424,30 @@ account, position, order, or working order.
   its unmodified default configuration on daily bars. Its original acceptance
   evidence predates this framework and is not equivalent to a Milestone 12
   validation artifact.
+
+## Portfolio Analytics Boundary
+
+- `trading_desk.analytics` is a pure, deterministic, read-only calculator. It
+  must not import broker adapters, HTTP/mutation clients, execution, lifecycle,
+  Risk, portfolio, journal, operations, or opportunity modules; an authority
+  scan test enforces this. It cannot change allocations, strategy states, Risk
+  policy, execution, lifecycle, campaign state, or broker data.
+- Every result carries a declared `MeasureConvention` (reporting currency,
+  returns definition, risk/downside conventions, timezone) and is fingerprinted.
+  Attribution reconciles exactly: dimension slices sum to portfolio totals,
+  cost decomposition sums to total cost, and net equals gross minus costs.
+- Missing evidence fails visibly. A metric with no supporting data is an
+  explicitly unavailable `Measure` with a reason, never a fabricated zero.
+  Notional normalization without an entry notional, cost decomposition without a
+  split, currency roll-up without a dated conversion rate, and the outcome of a
+  rejected candidate are all reported as unavailable.
+- Counterfactuals use frozen evidence only. Accepted-versus-rejected reporting
+  never estimates the foregone P&L of a path not taken.
+- Currency handling is explicit: a reporting-currency roll-up is produced only
+  when every native currency has timestamped conversion evidence dated at or
+  before the trade; otherwise the roll-up is unavailable.
+- The Operations analytics view (`GET /api/v1/portfolio-analytics`) reconstructs
+  closed-trade evidence from authoritative `PAPER_CLOSED_TRADE` records in the
+  account currency and reconciles the scorecard net to the authoritative net
+  P&L. Records whose gross/cost/net do not internally reconcile, or that lack
+  required fields, are excluded with an explicit reason. The route is GET-only.

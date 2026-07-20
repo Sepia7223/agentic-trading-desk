@@ -41,3 +41,23 @@ def test_portfolio_allocation_view_is_sanitized_and_get_only() -> None:
         assert "authorization" not in text
         for method in ("POST", "PUT", "PATCH", "DELETE"):
             assert client.request(method, endpoint).status_code == 405
+
+
+def test_portfolio_analytics_view_is_reconciled_sanitized_and_get_only() -> None:
+    with _client() as client:
+        endpoint = "/api/v1/portfolio-analytics"
+        response = client.get(endpoint)
+        assert response.status_code == 200
+        body = response.json()
+        assert body["authority"] == "READ_ONLY"
+        assert body["convention"]["returns_definition"] == "account_currency_realized_pnl"
+        assert "scorecard" in body
+        assert "attribution_waterfall" in body
+        assert "opportunity_funnel" in body
+        assert body["reconciliation"]["reconciled"] in (True, False)
+        assert body["completeness"]["currency_basis"] == "ACCOUNT_CURRENCY_UNIFORM"
+        text = response.text.lower()
+        assert "password" not in text
+        assert "authorization" not in text
+        for method in ("POST", "PUT", "PATCH", "DELETE"):
+            assert client.request(method, endpoint).status_code == 405
