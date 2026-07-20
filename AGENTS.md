@@ -507,3 +507,25 @@ account, position, order, or working order.
   trade observed through entry, restart, monitoring, close, reconciliation,
   attribution, and final restart, with no gate weakened and no ambiguous mutation
   retried. The software builds the tooling; it does not fabricate the trade.
+
+## Live-Trading Readiness Boundary
+
+- `trading_desk.readiness` is optional governance tooling. It adds no Live
+  capability: no Live host or adapter, no Live credentials, no Live order path,
+  no HTTP client. It produces an advisory go/no-go readiness dossier and never
+  authorizes anything.
+- The recommendation is deterministic and fail-closed: a failed domain or an
+  unresolved HIGH/CRITICAL finding forces NO_GO; GO requires every domain PASS,
+  no material unresolved finding, every human-gated prerequisite met (milestones
+  accepted, Demo certified, legal/financial review, independent safety review,
+  separate Live infrastructure and credentials), and named approvers. A validator
+  makes a GO recommendation with unmet prerequisites or no approvers structurally
+  impossible.
+- Demo certification is not financial suitability; a certified Demo alone never
+  yields GO. Software cannot satisfy the prerequisites, so an unattended
+  assessment can never reach GO by itself.
+- The system remains Demo-only regardless of the assessment outcome. Any future
+  Live work requires a new architecture decision, a new milestone specification,
+  explicit legal and financial approval, separate credentials and infrastructure,
+  and an independent safety review. No AI, dashboard, strategy, portfolio, or
+  research tooling may approve Live activity.
