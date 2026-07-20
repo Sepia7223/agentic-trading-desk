@@ -257,3 +257,29 @@ def test_state_store_is_idempotent_and_detects_conflicts(tmp_path: Path) -> None
                 decisions=forged.decisions,
             )
         )
+
+
+def test_portfolio_decisions_are_journaled_with_lineage(tmp_path: Path) -> None:
+    from trading_desk.allocation.state import create_persisted_batch
+    from trading_desk.journal.allocation import PortfolioAllocationJournal
+    from trading_desk.journal.config import JournalConfiguration
+    from trading_desk.journal.models import JournalRecordType
+    from trading_desk.journal.sqlite import SQLiteJournalRepository
+    from trading_desk.journal.writer import DurableJournalWriter
+
+    decisions = run((candidate("cand-1"),), (components("cand-1"),), snapshot())
+    batch = create_persisted_batch(
+        batch_id=decisions[0].batch_id,
+        state_snapshot_id=decisions[0].state_snapshot_id,
+        configuration_fingerprint=decisions[0].configuration_fingerprint,
+        decisions=decisions,
+    )
+    with SQLiteJournalRepository(
+        JournalConfiguration(database_path=tmp_path / "journal.sqlite3")
+    ) as repository:
+        journal = PortfolioAllocationJournal(DurableJournalWriter(repository))
+        batch_record = journal.append_batch(batch)
+        decision_record = journal.append_decision(decisions[0], strategy_id="trend-regime-v1")
+    assert batch_record.record_type is JournalRecordType.PORTFOLIO_BATCH_EVALUATED
+    assert decision_record.record_type is JournalRecordType.PORTFOLIO_DECISION_CREATED
+    assert decision_record.environment == "LOCAL"
