@@ -2,6 +2,16 @@
 
 from trading_desk.analytics.attribution import build_scorecard
 from trading_desk.analytics.currency import ConversionPolicy, ConversionRate
+from trading_desk.analytics.funnel import (
+    Counterfactual,
+    FunnelStage,
+    FunnelTally,
+    OpportunityFunnel,
+    RejectionTally,
+    StageConversion,
+    StageCount,
+    build_funnel,
+)
 from trading_desk.analytics.ledger_evidence import (
     ClosedTradeSource,
     CompletenessDiagnostic,
@@ -24,6 +34,14 @@ from trading_desk.analytics.models import (
     create_scorecard,
     unavailable,
 )
+from trading_desk.analytics.windows import (
+    MeasureDelta,
+    ScorecardComparison,
+    WindowBoundary,
+    WindowScorecard,
+    build_window_scorecards,
+    compare_scorecards,
+)
 
 __all__ = [
     "AnalyticsModel",
@@ -32,19 +50,33 @@ __all__ = [
     "ConversionPolicy",
     "ConversionRate",
     "CostDecomposition",
+    "Counterfactual",
     "CurrencyBlock",
     "DimensionName",
     "DimensionSlice",
     "ExcludedRecord",
+    "FunnelStage",
+    "FunnelTally",
     "LedgerAttributionReport",
     "LedgerSlice",
     "Measure",
     "MeasureConvention",
+    "MeasureDelta",
+    "OpportunityFunnel",
     "PortfolioScorecard",
+    "RejectionTally",
+    "ScorecardComparison",
+    "StageConversion",
+    "StageCount",
     "TradeEvidence",
+    "WindowBoundary",
+    "WindowScorecard",
     "available",
+    "build_funnel",
     "build_ledger_attribution",
     "build_scorecard",
+    "build_window_scorecards",
+    "compare_scorecards",
     "create_scorecard",
     "unavailable",
 ]
