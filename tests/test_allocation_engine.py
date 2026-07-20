@@ -225,3 +225,35 @@ def test_allocation_package_has_no_operational_dependencies() -> None:
             stripped = line.strip()
             if stripped.startswith(("import ", "from ")):
                 assert not forbidden.search(stripped), f"{path.name}: {stripped}"
+
+
+def test_state_store_is_idempotent_and_detects_conflicts(tmp_path: Path) -> None:
+    from trading_desk.allocation.state import (
+        PortfolioStateError,
+        PortfolioStateStore,
+        create_persisted_batch,
+    )
+
+    decisions = run((candidate("cand-1"),), (components("cand-1"),), snapshot())
+    batch = create_persisted_batch(
+        batch_id=decisions[0].batch_id,
+        state_snapshot_id=decisions[0].state_snapshot_id,
+        configuration_fingerprint=decisions[0].configuration_fingerprint,
+        decisions=decisions,
+    )
+    store = PortfolioStateStore(tmp_path / "portfolio-state.json")
+    assert store.persist(batch) is True
+    assert store.persist(batch) is False
+    assert len(store.load()) == 1
+    assert [item.candidate_id for item in store.open_reservations()] == ["cand-1"]
+
+    forged = batch.model_copy(update={"state_snapshot_id": "f" * 64})
+    with pytest.raises(PortfolioStateError):
+        store.persist(
+            create_persisted_batch(
+                batch_id=forged.batch_id,
+                state_snapshot_id=forged.state_snapshot_id,
+                configuration_fingerprint=forged.configuration_fingerprint,
+                decisions=forged.decisions,
+            )
+        )
