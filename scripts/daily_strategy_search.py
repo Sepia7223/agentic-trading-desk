@@ -102,7 +102,11 @@ def _simulate_pair(
 
 
 def _run(
-    pairs: list[str], config: DonchianBreakoutConfiguration, bars_root: Path, timeframe: str
+    pairs: list[str],
+    config: DonchianBreakoutConfiguration,
+    bars_root: Path,
+    timeframe: str,
+    emit_trades: Path | None = None,
 ) -> dict[str, object]:
     trades = []
     candidate_count = 0
@@ -114,6 +118,12 @@ def _run(
         candidate_count += result.candidate_count
         rejection_count += result.rejection_count
         total_bars += bar_count
+    if emit_trades is not None:
+        ordered = tuple(sorted(trades, key=lambda item: (item.entry_at, item.trade_id)))
+        emit_trades.parent.mkdir(parents=True, exist_ok=True)
+        emit_trades.write_text(
+            "\n".join(item.model_dump_json() for item in ordered), encoding="utf-8"
+        )
     metrics = calculate_metrics(
         tuple(trades), rejection_count=rejection_count, candidate_count=candidate_count
     )
@@ -159,6 +169,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--entry-channel", type=int, default=None)
     parser.add_argument("--stop-atr", type=str, default=None)
     parser.add_argument("--breakout-buffer", type=str, default=None)
+    parser.add_argument("--emit-trades", type=str, default=None)
     parser.add_argument("--bars-root", default="data/validation/bars")
     args = parser.parse_args(argv)
     pairs = [p.strip() for p in args.pairs.split(",") if p.strip()]
@@ -170,7 +181,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.breakout_buffer is not None:
         overrides["breakout_buffer_atr"] = Decimal(args.breakout_buffer)
     config = DonchianBreakoutConfiguration(**overrides)
-    record = _run(pairs, config, Path(args.bars_root), args.timeframe)
+    emit = Path(args.emit_trades) if args.emit_trades else None
+    record = _run(pairs, config, Path(args.bars_root), args.timeframe, emit)
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     with LEDGER.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
