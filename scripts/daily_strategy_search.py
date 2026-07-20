@@ -74,6 +74,36 @@ def _timeframe_context(timeframe: str):  # type: ignore[no-untyped-def]
     raise ValueError(f"unsupported timeframe: {timeframe}")
 
 
+def _invert_bars(bars: tuple[HistoricalBar, ...]) -> tuple[HistoricalBar, ...]:
+    """Reflect prices around a constant so a LONG run == a SHORT on the real series.
+
+    Research-only: a short position on the real series is identical to a long
+    position on the reflected series. Reflecting by C = 2*max_ask keeps all prices
+    positive; bid/ask sides and high/low swap so the spread and ranges are
+    preserved exactly. This tests short-side edge without touching the production
+    long-only invariant.
+    """
+
+    constant = 2 * max(b.high_ask for b in bars)
+    out: list[HistoricalBar] = []
+    for b in bars:
+        out.append(
+            HistoricalBar(
+                timestamp=b.timestamp,
+                volume=b.volume,
+                open_bid=constant - b.open_ask,
+                open_ask=constant - b.open_bid,
+                high_bid=constant - b.low_ask,
+                high_ask=constant - b.low_bid,
+                low_bid=constant - b.high_ask,
+                low_ask=constant - b.high_bid,
+                close_bid=constant - b.close_ask,
+                close_ask=constant - b.close_bid,
+            )
+        )
+    return tuple(out)
+
+
 def _aggregate_h4(bars: tuple[HistoricalBar, ...]) -> tuple[HistoricalBar, ...]:
     """Aggregate consecutive hourly bars into 4-hour bars (research approximation)."""
 
@@ -98,7 +128,11 @@ def _aggregate_h4(bars: tuple[HistoricalBar, ...]) -> tuple[HistoricalBar, ...]:
 
 
 def _simulate_pair(
-    pair: str, config: DonchianBreakoutConfiguration, bars_root: Path, timeframe: str
+    pair: str,
+    config: DonchianBreakoutConfiguration,
+    bars_root: Path,
+    timeframe: str,
+    invert: bool = False,
 ):  # type: ignore[no-untyped-def]
     epic, instrument = PAIR_EPICS[pair]
     resolution, context_config, window = _timeframe_context(timeframe)
@@ -111,6 +145,8 @@ def _simulate_pair(
     bars = load_bars(bars_root / f"{pair}_{source_timeframe}.csv", epic=epic)
     if timeframe == "HOUR_4":
         bars = _aggregate_h4(bars)
+    if invert:
+        bars = _invert_bars(bars)
     builder = CausalContextBuilder(
         epic=epic,
         instrument=instrument,
@@ -136,13 +172,14 @@ def _run(
     bars_root: Path,
     timeframe: str,
     emit_trades: Path | None = None,
+    invert: bool = False,
 ) -> dict[str, object]:
     trades = []
     candidate_count = 0
     rejection_count = 0
     total_bars = 0
     for pair in pairs:
-        result, bar_count = _simulate_pair(pair, config, bars_root, timeframe)
+        result, bar_count = _simulate_pair(pair, config, bars_root, timeframe, invert)
         trades.extend(result.trades)
         candidate_count += result.candidate_count
         rejection_count += result.rejection_count
@@ -199,6 +236,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--stop-atr", type=str, default=None)
     parser.add_argument("--breakout-buffer", type=str, default=None)
     parser.add_argument("--emit-trades", type=str, default=None)
+    parser.add_argument(
+        "--direction",
+        default="long",
+        choices=("long", "short"),
+        help="short runs the validated long harness on a price-inverted series (research only)",
+    )
     parser.add_argument("--bars-root", default="data/validation/bars")
     args = parser.parse_args(argv)
     pairs = [p.strip() for p in args.pairs.split(",") if p.strip()]
@@ -211,7 +254,9 @@ def main(argv: list[str] | None = None) -> int:
         overrides["breakout_buffer_atr"] = Decimal(args.breakout_buffer)
     config = DonchianBreakoutConfiguration(**overrides)
     emit = Path(args.emit_trades) if args.emit_trades else None
-    record = _run(pairs, config, Path(args.bars_root), args.timeframe, emit)
+    invert = args.direction == "short"
+    record = _run(pairs, config, Path(args.bars_root), args.timeframe, emit, invert)
+    record["direction"] = args.direction
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     with LEDGER.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
