@@ -58,6 +58,15 @@ junit.xml
 reports/
 artifacts/ig_demo_certification/runtime/
 
+# Stray editor/merge/backup and scratch artifacts
+.test-tmp*
+*.orig
+*.rej
+*.bak
+*.tmp
+*.corrupt
+*~
+
 # Docker local overrides
 docker-compose.override.yml
 artifacts/strategy_validation/evidence/logs/
