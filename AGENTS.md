@@ -482,3 +482,28 @@ account, position, order, or working order.
   or tokens are rejected at the model boundary, so resilience evidence is safe to
   persist and commit. No credentials or raw broker payloads are ever committed;
   CI runs secret, authority, and repository-cleanliness scans.
+
+## Operational Certification Boundary
+
+- `trading_desk.certification` is a pure, deterministic calculator with no trading
+  authority. It imports no ig/execution/lifecycle/api/risk/portfolio module and no
+  HTTP client; it structures and evaluates certification evidence that actually
+  occurred and never manufactures a candidate or forces a trade.
+- The verdict is deterministic and fingerprinted: any recorded defect (safety,
+  consistency, reconciliation, authority, duplicate mutation) forces FAILED; all
+  seventeen required items observed yields CERTIFIED; otherwise
+  PARTIALLY_CERTIFIED. A validator makes a CERTIFIED verdict with pending items or
+  defects structurally impossible.
+- An absent natural trade — markets closed or no candidate appearing — is an
+  explicit non-defect and yields PARTIALLY_CERTIFIED, a legitimate reason to
+  continue certification later.
+- The journal-record collector (`operations/certification_views.py`) derives the
+  software/read-only items from immutable record types. The two restart
+  checkpoints are operator-recorded and never inferred. `GET
+  /api/v1/certification-status` exposes the read-only status; there is no mutation
+  route.
+- CERTIFIED is reached only by a real operational run
+  (`docs/runbooks/ig-demo-certification.md`): a naturally occurring bounded Demo
+  trade observed through entry, restart, monitoring, close, reconciliation,
+  attribution, and final restart, with no gate weakened and no ambiguous mutation
+  retried. The software builds the tooling; it does not fabricate the trade.
