@@ -47,6 +47,9 @@ jobs:
       - name: Secret and repository cleanliness scan
         run: python -m pytest tests/test_repository_hygiene.py
 
+      - name: Architecture and dependency-direction scan
+        run: python -m pytest tests/test_architecture_boundaries.py
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
