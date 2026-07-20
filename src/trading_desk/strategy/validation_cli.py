@@ -29,8 +29,10 @@ from pathlib import Path
 
 from trading_desk.strategy.artifacts import build_artifact_package
 from trading_desk.strategy.configuration import StrategyConfiguration
+from trading_desk.strategy.donchian_breakout import DonchianBreakoutEvaluator
 from trading_desk.strategy.models import StrategyBarResolution
 from trading_desk.strategy.portfolio_configuration import (
+    DonchianBreakoutConfiguration,
     RangeMeanReversionConfiguration,
     TrendPullbackConfiguration,
     VolatilityBreakoutConfiguration,
@@ -116,6 +118,7 @@ def _strategies() -> tuple[SimulatedStrategy, ...]:
     pullback = TrendPullbackConfiguration()
     breakout = VolatilityBreakoutConfiguration()
     ranging = RangeMeanReversionConfiguration()
+    donchian = DonchianBreakoutConfiguration()
     return (
         SimulatedStrategy(
             evaluator=TrendPullbackEvaluator(pullback),
@@ -132,6 +135,11 @@ def _strategies() -> tuple[SimulatedStrategy, ...]:
             maximum_holding_bars=ranging.maximum_holding_bars,
             configuration_fingerprint=ranging.fingerprint,
         ),
+        SimulatedStrategy(
+            evaluator=DonchianBreakoutEvaluator(donchian),
+            maximum_holding_bars=donchian.maximum_holding_bars,
+            configuration_fingerprint=donchian.fingerprint,
+        ),
     )
 
 
@@ -140,6 +148,7 @@ def strategy_configuration_fingerprints() -> dict[str, str]:
         "trend-pullback-v1": TrendPullbackConfiguration().fingerprint,
         "volatility-breakout": VolatilityBreakoutConfiguration().fingerprint,
         "range-mean-reversion": RangeMeanReversionConfiguration().fingerprint,
+        "donchian-breakout": DonchianBreakoutConfiguration().fingerprint,
         "trend-regime-v1": StrategyConfiguration().fingerprint,
     }
 

@@ -114,6 +114,16 @@ def default_strategies() -> tuple[StrategyDescriptor, ...]:
             eligible_event_states=(ScheduledEventState.POST_EVENT_ELIGIBLE,),
             eligible_trend_states=(TrendState.STRONG_BULL_TREND, TrendState.WEAK_BULL_TREND),
         ),
+        _descriptor(
+            "donchian-breakout",
+            ValidationStatus.RESEARCH_ONLY,
+            strategy_code_fingerprint=fingerprint("donchian-breakout:1.0.0"),
+            eligible_volatility_states=(
+                VolatilityState.NORMAL,
+                VolatilityState.HIGH,
+                VolatilityState.EXPANSION,
+            ),
+        ),
     )
 
 

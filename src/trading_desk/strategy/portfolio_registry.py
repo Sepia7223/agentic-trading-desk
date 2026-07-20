@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from trading_desk.strategy.contracts import StrategyEvaluator
+from trading_desk.strategy.donchian_breakout import DonchianBreakoutEvaluator
 from trading_desk.strategy.range_mean_reversion import RangeMeanReversionEvaluator
 from trading_desk.strategy.trend_pullback import TrendPullbackEvaluator
 from trading_desk.strategy.volatility_breakout import VolatilityBreakoutEvaluator
@@ -14,6 +15,7 @@ class PortfolioStrategyRegistry:
             TrendPullbackEvaluator(),
             VolatilityBreakoutEvaluator(),
             RangeMeanReversionEvaluator(),
+            DonchianBreakoutEvaluator(),
         )
         identifiers = tuple(item.strategy_id for item in values)
         if len(set(identifiers)) != len(identifiers):
