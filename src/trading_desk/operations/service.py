@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from trading_desk.journal.models import JournalQuery, JournalRecordType
 from trading_desk.operations.alerts import derive_alerts
 from trading_desk.operations.analytics_views import build_portfolio_analytics
+from trading_desk.operations.certification_views import build_certification_status
 from trading_desk.operations.config import OperationsConfiguration
 from trading_desk.operations.decision_trace import build_why_no_trade
 from trading_desk.operations.execution_views import build_execution_lifecycles
@@ -391,6 +392,11 @@ class OperationsService:
             "EXECUTION_PREFLIGHT": _reason_count(records, ("PREFLIGHT",)),
         }
         return build_portfolio_analytics(closed, funnel_records, funnel_counts, rejection_counts)
+
+    def certification_status(self) -> dict[str, object]:
+        """Deterministic read-only IG Demo operational certification status."""
+
+        return build_certification_status(self.all_records())
 
     def lifecycle(self, *, limit: int = 100, offset: int = 0) -> SearchResult:
         lifecycle_types = {
