@@ -1,0 +1,39 @@
+{
+  "label": "USDJPY-HOUR-donchian-b020",
+  "trades": 429,
+  "expectancy": "0.00009614226107226107226107226107",
+  "profit_factor": "1.133875836540789823041882706",
+  "sharpe_ratio": "0.03685409873851691095913724172",
+  "maximum_drawdown": "0.06987963",
+  "walk_forward_windows_populated": 7,
+  "walk_forward_profitable": 5,
+  "walk_forward_profitable_fraction": "0.7142857142857142857142857143",
+  "window_expectancies": [
+    "0.0002663926760563380281690140845",
+    "0.0004096677272727272727272727273",
+    "0.0003301050684931506849315068493",
+    "0.0004001336206896551724137931034",
+    "-0.0008022934615384615384615384615",
+    "0.00004796431034482758620689655172",
+    "-0.0002563727450980392156862745098"
+  ],
+  "cost_stress_expectancy": {
+    "1.25": "0.00005219939976689976689976689977",
+    "1.50": "0.000008256538461538461538461538462",
+    "2.00": "-0.00007962918414918414918414918415"
+  },
+  "cost_sensitivity": "1.828243305920737601597089395",
+  "regimes": [
+    "BEAR_HIGH_VOL",
+    "BULL_LOW_VOL"
+  ],
+  "extended_gate_checks": {
+    "walk_forward_consistency": true,
+    "cost_stress_2x_positive": false,
+    "cost_sensitivity_bounded": false,
+    "regime_coverage": true,
+    "risk_adjusted_positive": true
+  },
+  "all_extended_gates_pass": false,
+  "advisory": "research screen; authoritative gates are the M12 CLI + locked final-test"
+}
