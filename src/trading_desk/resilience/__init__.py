@@ -7,6 +7,12 @@ whether new entries are permitted, and records resilience events as immutable
 evidence.
 """
 
+from trading_desk.resilience.backup import (
+    BackupEntry,
+    BackupManifest,
+    BackupService,
+    RestoreOutcome,
+)
 from trading_desk.resilience.diagnostics import (
     DiagnosticCheck,
     DiagnosticResult,
@@ -29,16 +35,32 @@ from trading_desk.resilience.preflight import (
     PreflightReport,
     run_preflight,
 )
+from trading_desk.resilience.process_lock import (
+    LockAcquisition,
+    LockOutcome,
+    ProcessLock,
+    ProcessLockError,
+    ProcessLockStore,
+)
 
 __all__ = [
+    "BackupEntry",
+    "BackupManifest",
+    "BackupService",
     "DiagnosticCheck",
     "DiagnosticResult",
     "DiagnosticStatus",
     "IncidentCategory",
     "IncidentRecord",
     "IncidentSeverity",
+    "LockAcquisition",
+    "LockOutcome",
     "OperatingState",
     "PreflightReport",
+    "ProcessLock",
+    "ProcessLockError",
+    "ProcessLockStore",
+    "RestoreOutcome",
     "create_incident",
     "evaluate_clock_drift",
     "evaluate_connectivity",
