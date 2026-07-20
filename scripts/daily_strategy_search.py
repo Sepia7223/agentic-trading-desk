@@ -34,6 +34,7 @@ from trading_desk.strategy.validation_cli import (
 )
 from trading_desk.strategy.validation_runner import (
     CausalContextBuilder,
+    HistoricalBar,
     SimulatedStrategy,
     SimulationCosts,
     load_bars,
@@ -63,12 +64,37 @@ def _timeframe_context(timeframe: str):  # type: ignore[no-untyped-def]
     if timeframe == "DAY":
         return StrategyBarResolution.DAY, StrategyConfiguration(), DAY_CONTEXT_WINDOW
     if timeframe == "HOUR":
+        return StrategyBarResolution.HOUR, INTRADAY_CONTEXT_CONFIGURATION, INTRADAY_CONTEXT_WINDOW
+    if timeframe == "HOUR_4":
         return (
-            StrategyBarResolution.HOUR,
+            StrategyBarResolution.HOUR_4,
             INTRADAY_CONTEXT_CONFIGURATION,
             INTRADAY_CONTEXT_WINDOW,
         )
     raise ValueError(f"unsupported timeframe: {timeframe}")
+
+
+def _aggregate_h4(bars: tuple[HistoricalBar, ...]) -> tuple[HistoricalBar, ...]:
+    """Aggregate consecutive hourly bars into 4-hour bars (research approximation)."""
+
+    out: list[HistoricalBar] = []
+    for index in range(0, len(bars) - (len(bars) % 4), 4):
+        chunk = bars[index : index + 4]
+        out.append(
+            HistoricalBar(
+                timestamp=chunk[0].timestamp,
+                volume=sum(b.volume for b in chunk),
+                open_bid=chunk[0].open_bid,
+                open_ask=chunk[0].open_ask,
+                high_bid=max(b.high_bid for b in chunk),
+                high_ask=max(b.high_ask for b in chunk),
+                low_bid=min(b.low_bid for b in chunk),
+                low_ask=min(b.low_ask for b in chunk),
+                close_bid=chunk[-1].close_bid,
+                close_ask=chunk[-1].close_ask,
+            )
+        )
+    return tuple(out)
 
 
 def _simulate_pair(
@@ -81,7 +107,10 @@ def _simulate_pair(
         maximum_holding_bars=config.maximum_holding_bars,
         configuration_fingerprint=config.fingerprint,
     )
-    bars = load_bars(bars_root / f"{pair}_{timeframe}.csv", epic=epic)
+    source_timeframe = "HOUR" if timeframe == "HOUR_4" else timeframe
+    bars = load_bars(bars_root / f"{pair}_{source_timeframe}.csv", epic=epic)
+    if timeframe == "HOUR_4":
+        bars = _aggregate_h4(bars)
     builder = CausalContextBuilder(
         epic=epic,
         instrument=instrument,
@@ -165,7 +194,7 @@ def _run(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Governed daily strategy search")
     parser.add_argument("--pairs", required=True, help="comma-separated pairs, pooled")
-    parser.add_argument("--timeframe", default="DAY", choices=("DAY", "HOUR"))
+    parser.add_argument("--timeframe", default="DAY", choices=("DAY", "HOUR", "HOUR_4"))
     parser.add_argument("--entry-channel", type=int, default=None)
     parser.add_argument("--stop-atr", type=str, default=None)
     parser.add_argument("--breakout-buffer", type=str, default=None)
