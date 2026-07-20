@@ -55,9 +55,8 @@ def _dataset_fingerprint() -> str:
     return ""
 
 
-def _run(pair: str, bars_root: Path) -> dict[str, object]:
+def _simulate_pair(pair: str, config: DonchianBreakoutConfiguration, bars_root: Path):  # type: ignore[no-untyped-def]
     epic, instrument = PAIR_EPICS[pair]
-    config = DonchianBreakoutConfiguration()
     strategy = SimulatedStrategy(
         evaluator=DonchianBreakoutEvaluator(config),
         maximum_holding_bars=config.maximum_holding_bars,
@@ -80,10 +79,24 @@ def _run(pair: str, bars_root: Path) -> dict[str, object]:
         evaluation_end=VALIDATION_END,
         trade_prefix=f"{pair}-DAY",
     )
+    return result, len(bars)
+
+
+def _run(
+    pairs: list[str], config: DonchianBreakoutConfiguration, bars_root: Path
+) -> dict[str, object]:
+    trades = []
+    candidate_count = 0
+    rejection_count = 0
+    total_bars = 0
+    for pair in pairs:
+        result, bar_count = _simulate_pair(pair, config, bars_root)
+        trades.extend(result.trades)
+        candidate_count += result.candidate_count
+        rejection_count += result.rejection_count
+        total_bars += bar_count
     metrics = calculate_metrics(
-        result.trades,
-        rejection_count=result.rejection_count,
-        candidate_count=result.candidate_count,
+        tuple(trades), rejection_count=rejection_count, candidate_count=candidate_count
     )
     passes = (
         metrics.closed_trade_count >= MIN_TRADES
@@ -94,22 +107,22 @@ def _run(pair: str, bars_root: Path) -> dict[str, object]:
     )
     return {
         "schema_version": "daily-research-v1",
-        "pair": pair,
+        "pairs": pairs,
         "timeframe": "DAY",
         "stage": "development_validation",
-        "strategy_id": strategy.evaluator.strategy_id,
-        "strategy_version": strategy.evaluator.strategy_version,
+        "strategy_id": "donchian-breakout",
+        "strategy_version": "1.0.0",
         "configuration_fingerprint": config.fingerprint,
         "parameters": config.model_dump(mode="json"),
         "dataset_fingerprint": _dataset_fingerprint(),
-        "bars": len(bars),
+        "bars": total_bars,
         "closed_trades": metrics.closed_trade_count,
         "win_rate": str(metrics.win_rate),
         "expectancy": str(metrics.expectancy),
         "profit_factor": None if metrics.profit_factor is None else str(metrics.profit_factor),
         "maximum_drawdown": str(metrics.maximum_drawdown),
-        "candidate_count": result.candidate_count,
-        "rejection_count": result.rejection_count,
+        "candidate_count": candidate_count,
+        "rejection_count": rejection_count,
         "gate_minimums": {
             "min_trades": MIN_TRADES,
             "min_profit_factor": str(MIN_PROFIT_FACTOR),
@@ -122,15 +135,26 @@ def _run(pair: str, bars_root: Path) -> dict[str, object]:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Governed daily strategy search")
-    parser.add_argument("--pair", required=True, choices=sorted(PAIR_EPICS))
+    parser.add_argument("--pairs", required=True, help="comma-separated pairs, pooled")
+    parser.add_argument("--entry-channel", type=int, default=None)
+    parser.add_argument("--stop-atr", type=str, default=None)
     parser.add_argument("--bars-root", default="data/validation/bars")
     args = parser.parse_args(argv)
-    record = _run(args.pair, Path(args.bars_root))
+    pairs = [p.strip() for p in args.pairs.split(",") if p.strip()]
+    overrides: dict[str, object] = {}
+    if args.entry_channel is not None:
+        overrides["entry_channel_window"] = args.entry_channel
+    if args.stop_atr is not None:
+        overrides["stop_atr_multiple"] = Decimal(args.stop_atr)
+    config = DonchianBreakoutConfiguration(**overrides)
+    record = _run(pairs, config, Path(args.bars_root))
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
     with LEDGER.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
+    params = record["parameters"]
+    channel = params["entry_channel_window"] if isinstance(params, dict) else "?"
     print(
-        f"{record['pair']} DAY {record['strategy_id']}: "
+        f"{'+'.join(pairs)} DAY donchian ch={channel}: "
         f"trades={record['closed_trades']} win_rate={record['win_rate']} "
         f"expectancy={record['expectancy']} pf={record['profit_factor']} "
         f"maxDD={record['maximum_drawdown']} passes_gates={record['passes_gates']}"
