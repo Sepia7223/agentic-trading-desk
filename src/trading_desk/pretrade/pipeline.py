@@ -36,7 +36,7 @@ def _reject(code: RejectionCode, detail: str) -> Rejection:
     return Rejection(code=code, detail=detail)
 
 
-def check_system(health: SystemHealth) -> list[Rejection]:
+def check_system(health: SystemHealth, limits: PreTradeLimits) -> list[Rejection]:
     out: list[Rejection] = []
     if not health.market_data_current:
         out.append(_reject(RejectionCode.STALE_DATA, "market data stale or missing"))
@@ -46,11 +46,20 @@ def check_system(health: SystemHealth) -> list[Rejection]:
         (health.positions_reconciled, "broker/internal positions disagree"),
         (health.clock_synchronized, "clock not synchronized"),
         (health.strategy_enabled, "strategy disabled"),
-        (health.kill_switch_inactive, "kill switch active"),
+        (health.kill_switch_inactive, "GLOBAL kill switch active"),
+        (health.strategy_kill_switch_inactive, "strategy kill switch active"),
+        (not health.incident_lock_active, "incident lock active (human reset only)"),
         (health.protective_orders_submittable, "protective order cannot be submitted"),
     ):
         if not flag:
             out.append(_reject(RejectionCode.SYSTEM_UNHEALTHY, name))
+    if health.clock_skew_ms > limits.maximum_clock_skew_ms:
+        out.append(
+            _reject(
+                RejectionCode.SYSTEM_UNHEALTHY,
+                f"clock skew {health.clock_skew_ms}ms > {limits.maximum_clock_skew_ms}ms",
+            )
+        )
     if health.recently_restarted_unreconciled:
         out.append(_reject(RejectionCode.SYSTEM_UNHEALTHY, "recent restart not reconciled"))
     if health.abnormal_order_rejections:
@@ -60,6 +69,13 @@ def check_system(health: SystemHealth) -> list[Rejection]:
 
 def check_account(account: AccountState, limits: PreTradeLimits) -> list[Rejection]:
     out: list[Rejection] = []
+    if limits.minimum_equity > 0 and account.equity < limits.minimum_equity:
+        out.append(
+            _reject(
+                RejectionCode.EQUITY_FLOOR,
+                f"equity {account.equity} below floor {limits.minimum_equity}",
+            )
+        )
     if account.daily_loss_fraction >= limits.daily_loss_limit_fraction:
         out.append(
             _reject(
@@ -135,6 +151,17 @@ def check_instrument(p: TradeProposal, limits: PreTradeLimits) -> list[Rejection
         out.append(_reject(RejectionCode.STALE_DATA, "quote too old"))
     if not inst.within_trading_hours:
         out.append(_reject(RejectionCode.INELIGIBLE_SYMBOL, "outside approved trading hours"))
+    if inst.price_spike_suspected:
+        out.append(_reject(RejectionCode.STALE_DATA, "price spike/outlier suspected in data"))
+    if not inst.adjustment_sane:
+        out.append(_reject(RejectionCode.STALE_DATA, "corporate-action adjustment implausible"))
+    if not inst.market_session_normal:
+        out.append(
+            _reject(
+                RejectionCode.INELIGIBLE_SYMBOL,
+                "abnormal session (holiday/half-day/auction window)",
+            )
+        )
     return out
 
 
@@ -293,6 +320,14 @@ def check_portfolio(p: TradeProposal, limits: PreTradeLimits) -> list[Rejection]
         )
     if abs(proj.estimated_beta) > limits.maximum_abs_beta:
         out.append(_reject(RejectionCode.FACTOR_CONCENTRATION, f"beta {proj.estimated_beta}"))
+    if proj.max_correlated_cluster_weight > limits.maximum_correlated_cluster_weight:
+        out.append(
+            _reject(
+                RejectionCode.FACTOR_CONCENTRATION,
+                f"correlated cluster {proj.max_correlated_cluster_weight} > "
+                f"{limits.maximum_correlated_cluster_weight}",
+            )
+        )
     return out
 
 
@@ -448,7 +483,7 @@ def evaluate_trade(
     rejections: list[Rejection] = []
     warnings: list[str] = []
 
-    rejections += check_system(health)
+    rejections += check_system(health, limits)
     rejections += check_account(account, limits)
     rejections += check_instrument(proposal, limits)
     rejections += check_signal(proposal)

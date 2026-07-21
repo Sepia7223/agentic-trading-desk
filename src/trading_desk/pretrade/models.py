@@ -44,6 +44,8 @@ class RejectionCode(StrEnum):
     RISK_LIMIT_EXCEEDED = "RISK_LIMIT_EXCEEDED"
     REGIME_REJECTED = "REGIME_REJECTED"
     STRESS_SCENARIO_BREACH = "STRESS_SCENARIO_BREACH"
+    EQUITY_FLOOR = "EQUITY_FLOOR"
+    RATE_LIMITED = "RATE_LIMITED"
 
 
 class MasterCondition(StrEnum):
@@ -69,7 +71,13 @@ class Rejection(_Frozen):
 
 
 class SystemHealth(_Frozen):
-    """Checked BEFORE signal generation, not after order submission."""
+    """Checked BEFORE signal generation, not after order submission.
+
+    Kill-switch granularity: ``kill_switch_inactive`` is the GLOBAL switch;
+    ``strategy_kill_switch_inactive`` is per-strategy. ``incident_lock_active``
+    is set by the order lifecycle on protection failures and may only be reset
+    by a human.
+    """
 
     market_data_current: bool
     broker_connected: bool
@@ -78,12 +86,24 @@ class SystemHealth(_Frozen):
     clock_synchronized: bool
     strategy_enabled: bool
     kill_switch_inactive: bool
+    strategy_kill_switch_inactive: bool = True
+    incident_lock_active: bool = False
+    clock_skew_ms: Decimal = Field(default=Decimal("0"), ge=0)
     recently_restarted_unreconciled: bool = False
     abnormal_order_rejections: bool = False
     protective_orders_submittable: bool = True
 
 
 class AccountState(_Frozen):
+    """RISK-BUDGET SEMANTICS (reconciled): ``risk_per_trade`` governs each
+    INCREMENTAL order's maximum loss. ``open_risk_fraction`` is NOT a sum of
+    per-position stops (which ignores long-short netting and would forbid a
+    60-name book); it is the portfolio's NETTED stress-based open risk — the
+    worst loss across the pre-registered stress scenarios for the CURRENT
+    book (see stress.compute_stress_report). The portfolio-level cap is
+    therefore enforced twice: here on the current book, and in check_stress
+    on the post-trade projection."""
+
     equity: Decimal = Field(gt=0)
     daily_loss_fraction: Decimal = Field(ge=0)
     current_drawdown_fraction: Decimal = Field(ge=0)
@@ -104,6 +124,11 @@ class InstrumentState(_Frozen):
     corporate_action_data_valid: bool
     quote_age_seconds: Decimal = Field(ge=0)
     within_trading_hours: bool
+    # data-sanity flags: a bad tick can fabricate a momentum rank
+    price_spike_suspected: bool = False
+    adjustment_sane: bool = True
+    # holidays / half-days / opening-closing auction windows
+    market_session_normal: bool = True
 
 
 class SignalState(_Frozen):
@@ -158,6 +183,10 @@ class PortfolioProjection(_Frozen):
     max_abs_sector_net: Decimal = Field(ge=0)
     max_single_name_weight: Decimal = Field(ge=0)
     estimated_beta: Decimal
+    # largest gross weight of any highly-correlated cluster of names (a
+    # measurable stand-in for "correlation concentration"; supplied by the
+    # caller's correlation model, conservatively gross if unknown)
+    max_correlated_cluster_weight: Decimal = Field(default=Decimal("0"), ge=0)
 
 
 class StressReport(_Frozen):
@@ -257,10 +286,15 @@ class PreTradeLimits(_Frozen):
     maximum_single_name_weight: Decimal = Decimal("0.02")
     maximum_abs_sector_net: Decimal = Decimal("0.05")
     maximum_abs_beta: Decimal = Decimal("0.10")
+    maximum_correlated_cluster_weight: Decimal = Decimal("0.15")
     stress_loss_limit_fraction: Decimal = Decimal("0.01")
     minimum_margin_buffer_fraction: Decimal = Decimal("0.25")
     price_collar_fraction: Decimal = Decimal("0.005")
     caution_news_blocks_shorts: bool = True
+    # absolute floor: below this equity, no new trades (0 = must be set per
+    # deployment; ties to the never-blow-the-account mandate)
+    minimum_equity: Decimal = Field(default=Decimal("0"), ge=0)
+    maximum_clock_skew_ms: Decimal = Decimal("1000")
 
 
 class PreTradeDecision(_Frozen):
