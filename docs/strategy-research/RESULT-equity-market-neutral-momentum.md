@@ -13,8 +13,13 @@ avoids short-term reversal contamination). **Long** the top-30 (strongest), **sh
 the bottom-30 (weakest), equal-weight → dollar-neutral (no market beta). Rebalance
 daily. Gross 1.0 = 100% long + 100% short. Costs 3 bps/turnover. Compounds.
 
-Market-neutral at 1× gross **cannot blow a $1,000 account** by construction — daily
-P&L is a small, bounded spread of diversified returns (worst day in 4.5 yrs: −3.4%).
+**Under the tested return series and simulated exposure assumptions**, the strategy
+did not experience ruin (worst simulated day in 4.5 yrs: −3.4%). This is NOT a
+"cannot blow up by construction" guarantee — dollar-neutral is not risk-neutral. A
+live long-short book can still lose catastrophically via short squeezes, gaps,
+borrow recalls, factor/idiosyncratic concentration, correlation spikes, or
+operational failure (duplicate orders, failed hedges, broker liquidation). The
+no-ruin claim holds only for the simulated series, not for live deployment.
 
 ## Results — full continuous 2022-01..2026-06, from $1,000
 | Metric | 1× gross | 2× gross |
