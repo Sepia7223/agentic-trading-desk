@@ -235,6 +235,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--entry-channel", type=int, default=None)
     parser.add_argument("--stop-atr", type=str, default=None)
     parser.add_argument("--breakout-buffer", type=str, default=None)
+    parser.add_argument("--max-holding", type=int, default=None)
     parser.add_argument("--emit-trades", type=str, default=None)
     parser.add_argument(
         "--direction",
@@ -252,6 +253,8 @@ def main(argv: list[str] | None = None) -> int:
         overrides["stop_atr_multiple"] = Decimal(args.stop_atr)
     if args.breakout_buffer is not None:
         overrides["breakout_buffer_atr"] = Decimal(args.breakout_buffer)
+    if args.max_holding is not None:
+        overrides["maximum_holding_bars"] = args.max_holding
     config = DonchianBreakoutConfiguration(**overrides)
     emit = Path(args.emit_trades) if args.emit_trades else None
     invert = args.direction == "short"
