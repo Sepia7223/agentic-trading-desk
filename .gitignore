@@ -63,3 +63,4 @@ docker-compose.override.yml
 artifacts/strategy_validation/evidence/logs/
 data/crypto/
 data/stocks/
+data/pit/
