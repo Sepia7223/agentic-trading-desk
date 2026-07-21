@@ -118,8 +118,9 @@ def main(argv=None) -> int:
         skip=args.skip,
         basket=args.basket,
         hold_buffer=2 * args.basket,
-        buffered=False,
-        rebalance_every=1,
+        buffered=True,
+        sector_neutral=True,
+        rebalance_every=5,
         gross=args.gross,
         half_spread_bps=2.5,
         slippage_bps=1.0,
@@ -179,8 +180,8 @@ def main(argv=None) -> int:
         ("costs-2x", {"half_spread_bps": 5.0, "slippage_bps": 2.0,
                       "commission_bps": 1.0}),
         ("borrow-2x", {"borrow_fee_annual": 0.01}),
-        ("buffered", {"buffered": True, "hold_buffer": 2 * args.basket}),
-        ("weekly-rebalance", {"rebalance_every": 5}),
+        ("daily-unbuffered", {"buffered": False, "rebalance_every": 1}),
+        ("no-sector-neutral", {"sector_neutral": False}),
     ):
         case, _ = run_case(label, args.start, args.end, **over)
         stresses.append(case)

@@ -93,6 +93,7 @@ def run(
     basket: int,
     hold_buffer: int,
     buffered: bool,
+    sector_neutral: bool,
     rebalance_every: int,
     gross: float,
     half_spread_bps: float,
@@ -204,7 +205,49 @@ def run(
             n = len(eligible)
             if n >= 4 * basket:
                 shortable = [e for e in eligible if e[2] >= min_short_price]
-                if buffered:
+                if sector_neutral:
+                    # Per-sector construction: the SAME count q is taken long and
+                    # short within each sector, so sector-net exposure is zero by
+                    # construction (uniform weights across the whole book).
+                    # Buffered mode applies the hysteresis inside each sector: a
+                    # held name is retained while it stays inside the top/bottom
+                    # 2q zone of its sector.
+                    by_sec: dict[str, list] = {}
+                    for e in eligible:
+                        by_sec.setdefault(sectors.get(e[1], "?"), []).append(e)
+                    zone_mult = 2 if buffered else 1
+                    new_long, new_short = [], []
+                    for _sec, es in sorted(by_sec.items()):
+                        n_s = len(es)
+                        sh = [e for e in es if e[2] >= min_short_price]
+                        q = min(max(1, round(basket * n_s / n)), n_s // 2, len(sh))
+                        if q < 1:
+                            continue
+                        syms = [sym for _, sym, _ in es]  # ascending momentum
+                        sh_syms = [sym for _, sym, _ in sh]
+                        top_zone = set(syms[-min(zone_mult * q, n_s):])
+                        sel_l = [
+                            s for s in reversed(syms)
+                            if s in long_book and s in top_zone
+                        ][:q]
+                        for sym in reversed(syms):
+                            if len(sel_l) >= q:
+                                break
+                            if sym not in sel_l:
+                                sel_l.append(sym)
+                        bot_zone = set(sh_syms[: min(zone_mult * q, len(sh_syms))])
+                        sel_s = [
+                            s for s in sh_syms
+                            if s in short_book and s in bot_zone
+                        ][:q]
+                        for sym in sh_syms:
+                            if len(sel_s) >= q:
+                                break
+                            if sym not in sel_s:
+                                sel_s.append(sym)
+                        new_long += sel_l
+                        new_short += sel_s
+                elif buffered:
                     rank = {sym: i for i, (_, sym, _) in enumerate(eligible)}
                     srank = {sym: i for i, (_, sym, _) in enumerate(shortable)}
                     new_long = [
@@ -373,9 +416,13 @@ def main(argv=None) -> int:
     p.add_argument("--lookback", type=int, default=252)
     p.add_argument("--skip", type=int, default=21)
     p.add_argument("--basket", type=int, default=30)
-    p.add_argument("--buffered", action="store_true")
+    # Recommended defaults (reviewer): buffered + sector-neutral + weekly.
+    p.add_argument("--buffered", action=argparse.BooleanOptionalAction, default=True)
+    p.add_argument(
+        "--sector-neutral", action=argparse.BooleanOptionalAction, default=True
+    )
     p.add_argument("--hold-buffer", type=int, default=60)
-    p.add_argument("--rebalance-every", type=int, default=1)
+    p.add_argument("--rebalance-every", type=int, default=5)
     p.add_argument("--gross", type=float, default=1.0)
     p.add_argument("--half-spread-bps", type=float, default=2.5)
     p.add_argument("--slippage-bps", type=float, default=1.0)
@@ -406,6 +453,7 @@ def main(argv=None) -> int:
         basket=args.basket,
         hold_buffer=args.hold_buffer,
         buffered=args.buffered,
+        sector_neutral=args.sector_neutral,
         rebalance_every=args.rebalance_every,
         gross=args.gross,
         half_spread_bps=args.half_spread_bps,
@@ -423,9 +471,10 @@ def main(argv=None) -> int:
         "params": {
             k: getattr(args, k.replace("-", "_"))
             for k in (
-                "lookback", "skip", "basket", "buffered", "hold_buffer",
-                "rebalance_every", "gross", "half_spread_bps", "slippage_bps",
-                "commission_bps", "borrow_fee_annual", "min_short_price", "delay",
+                "lookback", "skip", "basket", "buffered", "sector_neutral",
+                "hold_buffer", "rebalance_every", "gross", "half_spread_bps",
+                "slippage_bps", "commission_bps", "borrow_fee_annual",
+                "min_short_price", "delay",
             )
         },
         "universe": {

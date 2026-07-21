@@ -62,6 +62,7 @@ BASE = dict(
     basket=1,
     hold_buffer=2,
     buffered=False,
+    sector_neutral=False,
     rebalance_every=1,
     gross=1.0,
     half_spread_bps=0.0,
@@ -144,3 +145,30 @@ def test_delay_mode_still_trades():
     res = run_case(prices, intervals, sectors, delay=1)
     assert res["position_changes"] >= 2
     assert res["final_equity"] > 1000.0  # trend persists; 1-day delay still profits
+
+
+def test_sector_neutral_balances_each_sector():
+    """Two sectors with opposite-trend names: every sector snapshot must net to
+    ~zero because each sector contributes the same count long and short."""
+    prices = {
+        "T_UP1": geometric(DATES, 100, 0.0020),
+        "T_UP2": geometric(DATES, 100, 0.0015),
+        "T_DN1": geometric(DATES, 100, -0.0015),
+        "T_DN2": geometric(DATES, 100, -0.0020),
+        "F_UP1": geometric(DATES, 100, 0.0018),
+        "F_UP2": geometric(DATES, 100, 0.0012),
+        "F_DN1": geometric(DATES, 100, -0.0012),
+        "F_DN2": geometric(DATES, 100, -0.0018),
+    }
+    intervals = {sym: FULL for sym in prices}
+    sectors = {s: ("Tech" if s.startswith("T_") else "Fin") for s in prices}
+    res = run_case(
+        prices, intervals, sectors, sector_neutral=True, basket=2, hold_buffer=4
+    )
+    assert res["sector_net_series"], "expected sector snapshots"
+    for snap in res["sector_net_series"]:
+        for sector, net in snap.items():
+            assert abs(net) < 1e-9, f"sector {sector} not neutral: {net}"
+    # and both sectors actually participated
+    contrib_sectors = {sectors[s] for s in res["name_contrib"]}
+    assert contrib_sectors == {"Tech", "Fin"}
