@@ -44,15 +44,22 @@ def load_all(root: Path):
     return series, all_dates
 
 
-def backtest(series, all_dates, start, end, *, lookback, basket, hold, gross, cost_bps, momentum):
-    dates = [d for d in all_dates if start <= d <= end]
+def backtest(
+    series, all_dates, start, end, *, lookback, basket, hold, gross, cost_bps, momentum, skip=0
+):
+    dates = all_dates  # full history; lookback may reach before `start`
     syms = list(series)
     daily_ret = []  # (date, portfolio_return_after_costs)
     trades = 0
     book_long: list[str] = []
     book_short: list[str] = []
-    for k in range(lookback + 1, len(dates)):
+    first = next((i for i, d in enumerate(dates) if d >= start), len(dates))
+    start_k = max(lookback + 1, first)
+    rebal = 0
+    for k in range(start_k, len(dates)):
         d = dates[k]
+        if d > end:
+            break
         prev = dates[k - 1]
         # daily P&L from yesterday's book applied to today's return
         if book_long or book_short:
@@ -65,10 +72,11 @@ def backtest(series, all_dates, start, end, *, lookback, basket, hold, gross, co
             port = 0.0
         # rebalance every `hold` days
         cost = 0.0
-        if (k - lookback - 1) % hold == 0:
+        if rebal % hold == 0:
             ranked = []
+            rank_end = dates[k - skip] if skip else d
             for s in syms:
-                r = _ret(series[s], dates[k - lookback], d)
+                r = _ret(series[s], dates[k - lookback], rank_end)
                 if r is not None:
                     ranked.append((r, s))
             ranked.sort()
@@ -80,6 +88,7 @@ def backtest(series, all_dates, start, end, *, lookback, basket, hold, gross, co
             trades += turnover
             cost = turnover / max(2 * basket, 1) * gross * (cost_bps / 10000.0)
             book_long, book_short = new_long, new_short
+        rebal += 1  # noqa: SIM113 - counts in-window days only (start offset + break)
         daily_ret.append((d, port - cost))
     return daily_ret, trades, len(dates)
 
@@ -141,11 +150,16 @@ def main(argv=None):
     p.add_argument("--gross", type=float, default=1.0, help="gross leverage (1.0=100% long+short)")
     p.add_argument("--cost-bps", type=float, default=3.0)
     p.add_argument("--momentum", action="store_true", help="long winners/short losers")
+    p.add_argument("--skip", type=int, default=0, help="skip most-recent N days in ranking")
     p.add_argument("--start-equity", type=float, default=1000.0)
     p.add_argument("--final-test", action="store_true")
+    p.add_argument("--full", action="store_true", help="continuous 2022-01..2026-06")
     p.add_argument("--root", default="data/stocks")
     args = p.parse_args(argv)
-    start, end = (FINAL_START, FINAL_END) if args.final_test else (DEV_START, VAL_END)
+    if args.full:
+        start, end = DEV_START, FINAL_END
+    else:
+        start, end = (FINAL_START, FINAL_END) if args.final_test else (DEV_START, VAL_END)
     series, all_dates = load_all(Path(args.root))
     daily_ret, trades, nd = backtest(
         series,
@@ -158,6 +172,7 @@ def main(argv=None):
         gross=args.gross,
         cost_bps=args.cost_bps,
         momentum=args.momentum,
+        skip=args.skip,
     )
     m = metrics(daily_ret, trades, nd, args.start_equity)
     window = "FINAL-TEST" if args.final_test else "dev+val"
