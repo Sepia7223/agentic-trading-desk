@@ -7,7 +7,18 @@ stack.**
 
 ## Daily operation
 
-Run once per day, after the US close (any time before the next open):
+**Automated:** the Windows scheduled task `AgenticDesk-PaperTrade` runs
+`scripts/run_paper_session.cmd` weekdays at 18:30 local (after the US close),
+appending output to `data/paper/session.log`. Manage it with:
+
+    schtasks /Query  /TN "AgenticDesk-PaperTrade" /FO LIST /V   # inspect
+    schtasks /Run    /TN "AgenticDesk-PaperTrade"               # run now
+    schtasks /Delete /TN "AgenticDesk-PaperTrade" /F            # remove
+
+(The machine must be on at 18:30; a missed day is harmless — the next session
+settles whatever is queued against the newest completed bars.)
+
+**Manual** (equivalent):
 
     cd agentic-trading-desk-m12
     PYTHONPATH="src;scripts" python scripts/paper_trade.py
