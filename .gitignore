@@ -62,3 +62,4 @@ artifacts/ig_demo_certification/runtime/
 docker-compose.override.yml
 artifacts/strategy_validation/evidence/logs/
 data/crypto/
+data/stocks/
