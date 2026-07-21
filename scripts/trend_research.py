@@ -50,6 +50,7 @@ class Trade:
     regime: str
     month: str
     held_bars: int
+    stop_frac: float = 0.0  # protective stop distance as a fraction of entry price
 
     def net(self, cost_mult: float = 1.0) -> float:
         return self.gross - cost_mult * self.exec_cost
@@ -121,6 +122,7 @@ def simulate(
                 e_i = fill
                 e_mid = ho[fill]
                 stop_px = e_mid - direction * stop_atr * atr[i]
+                e_stop_frac = stop_atr * atr[i] / e_mid
                 mae = mfe = 0.0
                 fast = sum(mc[i - 20 : i]) / 20
                 slw = sum(mc[i - slow : i]) / slow
@@ -158,6 +160,7 @@ def simulate(
                     regime=regime,
                     month=f"{ts[e_i].year}-{ts[e_i].month:02d}",
                     held_bars=fill - e_i,
+                    stop_frac=e_stop_frac,
                 )
             )
             in_pos = 0
