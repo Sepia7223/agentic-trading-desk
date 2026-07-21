@@ -158,12 +158,15 @@ def simulate(
     trailing: bool,
     start: datetime,
     end: datetime,
+    momentum: bool = False,
 ) -> list[Trade]:
     sma, std, atr, slow = _indicators(s, w, atr_w, slow_w)
     trades: list[Trade] = []
     n = len(s.mid_c)
     i = max(w, atr_w, slow_w)
     warm = i
+    # fade sign: mean-reversion trades AGAINST the z-extension; momentum trades WITH it.
+    fade = -1 if momentum else 1
     while i < n - 1:
         if not (start <= s.ts[i] <= end):
             i += 1
@@ -174,9 +177,9 @@ def simulate(
         z = (s.mid_c[i] - sma[i]) / std[i]
         direction = 0
         if z <= -z_entry:
-            direction = 1
+            direction = 1 * fade
         elif z >= z_entry:
-            direction = -1
+            direction = -1 * fade
         if direction == 0:
             i += 1
             continue
@@ -385,6 +388,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-holding", type=int, default=24)
     p.add_argument("--slippage", type=float, default=0.00005)
     p.add_argument("--trailing", action="store_true")
+    p.add_argument(
+        "--momentum",
+        action="store_true",
+        help="trade WITH the z-extension (breakout/momentum) instead of against it",
+    )
     p.add_argument("--final-test", action="store_true")
     p.add_argument("--bars-root", default="data/validation/bars")
     p.add_argument("--out", default=None)
@@ -415,6 +423,7 @@ def main(argv: list[str] | None = None) -> int:
             trailing=args.trailing,
             start=start,
             end=end,
+            momentum=args.momentum,
         )
         all_trades.extend(trades)
         per_pair.append(analyse_pair(pair, trades, weekdays, args.target_atr, args.stop_atr))
