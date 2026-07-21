@@ -56,7 +56,7 @@ class Trade:
 
 
 def _load(pair: str, root: Path, tf: str, start: datetime, end: datetime):
-    epic, _ = PAIR_EPICS[pair]
+    epic = PAIR_EPICS[pair][0] if pair in PAIR_EPICS else pair
     ts, mc, mh, ml, ho, half = [], [], [], [], [], []
     for b in load_bars(root / f"{pair}_{tf}.csv", epic=epic):
         if start <= b.timestamp <= end:
@@ -167,8 +167,10 @@ def simulate(
     return trades
 
 
-def _weekdays(start, end):
+def _weekdays(start, end, all_days=False):
     days = (end.date() - start.date()).days + 1
+    if all_days:
+        return days
     return sum(1 for k in range(days) if (start.date() + dt.timedelta(days=k)).weekday() < 5)
 
 
@@ -273,11 +275,12 @@ def main(argv=None):
     p.add_argument("--max-hold", type=int, default=500)
     p.add_argument("--slippage", type=float, default=0.00005)
     p.add_argument("--final-test", action="store_true")
+    p.add_argument("--all-days", action="store_true", help="count all calendar days (24/7 crypto)")
     p.add_argument("--bars-root", default="data/validation/bars")
     p.add_argument("--out", default=None)
     args = p.parse_args(argv)
     start, end = (FINAL_START, FINAL_END) if args.final_test else (DEV_START, VAL_END)
-    weekdays = _weekdays(start, end)
+    weekdays = _weekdays(start, end, args.all_days)
     root = Path(args.bars_root)
     pairs = [x.strip() for x in args.pairs.split(",") if x.strip()]
     per_pair = []

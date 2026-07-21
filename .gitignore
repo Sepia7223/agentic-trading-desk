@@ -61,3 +61,4 @@ artifacts/ig_demo_certification/runtime/
 # Docker local overrides
 docker-compose.override.yml
 artifacts/strategy_validation/evidence/logs/
+data/crypto/
