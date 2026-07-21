@@ -78,6 +78,53 @@ def member_on(intervals, ticker: str, d: date) -> bool:
     return any(a <= d <= b for a, b in intervals.get(ticker, ()))
 
 
+def load_events(path: Path) -> dict[str, list[tuple[date, str]]]:
+    """EDGAR 8-K ledger -> {symbol: [(accepted_date, tier), ...] sorted}.
+
+    Causality note: acceptance is usually after the close, so an event accepted
+    on day e is treated as knowable for decisions strictly AFTER e.
+    """
+
+    out: dict[str, list[tuple[date, str]]] = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        e = json.loads(line)
+        if e.get("tier") in ("BLOCK", "CAUTION"):
+            out.setdefault(e["ticker"], []).append(
+                (date.fromisoformat(e["accepted"][:10]), e["tier"])
+            )
+    for evs in out.values():
+        evs.sort()
+    return out
+
+
+def event_state(
+    evs: list[tuple[date, str]] | None,
+    d: date,
+    block_days: int,
+    caution_days: int,
+) -> tuple[bool, bool]:
+    """(blocked, caution) for decision date d, using only events accepted
+    strictly before d."""
+
+    if not evs:
+        return False, False
+    blocked = caution = False
+    horizon = max(block_days, caution_days)
+    for ed, tier in reversed(evs):
+        age = (d - ed).days
+        if age > horizon:
+            break
+        if age < 1:  # accepted on/after the decision day: not yet knowable
+            continue
+        if tier == "BLOCK" and age <= block_days:
+            blocked = True
+        elif tier == "CAUTION" and age <= caution_days:
+            caution = True
+    return blocked, caution
+
+
 # ------------------------------------------------------------------- backtest
 
 
@@ -103,6 +150,9 @@ def run(
     min_short_price: float,
     delay: int,
     start_equity: float,
+    events: dict[str, list[tuple[date, str]]] | None = None,
+    event_block_days: int = 7,
+    event_caution_days: int = 3,
 ):
     all_dates = sorted({d for s in prices.values() for d in s})
     dates = [d for d in all_dates if d <= end]
@@ -132,6 +182,8 @@ def run(
     name_contrib: dict[str, float] = {}
     sector_net_series: list[dict[str, float]] = []
     day_count = 0
+    event_block_exclusions = 0
+    event_short_exclusions = 0
     cost_rate = (half_spread_bps + slippage_bps + commission_bps) / 10000.0
     borrow_daily = borrow_fee_annual / 252.0
 
@@ -191,9 +243,23 @@ def run(
         # ---- compute today's signal
         if (k - k0) % rebalance_every == 0:
             eligible = []
+            no_short: set[str] = set()
             for sym in prices:
                 if not member_on(intervals, sym, d):
                     continue
+                # news/corporate-event gate: BLOCK-tier 8-K excludes the name
+                # entirely BEFORE ranking; CAUTION-tier excludes it from the
+                # short side (mirrors the live pre-trade pipeline semantics).
+                if events is not None:
+                    blocked, caution = event_state(
+                        events.get(sym), d, event_block_days, event_caution_days
+                    )
+                    if blocked:
+                        event_block_exclusions += 1
+                        continue
+                    if caution:
+                        event_short_exclusions += 1
+                        no_short.add(sym)
                 r = ret(sym, dates[k - lookback - skip], dates[k - skip])
                 if r is None:
                     continue
@@ -204,7 +270,10 @@ def run(
             eligible.sort()
             n = len(eligible)
             if n >= 4 * basket:
-                shortable = [e for e in eligible if e[2] >= min_short_price]
+                shortable = [
+                    e for e in eligible
+                    if e[2] >= min_short_price and e[1] not in no_short
+                ]
                 if sector_neutral:
                     # Per-sector construction: the SAME count q is taken long and
                     # short within each sector, so sector-net exposure is zero by
@@ -219,7 +288,10 @@ def run(
                     new_long, new_short = [], []
                     for _sec, es in sorted(by_sec.items()):
                         n_s = len(es)
-                        sh = [e for e in es if e[2] >= min_short_price]
+                        sh = [
+                            e for e in es
+                            if e[2] >= min_short_price and e[1] not in no_short
+                        ]
                         q = min(max(1, round(basket * n_s / n)), n_s // 2, len(sh))
                         if q < 1:
                             continue
@@ -303,6 +375,8 @@ def run(
         "rebalances": rebalances,
         "name_contrib": name_contrib,
         "sector_net_series": sector_net_series,
+        "event_block_exclusions": event_block_exclusions,
+        "event_short_exclusions": event_short_exclusions,
         "final_equity": equity,
     }
 
@@ -405,6 +479,8 @@ def summarize(res, start_equity: float, spy: dict[date, float] | None) -> dict:
         if res["turnover_dollars"]
         else None,
         "rebalances": res["rebalances"],
+        "event_block_exclusions": res.get("event_block_exclusions", 0),
+        "event_short_exclusions": res.get("event_short_exclusions", 0),
     }
 
 
@@ -429,6 +505,13 @@ def main(argv=None) -> int:
     p.add_argument("--commission-bps", type=float, default=0.5)
     p.add_argument("--borrow-fee-annual", type=float, default=0.005)
     p.add_argument("--min-short-price", type=float, default=5.0)
+    p.add_argument(
+        "--events",
+        default=None,
+        help="EDGAR events JSONL; enables the pre-trade news/event gate",
+    )
+    p.add_argument("--event-block-days", type=int, default=7)
+    p.add_argument("--event-caution-days", type=int, default=3)
     p.add_argument("--delay", type=int, default=0)
     p.add_argument("--start-equity", type=float, default=1000.0)
     p.add_argument("--pit-dir", default="data/pit")
@@ -463,6 +546,9 @@ def main(argv=None) -> int:
         min_short_price=args.min_short_price,
         delay=args.delay,
         start_equity=args.start_equity,
+        events=load_events(Path(args.events)) if args.events else None,
+        event_block_days=args.event_block_days,
+        event_caution_days=args.event_caution_days,
     )
     m = summarize(res, args.start_equity, spy)
     report = {

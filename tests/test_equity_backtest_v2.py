@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from equity_backtest_v2 import run  # noqa: E402
+from equity_backtest_v2 import event_state, run  # noqa: E402
 
 
 def weekdays(start: date, n: int) -> list[date]:
@@ -145,6 +145,46 @@ def test_delay_mode_still_trades():
     res = run_case(prices, intervals, sectors, delay=1)
     assert res["position_changes"] >= 2
     assert res["final_equity"] > 1000.0  # trend persists; 1-day delay still profits
+
+
+def test_event_state_causality_and_windows():
+    d = date(2024, 6, 14)
+    evs = [(date(2024, 6, 10), "BLOCK")]
+    # 4 days old, inside 7-day block window
+    assert event_state(evs, d, 7, 3) == (True, False)
+    # same-day acceptance is NOT knowable yet (accepted after the close)
+    assert event_state([(d, "BLOCK")], d, 7, 3) == (False, False)
+    # expired block window
+    assert event_state(evs, date(2024, 6, 25), 7, 3) == (False, False)
+    # caution only affects its own (shorter) window
+    cevs = [(date(2024, 6, 12), "CAUTION")]
+    assert event_state(cevs, d, 7, 3) == (False, True)
+    assert event_state(cevs, date(2024, 6, 18), 7, 3) == (False, False)
+
+
+def test_block_event_excludes_name_from_book():
+    prices, intervals, sectors = make_universe()
+    # UP1 files a BLOCK-tier 8-K mid-window: it must leave the long book and
+    # UP2 must take its place while the exclusion window is active.
+    mid = DATES[130]
+    events = {"UP1": [(mid, "BLOCK")]}
+    res = run_case(prices, intervals, sectors, events=events, event_block_days=30)
+    assert res["event_block_exclusions"] > 0
+    assert res["name_contrib"].get("UP2", 0.0) > 0
+
+
+def test_caution_event_blocks_short_side_only():
+    prices, intervals, sectors = make_universe()
+    mid = DATES[130]
+    events = {"DN2": [(mid, "CAUTION")], "UP1": [(mid, "CAUTION")]}
+    res = run_case(
+        prices, intervals, sectors, events=events, event_caution_days=30
+    )
+    # DN2 (short candidate) is displaced by DN1 during the caution window...
+    assert res["event_short_exclusions"] > 0
+    assert res["name_contrib"].get("DN1", 0.0) > 0
+    # ...but UP1 (long candidate) is unaffected by caution and stays long.
+    assert res["name_contrib"].get("UP1", 0.0) > 0
 
 
 def test_sector_neutral_balances_each_sector():
