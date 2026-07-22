@@ -1,65 +1,53 @@
-# Laptop → Mini-PC Migration
+# Laptop → Mini-PC Migration — COMPLETED (2026-07-22, via SSH)
 
-Moves the complete working environment — code, datasets, live paper-trading
-state, and the daily scheduled job — to the mini PC. Code travels via GitHub
-(everything is pushed, including all worktree branches); only the gitignored
-data travels by file copy.
+The working environment — code, datasets, live paper-trading state, and the
+daily job — was migrated from the laptop to the mini PC over SSH. This document
+records the final state (the original draft assumed a Windows mini PC; the
+machine runs **Linux**, so the actual layout below supersedes it —
+`setup_minipc.ps1` is retained only as a Windows fallback).
 
-## State of the laptop (already done)
+## The mini PC (authoritative machine)
 
-- **Every branch is on origin** (verified; the one orphan branch was pushed).
-- **The laptop's scheduled task `AgenticDesk-PaperTrade` is DISABLED** so two
-  machines can never both run sessions and fork the paper state. Missed days
-  during the migration are harmless by design — the next session settles
-  whatever is queued against the newest completed bars.
-- **Archive built:** `C:\Users\Jaydon.Yanez\Documents\minipc-migration\trading-data.tar.gz`
-  containing, from the m12 worktree:
-  | Contents | Size | Why copied |
-  |---|---|---|
-  | `data/validation/` | 547 MB | Dukascopy FX bars for M12 (Track A) — slow to re-download (per-IP throttling) |
-  | `data/pit/` | 53 MB | PIT universe, 606-name stock bars, coverage report, EDGAR event ledger |
-  | `data/stocks/` | 12 MB | survivor-universe bars (research history) |
-  | `data/paper/` | <1 MB | **live paper-trading state — irreplaceable** (positions, queued orders, equity curve, idempotency keys, journal) |
+- Host: `gusanio@10.0.0.8` (HP ProDesk 400 G4, Ubuntu, Python 3.12,
+  timezone America/Curaçao). SSH key: laptop's `~/.ssh/id_ed25519_minipc`.
+- Layout (mirrors the laptop):
+  - `~/agentic-trading-desk` — main clone (+ shared `.venv`)
+  - `~/agentic-trading-desk-m12` — worktree on
+    `feature/multi-regime-strategy-portfolio` (the active branch)
+- Data, inside the worktree:
+  - `data/validation → ~/agentic-trading-desk/data/validation` (symlink; 586 MB
+    Dukascopy FX — was already on the machine; symlinked, not duplicated,
+    because the disk is ~96% full)
+  - `data/pit/` (54 MB — PIT universe, stock bars, coverage, EDGAR events)
+  - `data/stocks/` (13 MB) · `data/paper/` (**live paper state** — cash,
+    queued orders, journal; transferred intact and verified)
+- Verification performed ON the mini PC: full test suite **1,070 passed**; one
+  end-to-end pipeline session against a scratch state (`--paper-dir`), proving
+  quotes + news gate + validation on Linux without touching the live state
+  (the market was open at migration time, so the real session was left to the
+  scheduled run).
+- Daily job: **cron** `30 18 * * 1-5 ~/agentic-trading-desk-m12/scripts/run_paper_session.sh`
+  (logs append to `data/paper/session.log`).
 
-  Not archived: `data/crypto/` (249 MB) — that research phase is closed and the
-  data regenerates in ~10 min via `scripts/fetch_crypto.py` if ever needed.
+## The laptop (retired from operation)
 
-## Steps on the mini PC
+- All branches pushed to origin (including the orphan
+  `feature/regime-aware-strategy`).
+- The scheduled task `AgenticDesk-PaperTrade` is **deleted** — the one-machine
+  rule: paper sessions run ONLY on the mini PC; two machines would silently
+  fork the state.
+- The laptop's `data/` copies and `Documents\minipc-migration\` archive are
+  now redundant backups; safe to delete when disk space is wanted.
 
-1. Copy `trading-data.tar.gz` over (USB / network share), e.g. to `D:\`.
-2. Get the setup script (it lives in the repo — grab just the file first):
-   download `scripts/setup_minipc.ps1` from the
-   `feature/multi-regime-strategy-portfolio` branch on GitHub, or clone the
-   repo and run it from there.
-3. Run it:
+## Operating the mini PC
 
-       powershell -ExecutionPolicy Bypass -File setup_minipc.ps1 `
-         -ArchivePath "D:\trading-data.tar.gz" -Root "C:\trading"
+    ssh -i ~/.ssh/id_ed25519_minipc gusanio@10.0.0.8       # from the laptop
+    crontab -l                                             # inspect the job
+    tail -50 ~/agentic-trading-desk-m12/data/paper/session.log
+    # kill switches (same file semantics as before):
+    touch ~/agentic-trading-desk-m12/data/paper/KILL_GLOBAL
+    rm    ~/agentic-trading-desk-m12/data/paper/INCIDENT_LOCK   # human-only
 
-   It clones/updates the repo + m12 worktree, restores the data, installs
-   dependencies, **runs the full test suite**, runs **one manual paper session**
-   (proving quotes + news gate + pipeline end-to-end on that machine), and
-   registers the weekday 18:30 scheduled task. It stops hard on any failure.
-4. When it prints MIGRATION COMPLETE, delete the laptop task for good:
-
-       schtasks /Delete /TN "AgenticDesk-PaperTrade" /F        (on the laptop)
-
-5. Optional worktrees (docs/PR work) on the mini PC:
-
-       git -C C:\trading\agentic-trading-desk worktree add ..\agentic-trading-desk-docs docs/project-engineering-documentation
-       git -C C:\trading\agentic-trading-desk worktree add ..\agentic-trading-desk-m12-docs docs/roadmap-and-milestones-clean
-
-## Rules
-
-- **One machine runs paper sessions. Never two.** The state file is the single
-  source of truth; parallel sessions would fork it silently.
-- If the migration is delayed, the laptop task can be temporarily re-enabled
-  (`schtasks /Change /TN "AgenticDesk-PaperTrade" /ENABLE`) — but then the
-  archive must be rebuilt before migrating (the paper state will have moved on).
-
-## After migration (Track A resumes there)
-
-The mini PC then has everything Track A needs: the accepted 11.5 head, the M12
-branch with all validation tooling + the 547 MB FX dataset, the clean docs
-branch, and the M13–M19 implementation branches — plus the reviewer memo at
-`docs/strategy-research/M12-DOD-DECISION-REQUEST.md`.
+Known constraints: disk ~96% full (9.6 GB free — monitor); pushing to GitHub
+from the mini PC needs credentials not yet configured (pulls are anonymous
+HTTPS and work; sessions never push).
