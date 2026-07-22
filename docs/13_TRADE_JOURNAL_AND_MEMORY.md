@@ -562,3 +562,13 @@ records UTC trading date, submitted/confirmed/rejected/closed state, strategy,
 instrument, candidate, and execution identifiers. Daily capacity counts submissions,
 including ambiguous outcomes. Campaign snapshots and hard halts are persisted and
 feed sanitized GET-only Operations Center projections.
+
+## Milestone 12 Strategy Governance Evidence
+
+Schema-recognized immutable events cover validation start/completion/failure,
+walk-forward, cost stress, robustness, portfolio tests, promotion decisions,
+promotion/disable actions, breaker trigger/clear, and invalidation evaluation. Records
+link strategy version, configuration, dataset, report, and artifact fingerprints and
+remain sanitized and replayable. Journal records cannot promote a strategy, clear a
+breaker, generate a candidate, or trigger execution. Current research artifact files
+contain no broker data, credentials, raw HTTP responses, or claimed historical results.

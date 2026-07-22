@@ -241,3 +241,12 @@ sets quantity, and enforces account, loss, drawdown, position, exposure, cooldow
 and halt rules. Opportunity confidence multipliers are recommendations capped at one;
 they cannot increase Risk policy or quantity. Campaign and activity objectives are not
 Risk inputs.
+
+## Milestone 12 Portfolio Boundary
+
+Strategies propose reference entry, protective stop, and target evidence but never a
+quantity. Opportunity ranking resolves competing candidates; Risk remains the only
+approval, sizing, exposure, correlation, loss, drawdown, cooldown, and halt authority.
+Portfolio-validation results and promotion records cannot modify Risk configuration.
+A strategy breaker can only reduce entry availability and cannot suppress defensive
+lifecycle exits or clear a broader Risk halt.
