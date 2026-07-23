@@ -1,0 +1,49 @@
+{
+ "signal": "short-volume",
+ "window": "2022-01..2025-06 (dev+validation only)",
+ "variants": [
+  {
+   "variant": {
+    "formation_days": 5,
+    "bucket_fraction": 0.1
+   },
+   "sharpe_daily": 0.0991,
+   "sharpe_annualized": 1.574,
+   "mean_daily_ls_bps": 2.534,
+   "n_obs": 874
+  },
+  {
+   "variant": {
+    "formation_days": 10,
+    "bucket_fraction": 0.1
+   },
+   "sharpe_daily": 0.105,
+   "sharpe_annualized": 1.666,
+   "mean_daily_ls_bps": 2.893,
+   "n_obs": 874
+  },
+  {
+   "variant": {
+    "formation_days": 5,
+    "bucket_fraction": 0.2
+   },
+   "sharpe_daily": 0.1141,
+   "sharpe_annualized": 1.811,
+   "mean_daily_ls_bps": 2.296,
+   "n_obs": 874
+  }
+ ],
+ "selected": {
+  "formation_days": 5,
+  "bucket_fraction": 0.2
+ },
+ "gauntlet": {
+  "registry_trials": 3,
+  "deflated_sharpe": 0.9993,
+  "dsr_pass_0.95": true,
+  "cpcv_paths_positive": 1.0,
+  "cpcv_pass_0.60": true,
+  "corr_vs_momentum": 0.3618
+ },
+ "honest_note": "public daily short volume graded WEAK by the research up front; the strong variant (bi-monthly short interest) is key-gated"
+}
