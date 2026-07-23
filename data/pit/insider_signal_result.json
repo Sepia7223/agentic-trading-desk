@@ -1,0 +1,64 @@
+{
+ "signal": "insider-cluster",
+ "window": "2022-01..2025-06 (dev+validation only)",
+ "variants": [
+  {
+   "variant": {
+    "min_buyers": 2,
+    "window_days": 21,
+    "min_dollars": 50000,
+    "hold_days": 63
+   },
+   "sharpe_daily": 0.013,
+   "sharpe_annualized": 0.206,
+   "mean_daily_excess_bps": 0.767,
+   "days_with_active_names": 874,
+   "avg_active_names": 14.4,
+   "n_obs": 874
+  },
+  {
+   "variant": {
+    "min_buyers": 2,
+    "window_days": 42,
+    "min_dollars": 100000,
+    "hold_days": 63
+   },
+   "sharpe_daily": 0.0141,
+   "sharpe_annualized": 0.224,
+   "mean_daily_excess_bps": 0.834,
+   "days_with_active_names": 874,
+   "avg_active_names": 15.3,
+   "n_obs": 874
+  },
+  {
+   "variant": {
+    "min_buyers": 3,
+    "window_days": 42,
+    "min_dollars": 100000,
+    "hold_days": 126
+   },
+   "sharpe_daily": 0.0084,
+   "sharpe_annualized": 0.134,
+   "mean_daily_excess_bps": 0.58,
+   "days_with_active_names": 874,
+   "avg_active_names": 10.5,
+   "n_obs": 874
+  }
+ ],
+ "selected": {
+  "min_buyers": 2,
+  "window_days": 42,
+  "min_dollars": 100000,
+  "hold_days": 63
+ },
+ "gauntlet": {
+  "registry_trials": 3,
+  "deflated_sharpe": 0.6386,
+  "dsr_pass_0.95": false,
+  "cpcv_paths_positive": 0.6,
+  "cpcv_pass_0.60": true,
+  "corr_vs_momentum": -0.4793,
+  "orthogonal": false
+ },
+ "data_note": "insider data through 2026q1 (SEC lag); final-test partially covered"
+}
