@@ -242,3 +242,45 @@ def test_store_appends_and_scores_brier(tmp_path: Path):
     score, n = store.brier_score("a1-news")
     assert n == 2
     assert score == pytest.approx((0.3**2 + 0.7**2) / 2)
+
+
+# --------------------------------------------------------------- client seam
+
+
+def test_openai_payload_parser():
+    from trading_desk.agents.client import parse_openai_payload
+
+    payload = {"choices": [{"message": {"role": "assistant", "content": '{"ok": true}'}}]}
+    assert parse_openai_payload(payload) == '{"ok": true}'
+    assert parse_openai_payload({}) == ""
+    assert parse_openai_payload({"choices": [{"message": {"content": None}}]}) == ""
+
+
+def test_default_client_selects_by_available_key(monkeypatch):
+    from trading_desk.agents.client import (
+        AnthropicHTTPClient,
+        OpenAIHTTPClient,
+        default_client,
+    )
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert default_client() is None  # no key -> agent layer inert
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+    client = default_client()
+    assert isinstance(client, OpenAIHTTPClient)
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    assert isinstance(default_client(), AnthropicHTTPClient)
+
+
+def test_live_clients_fail_loudly_without_keys(monkeypatch):
+    from trading_desk.agents.client import AnthropicHTTPClient, OpenAIHTTPClient
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
+        AnthropicHTTPClient().complete("s", "u")
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        OpenAIHTTPClient().complete("s", "u")
