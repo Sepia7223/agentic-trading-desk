@@ -1,0 +1,69 @@
+{
+ "phase": "2 - costed composite vs momentum",
+ "window": "2022-01..2025-06 (dev+validation only)",
+ "n_obs": 853,
+ "sleeves_net_of_costs": {
+  "momentum": {
+   "sharpe_daily": 0.0076,
+   "sharpe_annualized": 0.121,
+   "mean_daily_bps": 0.442
+  },
+  "short_volume_costed": {
+   "sharpe_daily": 0.048,
+   "sharpe_annualized": 0.762,
+   "mean_daily_bps": 0.969
+  },
+  "insider_costed": {
+   "sharpe_daily": 0.0077,
+   "sharpe_annualized": 0.122,
+   "mean_daily_bps": 0.451
+  },
+  "sleeve_correlations": {
+   "sv_vs_mom": 0.3613,
+   "ins_vs_mom": -0.4793,
+   "sv_vs_ins": -0.1767
+  }
+ },
+ "composites": [
+  {
+   "weights": {
+    "momentum": 0.5,
+    "short_volume": 0.5,
+    "insider": 0.0
+   },
+   "sharpe_daily": 0.0208,
+   "sharpe_annualized": 0.331,
+   "mean_daily_bps": 0.705
+  },
+  {
+   "weights": {
+    "momentum": 0.6,
+    "short_volume": 0.3,
+    "insider": 0.1
+   },
+   "sharpe_daily": 0.0172,
+   "sharpe_annualized": 0.273,
+   "mean_daily_bps": 0.601
+  },
+  {
+   "weights": {
+    "momentum": 0.7,
+    "short_volume": 0.3,
+    "insider": 0.0
+   },
+   "sharpe_daily": 0.0139,
+   "sharpe_annualized": 0.221,
+   "mean_daily_bps": 0.6
+  }
+ ],
+ "spa_gate": {
+  "benchmark": "momentum-alone (net)",
+  "p_value": 0.395,
+  "passes_0.05": false,
+  "best_candidate": "m0.5_sv0.5_in0.0"
+ },
+ "dsr_best_composite": {
+  "registry_trials": 3,
+  "deflated_sharpe": 0.7043
+ }
+}
