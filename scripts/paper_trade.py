@@ -40,6 +40,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fetch_stocks import fetch as fetch_yahoo  # type: ignore[import-not-found]
+from trading_desk.newsfeed import CombinedNewsReader
 from trading_desk.paper.broker import PaperBroker, PaperOrder, SessionBar
 from trading_desk.paper.health import build_account_state, build_system_health
 from trading_desk.paper.state import (
@@ -63,7 +64,6 @@ from trading_desk.pretrade import (
     idempotency_key,
 )
 from trading_desk.pretrade.correlation import max_correlated_cluster_weight
-from trading_desk.pretrade.news_gate import read_news
 from trading_desk.pretrade.stress import (
     PortfolioSnapshot,
     StressParameters,
@@ -327,6 +327,7 @@ def main(argv=None) -> int:
         estimated_beta=D("0.05"),  # measured from realized returns as they accrue
         max_correlated_cluster_weight=cluster_w,
     )
+    news_reader = CombinedNewsReader()
     throttle = OrderThrottle(PAPER_THROTTLE, seen_keys=set(state.seen_idempotency_keys))
     now = datetime.now(UTC)
 
@@ -407,7 +408,7 @@ def main(argv=None) -> int:
             strategy_id="EQUITY_MOMENTUM_V1",
             protection_attached=True,
         )
-        news = read_news(sym)  # mandatory: unread news == no trade
+        news = news_reader.read(sym)  # mandatory: unread news == no trade
         time.sleep(0.1)
         proposal = TradeProposal(
             signal=signal,
