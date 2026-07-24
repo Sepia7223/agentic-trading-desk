@@ -36,32 +36,36 @@ def test_add_business_days_skips_weekends() -> None:
     assert add_business_days(date(2026, 7, 18), 1).weekday() < 5
 
 
-def test_days_to_cover_scores() -> None:
+def test_days_to_cover_scores_consolidated_schema() -> None:
+    # Real consolidatedShortInterest record shape (verified live 2026-07-24
+    # from the Agilent/NYSE record): symbolCode + daysToCoverQuantity.
+    records = [
+        {"symbolCode": "A", "daysToCoverQuantity": 2.12},
+        {"symbolCode": "BBB", "daysToCoverQuantity": 999.99},
+        {"symbolCode": "CCC", "daysToCoverQuantity": None},
+        {"symbolCode": "DDD", "daysToCoverQuantity": 0.0},
+    ]
+    scores = variant_scores(records, "days-to-cover")
+    assert scores == {"A": 2.12}  # sentinel, missing and zero rows dropped
+
+
+def test_si_change_scores_from_single_record() -> None:
     records = [
         {
             "symbolCode": "AAA",
-            "currentShortPositionQuantity": 1000,
-            "averageDailyVolumeQuantity": 100,
+            "currentShortPositionQuantity": 1200,
+            "previousShortPositionQuantity": 1000,
         },
-        {"symbolCode": "BBB", "currentShortPositionQuantity": 500, "averageDailyVolumeQuantity": 0},
         {
-            "symbolCode": "CCC",
-            "currentShortPositionQuantity": None,
-            "averageDailyVolumeQuantity": 50,
+            "symbolCode": "BBB",
+            "currentShortPositionQuantity": 500,
+            "previousShortPositionQuantity": 0,
         },
     ]
-    scores = variant_scores(records, None, "days-to-cover")
-    assert scores == {"AAA": 10.0}  # zero-ADV and missing-position rows dropped
-
-
-def test_si_change_scores_need_previous() -> None:
-    current = [{"symbolCode": "AAA", "currentShortPositionQuantity": 1200}]
-    previous = [{"symbolCode": "AAA", "currentShortPositionQuantity": 1000}]
-    scores = variant_scores(current, previous, "si-change")
-    assert scores["AAA"] == pytest.approx(0.2)
-    assert variant_scores(current, None, "si-change") == {}
+    scores = variant_scores(records, "si-change")
+    assert scores == {"AAA": pytest.approx(0.2)}  # zero-previous dropped
 
 
 def test_unknown_variant_rejected() -> None:
     with pytest.raises(ValueError):
-        variant_scores([], None, "made-up")
+        variant_scores([], "made-up")

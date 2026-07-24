@@ -7,23 +7,15 @@ geometry and failed. The gates below are the ONLY things between the plan
 and execution. None of them can be done by the agent — they need your
 identity, your consent, or calendar time.
 
-## Action 1 — FINRA API key (biggest Sharpe lever, ~10 minutes, free)
+## Action 1 — FINRA API key: **NO LONGER NEEDED** (resolved 2026-07-24)
 
-Unlocks: full bi-monthly short-interest history → the STRONG variant of
-the short signal (the free daily proxy already survived costs at 0.76 on
-the full universe) → re-run its gauntlet with years of real history.
-
-1. Go to https://developer.finra.org → "Create account" (free tier).
-2. Register with your email; company can be "individual".
-3. In the API console, create an **API credential** — this gives you a
-   CLIENT ID and a SECRET (it's a pair, not a single key).
-4. Set both env vars (laptop shell, or mini PC `~/.trading_desk_env`):
-   `FINRA_API_CLIENT_ID=<id>` and `FINRA_API_CLIENT_SECRET=<secret>`
-   (never commit them).
-5. Run `python scripts/fetch_short_interest.py` then
-   `python scripts/validate_short_interest_signal.py` — the fetch AND the
-   pre-registered gauntlet are already built and waiting (the trial plan
-   was frozen in git BEFORE the data, so the result is untainted).
+The earlier "key-gated" conclusion targeted the wrong dataset:
+`equityShortInterest` is the OTC-only slice. The listed-market data
+(NYSE/Nasdaq) lives in **`consolidatedShortInterest`**, which is
+anonymously accessible in full — 205 partitions, 2017-12-29 → current,
+verified live. The fetch + pre-registered gauntlet ran without any
+registration. A credential (`FINRA_API_CLIENT_ID`/`FINRA_API_CLIENT_SECRET`)
+is only a resilience fallback if FINRA ever closes anonymous access.
 
 ## Action 2 — Alpaca account (news wire, ~10 minutes, free)
 

@@ -74,38 +74,40 @@ def load_partitions(si_dir: Path) -> dict[date, list[dict]]:
     return out
 
 
-def variant_scores(
-    records: list[dict], prev_records: list[dict] | None, variant: str
-) -> dict[str, float]:
-    """Symbol -> score (higher = more shorted/crowded = SHORT leg)."""
+DTC_SENTINEL = 999.0  # sentinel/no-volume guard; untradeable signal value
 
-    def field(rec: dict, *names: str) -> float | None:
-        for name in names:
-            value = rec.get(name)
-            if value is not None:
-                try:
-                    return float(value)
-                except (TypeError, ValueError):
-                    return None
-        return None
+
+def variant_scores(records: list[dict], variant: str) -> dict[str, float]:
+    """Symbol -> score (higher = more shorted/crowded = SHORT leg).
+
+    Schema = otcMarket/consolidatedShortInterest (the LISTED-market
+    dataset, verified live 2026-07-24): symbolCode, daysToCoverQuantity
+    (provided directly by FINRA), currentShortPositionQuantity /
+    previousShortPositionQuantity in the same record. The pre-registered
+    HYPOTHESES and grid are unchanged by this dataset retarget — the
+    earlier equityShortInterest target was the OTC slice and never
+    contained the listed names the plan was written for.
+    """
+
+    def field(rec: dict, name: str) -> float | None:
+        value = rec.get(name)
+        try:
+            return float(value) if value is not None else None
+        except (TypeError, ValueError):
+            return None
 
     scores: dict[str, float] = {}
     if variant == "days-to-cover":
         for rec in records:
             sym = rec.get("symbolCode")
-            pos = field(rec, "currentShortPositionQuantity")
-            adv = field(rec, "averageDailyVolumeQuantity")
-            if isinstance(sym, str) and pos and adv and adv > 0:
-                scores[sym] = pos / adv
+            dtc = field(rec, "daysToCoverQuantity")
+            if isinstance(sym, str) and dtc is not None and 0 < dtc < DTC_SENTINEL:
+                scores[sym] = dtc
     elif variant == "si-change":
-        prev = {
-            rec.get("symbolCode"): field(rec, "currentShortPositionQuantity")
-            for rec in (prev_records or [])
-        }
         for rec in records:
             sym = rec.get("symbolCode")
             pos = field(rec, "currentShortPositionQuantity")
-            prev_pos = prev.get(sym)
+            prev_pos = field(rec, "previousShortPositionQuantity")
             if isinstance(sym, str) and pos is not None and prev_pos:
                 scores[sym] = pos / prev_pos - 1.0
     else:
@@ -141,9 +143,7 @@ def build_series(
     for d in trading_days:
         while sched_i < len(schedule) and schedule[sched_i][0] <= d:
             tradeable, sd = schedule[sched_i]
-            prev_sd_idx = settle_days.index(sd) - 1
-            prev_records = partitions[settle_days[prev_sd_idx]] if prev_sd_idx >= 0 else None
-            scores = variant_scores(partitions[sd], prev_records, variant)
+            scores = variant_scores(partitions[sd], variant)
             candidates = sorted(
                 (score, sym)
                 for sym, score in scores.items()
@@ -185,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     pit = Path(args.pit_dir)
 
-    si_dir = pit / "shortinterest"
+    si_dir = pit / "consolidated_short_interest"
     partitions = load_partitions(si_dir)
     if len(partitions) < 24:  # ~1 year of bi-monthly data minimum
         raise SystemExit(

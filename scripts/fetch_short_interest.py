@@ -1,20 +1,18 @@
-"""Fetch FINRA bi-monthly Equity Short Interest history (key-ready).
+"""Fetch FINRA bi-monthly CONSOLIDATED Short Interest history (listed names).
 
-The strong short signal variant needs the real bi-monthly short-interest
-records (positions, days-to-cover), not the daily short-volume proxy.
-Anonymous access to this dataset stops at the 2022-09-15 partition; a free
-registered FINRA API credential unlocks the full history.
+Discovery (2026-07-24, live probes): the dataset behind the earlier
+"key-gated" conclusion — otcMarket/equityShortInterest — is the OTC slice
+(1 S&P name per partition). The LISTED-market data (NYSE/Nasdaq) lives in
+otcMarket/consolidatedShortInterest, whose partitions (2017-12-29 through
+current) and DATA are anonymously accessible. No FINRA credential is
+required for the strong short-interest signal after all.
 
-Auth (per developer.finra.org): create an API credential (client id +
-secret), then set BOTH env vars:
-    FINRA_API_CLIENT_ID=...
-    FINRA_API_CLIENT_SECRET=...
-Token flow: client-credentials OAuth2 against ews.fip.finra.org, then
-Bearer calls to api.finra.org. Without credentials the script still runs
-anonymously and honestly reports the partition wall it hits.
+Credential support is kept (FINRA_API_CLIENT_ID / FINRA_API_CLIENT_SECRET,
+client-credentials OAuth2 via ews.fip.finra.org) purely as resilience in
+case FINRA later closes anonymous access.
 
-Output: data/pit/shortinterest/{settlementDate}.jsonl (raw records,
-append-never — each partition file is written once and skipped later).
+Output: data/pit/consolidated_short_interest/{settlementDate}.jsonl (raw
+records, write-once per partition; existing files are skipped).
 
 Usage:
     python scripts/fetch_short_interest.py --list-partitions
@@ -35,13 +33,13 @@ from pathlib import Path
 TOKEN_URL = (
     "https://ews.fip.finra.org/fip/rest/ews/oauth2/access_token?grant_type=client_credentials"
 )
-DATA_URL = "https://api.finra.org/data/group/otcMarket/name/equityShortInterest"
-PARTITIONS_URL = "https://api.finra.org/partitions/group/otcMarket/name/equityShortInterest"
+DATA_URL = "https://api.finra.org/data/group/otcMarket/name/consolidatedShortInterest"
+PARTITIONS_URL = "https://api.finra.org/partitions/group/otcMarket/name/consolidatedShortInterest"
 PAGE_LIMIT = 5000
 ANON_WALL_NOTE = (
-    "anonymous access to this dataset historically ends around the "
-    "2022-09-15 partition; set FINRA_API_CLIENT_ID/SECRET (free "
-    "registration, see docs/strategy-research/UNBLOCK-ACTIONS.md) for full history"
+    "consolidatedShortInterest has been anonymously accessible in full "
+    "(verified 2026-07-24); if FINRA closes it, set FINRA_API_CLIENT_ID/"
+    "SECRET (free registration, docs/strategy-research/UNBLOCK-ACTIONS.md)"
 )
 
 
@@ -130,7 +128,7 @@ def fetch_partition(settlement_date: str, token: str | None, timeout: float = 12
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
-    p.add_argument("--out-dir", default="data/pit/shortinterest")
+    p.add_argument("--out-dir", default="data/pit/consolidated_short_interest")
     p.add_argument("--start", default="2019-01-01")
     p.add_argument("--list-partitions", action="store_true")
     p.add_argument("--sleep", type=float, default=1.0)
