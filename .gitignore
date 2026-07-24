@@ -65,3 +65,10 @@ data/crypto/
 data/stocks/
 data/pit/
 data/paper/
+
+# Forward shadow evidence is append-only research record: versioned on purpose
+!data/
+data/*
+!data/shadow/
+data/shadow/*
+!data/shadow/*.jsonl
