@@ -257,7 +257,23 @@ user when the forward record (target: ≥2-3 bi-monthly publication cycles,
 explicitly chooses to act on backtest-only evidence with the written
 budget cap.
 
-## 7. What we will NOT do
+## 7. USER DECISIONS — 2026-07-24 (recorded verbatim from the decision prompt)
+
+1. **Challenge fee timing: "Wait for forward proof."** No fee is paid on
+   backtest-only evidence. The nightly DTC-CFD shadow stream must accrue
+   ~2-3 bi-monthly publication cycles; **decision date ≈ mid-September
+   2026**, when the forward record either confirms the venue port (fee
+   sheet goes to the user with the written budget cap) or kills it.
+2. **Paper account: "Keep momentum-alone."** The failed SPA gate stands;
+   no sleeve is added. The DTC sleeve continues in shadow only.
+
+Standing state until then: three nightly jobs on the mini PC (paper
+session 18:30, short-vol shadow 19:15, DTC-CFD shadow 19:45), all
+verified live. Re-evaluation command set: `analyze_short_interest_result
+.py` + `validate_challenge_dtc_variant.py` + the forward JSONLs under
+`data/shadow/` on the mini PC.
+
+## 8. What we will NOT do
 
 - No fee before the challenge-mode config passes the pre-registered gauntlet.
 - No trailing-drawdown or time-limited geometries.
