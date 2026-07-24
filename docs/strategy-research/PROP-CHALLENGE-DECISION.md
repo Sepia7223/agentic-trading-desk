@@ -213,7 +213,51 @@ geometry — none passes today.**
    ¼ of the daily cap; funded phase steps down to 6-10% vol (same
    signals, one dial); the personal $1k track is never touched.
 
-## 6. What we will NOT do
+## 6. UPDATE 2026-07-24 — the short-interest unlock (major)
+
+**The "key-gated" premise was falsified by live probes.** The dataset the
+earlier arc hit (`equityShortInterest`, anonymous wall 2022-09-15) is the
+OTC slice — its latest partition contains exactly ONE S&P name. The
+listed-market bi-monthly short interest lives in
+**`consolidatedShortInterest`: 205 partitions, 2017-12-29 → current,
+fully open anonymously.** No FINRA credential was needed. Full history
+fetched (180 partitions, ~22k listed names each).
+
+**Pre-registered gauntlet (grid frozen in git BEFORE the data), first and
+only look:**
+
+| Variant | Sharpe/yr | DSR | CPCV | Verdict |
+|---|---|---|---|---|
+| **days-to-cover** (full universe) | **1.04** | **0.9868 PASS** | **15/15 PASS** | First new validated edge since the blueprint |
+| si-change | −0.73 | 0.006 | 0/15 | FAIL, recorded |
+
+Follow-ups (also pre-registered): **borrow stress PASS** (shorting the
+crowded-short quintile at +1%/+2%yr borrow → Sharpe 0.91/0.79, retains
+far over half); **SPA vs momentum p=0.515 FAIL for adoption** — the
+sleeve earns its Sharpe at 4% vol, so its MEAN return ties momentum's and
+SPA (a mean test) cannot rank them; momentum-alone stays the live paper
+strategy; the sleeve is a validated diversifier candidate (corr with
+momentum: 0.31; 50/50 book Sharpe 0.69).
+
+**The CFD-universe port** (`validate_challenge_dtc_variant.py`, one
+registered trial): Sharpe **0.906 after CFD financing at 14.7% natural
+vol** (no leverage needed for challenge-range vol), within-family DSR
+0.971, CPCV 12/15. Challenge math at the measured Sharpe: **P(fund) 72.7%
+at 12% vol** → expected fees ≈ $760, and funded-phase trader-share at
+stepped-down risk ≈ $4-6k/yr on $100k — IF the backtest holds forward.
+
+**The honest deflation that governs money**: as the best of FIVE
+challenge-venue ports tried today (momentum ×2, short-vol, DTC), the
+cross-family **DSR is 0.66 — below the 0.95 bar.** The full-universe edge
+is proven; the venue port is promising-but-unproven. Bridge: a second
+forward shadow stream (`shadow_dtc_forward.py`, nightly on the mini PC)
+now marks the EXACT challenge book daily. The fee decision comes to the
+user when the forward record (target: ≥2-3 bi-monthly publication cycles,
+~6-10 weeks) either confirms or kills the port — or earlier if the user
+explicitly chooses to act on backtest-only evidence with the written
+budget cap.
+
+## 7. What we will NOT do
 
 - No fee before the challenge-mode config passes the pre-registered gauntlet.
 - No trailing-drawdown or time-limited geometries.

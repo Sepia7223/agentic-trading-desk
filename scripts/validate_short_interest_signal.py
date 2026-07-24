@@ -122,8 +122,14 @@ def build_series(
     trading_days: list[date],
     member_on,
     variant: str,
+    min_candidates: int = MIN_CANDIDATES,
 ) -> dict[date, float]:
-    """Daily net L/S returns: rebalance at publication, hold to next."""
+    """Daily net L/S returns: rebalance at publication, hold to next.
+
+    min_candidates defaults to the pre-registered floor; the CFD-universe
+    port test (validate_challenge_dtc_variant.py, a separately registered
+    trial) passes a lower floor because a ~30-name universe cannot reach 50.
+    """
 
     settle_days = sorted(partitions)
     schedule: list[tuple[date, date]] = []  # (first tradeable day, settlement)
@@ -149,7 +155,7 @@ def build_series(
                 for sym, score in scores.items()
                 if member_on(membership, sym, d) and d in rets.get(sym, {})
             )
-            if len(candidates) >= MIN_CANDIDATES:
+            if len(candidates) >= min_candidates:
                 k = max(int(len(candidates) * BUCKET_FRACTION), MIN_BUCKET)
                 prev_low, prev_high = low, high
                 low = {sym for _, sym in candidates[:k]}
