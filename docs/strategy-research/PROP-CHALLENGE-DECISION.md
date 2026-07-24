@@ -140,29 +140,65 @@ Our validated edge is **US equity long-short momentum (~60 names)**. The
   rules yet. The fee buys a bet against a counterparty, not a brokerage
   relationship.
 
-## 4. Recommended path (no fee is paid before all gates)
+## 4. The concentrated-CFD backtest — MEASURED (2026-07-23)
 
-1. **Verify Blueberry Funded**: EA/automation policy in writing, stock-CFD
-   symbol list vs our momentum universe, challenge geometry, payout
-   evidence. If EAs are permitted and ≥~200 of our names exist → primary.
-2. **In parallel, backtest the FTMO-shaped fallback**: our momentum
-   gauntlet re-run on a ~20-name mega-cap universe (their symbol list),
-   with CFD costs (overnight financing both legs, ~$15/side minimums).
-   Verdict decides whether the concentrated variant retains enough edge.
-3. **Design challenge-mode config** (same signals, one vol dial):
-   12-16% annualized vol; daily σ ≤ ¼ of daily cap; static-DD/no-deadline
-   geometry only; funded-mode step-down plan to 6-10% vol pre-written.
-   Pre-register in the trial registry; validate through DSR/SPA/CPCV like
-   everything else. **No fee before the config passes.**
-4. **Fee budget decision (user)**: expected fees per funded account are
-   ~$1,100-1,600 at today's honest Sharpe. The user pre-commits a total
-   burnable budget (e.g. 2-3 attempts ≈ $1,100-1,650) — written down
-   before attempt #1; no re-ups beyond it inside 6 months.
-5. **Keep raising the real edge** — every +0.1 Sharpe adds ~3-5pp pass
-   probability and ~50% more funded-phase income. The FINRA key +
-   short-vol forward evidence remain the cheapest Sharpe available.
+`scripts/validate_challenge_cfd_variant.py` ran the momentum engine on the
+FTMO-shaped universe with the CFD financing model (net drag = gross ×
+2.5%/yr; benchmark cancels in a symmetric L/S book; Sharpe is
+leverage-invariant). Registered in the trial registry like every variant.
 
-## 5. What we will NOT do
+| Run | Sharpe (equity costs) | Sharpe after CFD financing |
+|---|---|---|
+| **Legacy pre-2026 list (30 names, honest)** | 0.305 | **0.130** |
+| +2026 additions (PLTR/SNOW/GME/MSTR — LOOK-AHEAD, sensitivity only) | 0.644 | 0.483 |
+
+**The +0.35 Sharpe gap is listing look-ahead**: the firm added those names
+AFTER they ran. A naive backtest on the current symbol list would have
+"found" a tripled edge that never existed ex ante. Honest gates on the
+legacy run: **DSR 0.51 — FAIL** (bar: 0.95), **CPCV 9/15 positive folds —
+FAIL** (standard: 15/15). Verdict: **the concentrated CFD variant is NOT
+promotable.** It carries the same ~0.12-0.13 net edge as the full-universe
+strategy; concentration adds nothing provable and financing eats a third
+of it. P(fund) at the measured Sharpe: **40.6%** (12% vol) — i.e. mostly
+barrier geometry, as §1 predicted.
+
+## 5. Recommended path (no fee is paid before all gates)
+
+1. **Verdict from §4 stands**: no challenge-mode config currently passes
+   the gauntlet. **Therefore no fee is paid today.** This is the same
+   honest "no" the gauntlet gave the insider signal and the composite.
+2. **The Sharpe pipeline is the binding constraint** — every +0.1 Sharpe
+   adds ~3-5pp pass probability and ~50% more funded-phase income, and the
+   whole chain flips clearly +EV around S≈0.3-0.5. Cheapest available
+   Sharpe: FINRA key (short-interest history → re-gauntlet), Alpaca key
+   (news wire), short-vol composite forward evidence accumulating nightly
+   in shadow. When the composite's forward record justifies adoption, the
+   challenge math is re-run in one command.
+3. **Firm shortlist frozen while we wait** (verified terms, July 2026):
+   - **FTMO 2-Step Swing** ($100k = €540 list/€439 promo, fee refunded
+     with first reward, 80→90% split, static 10%, no time limit, EAs +
+     VPS explicitly allowed, MT5/cTrader Python paths, weekend holds OK
+     on Swing) — Tier-A payout record. The realistic host.
+   - **FundedNext Stellar 2-Step** ($549.99 refundable, same geometry,
+     EAs on MT4/5) — best economics, but ZERO stock CFDs: only relevant
+     if we ever validate an FX/index strategy.
+   - **Excluded on verified rules**: FundingPips (weekend-hold ban on
+     funded accounts, Jan 2026 — fatal to a multi-day book), Alpha
+     Capital (autonomous EAs banned), all futures firms (daily
+     force-flatten + trailing DD + no single-stock futures), Apex
+     (denial history), ThinkCapital (no MT5/EA-capable platform),
+     Trade The Pool (2 req/min webhook beta, 60s holds), The5ers CFD
+     (no stock CFDs; MT5-only).
+   - Blueberry Funded: 1,000+ stock CFDs but Trustpilot ~3.1★ with
+     payout-denial complaint patterns — credibility gate currently
+     failing; EA-policy verification pending.
+4. **When a config passes**: user pre-commits a burnable fee budget
+   (2-3 attempts ≈ $1,100-1,650) in writing before attempt #1; no re-ups
+   beyond it inside 6 months; challenge runs at 12-16% vol with daily σ ≤
+   ¼ of the daily cap; funded phase steps down to 6-10% vol (same
+   signals, one dial); the personal $1k track is never touched.
+
+## 6. What we will NOT do
 
 - No fee before the challenge-mode config passes the pre-registered gauntlet.
 - No trailing-drawdown or time-limited geometries.
