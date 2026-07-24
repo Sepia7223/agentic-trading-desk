@@ -113,7 +113,7 @@ Our validated edge is **US equity long-short momentum (~60 names)**. The
 | Trade The Pool (real US equities, 12k symbols) | ✅ full | ❌ webhook-only beta, ~2 req/min, 60s min holds, 10¢ min profit, consistency rules, revocable | Structurally hostile to systematic baskets |
 | FundedNext (best challenge economics, EAs allowed on MT4/5, fee refunded) | ❌ **zero single-stock CFDs** (FX/indices/commodities/crypto only) | ✅ | Needs a NEW validated FX/index strategy — we don't have one (M12 FX evidence was negative) |
 | FTMO (most credible payer: $450-500M cumulative, 10-yr record; EAs explicitly allowed all phases; VPS allowed; MT5/cTrader Python paths) | ⚠️ ~50 stock CFDs → book must concentrate to ~20 names; overnight/weekend holds require the **Swing** account type (Standard funded accounts must flatten before weekends and observe ±2min news windows) | ✅ | Viable IF the concentrated variant re-passes the gauntlet |
-| Blueberry Funded (ASIC-regulated parent; 1,000+ stock CFDs on MT5 — largest universe among CFD firms) | ✅ near-full | ❓ EA policy unverified | **Top candidate to verify** — could run our strategy nearly as-is |
+| Blueberry Funded (SVG-registered operator; the ASIC license belongs to a separate AU broker entity) | ❌ stock-CFD program **discontinued** Oct 2025; historical stock accounts banned EAs + overnight holds anyway | ❌ | **Excluded** — verified 2026-07-23; see §5 |
 | Futures firms (Topstep API is excellent) | ❌ no single-stock futures exist; book collapses to index spreads, losing all cross-sectional alpha | ✅ | Rejected (geometry also worst-in-class) |
 
 **Alpha Capital**: bans autonomous EAs outright — excluded.
@@ -189,9 +189,14 @@ barrier geometry, as §1 predicted.
      (denial history), ThinkCapital (no MT5/EA-capable platform),
      Trade The Pool (2 req/min webhook beta, 60s holds), The5ers CFD
      (no stock CFDs; MT5-only).
-   - Blueberry Funded: 1,000+ stock CFDs but Trustpilot ~3.1★ with
-     payout-denial complaint patterns — credibility gate currently
-     failing; EA-policy verification pending.
+   - **Blueberry Funded: excluded (verified 2026-07-23).** The 1,000+
+     stock-CFD program was DISCONTINUED (new purchases stopped Oct 2025,
+     product pages removed) — and even historically its stock accounts
+     banned EAs, banned overnight holds, and mandated stop-losses, so it
+     never could have hosted this book. Trustpilot rating suppressed for
+     fake-review guideline breach (36% 1-star; payout-denial-at-review
+     patterns); SVG-registered operator, not the ASIC entity; fees
+     non-refundable; funded accounts capped at 1.5% loss per trade idea.
 4. **When a config passes**: user pre-commits a burnable fee budget
    (2-3 attempts ≈ $1,100-1,650) in writing before attempt #1; no re-ups
    beyond it inside 6 months; challenge runs at 12-16% vol with daily σ ≤
