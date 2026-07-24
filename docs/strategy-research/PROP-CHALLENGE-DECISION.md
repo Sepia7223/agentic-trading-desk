@@ -162,6 +162,16 @@ strategy; concentration adds nothing provable and financing eats a third
 of it. P(fund) at the measured Sharpe: **40.6%** (12% vol) — i.e. mostly
 barrier geometry, as §1 predicted.
 
+**Candidate #2 also measured (`validate_challenge_shortvol_variant.py`)**:
+the short-volume signal — our strongest fully-validated edge on the full
+universe (net Sharpe 0.76, DSR 0.9993, CPCV 15/15) — restricted to the
+same legacy CFD universe: **Sharpe −0.41 before financing, −0.66 after;
+DSR 0.08; CPCV 1/15. Hard FAIL.** The signal's alpha lives outside the
+mega-caps (consistent with the literature); it cannot be ported to a CFD
+symbol list. With momentum marginal and short-vol negative on this venue,
+**every validated edge has now been tested against the only viable
+geometry — none passes today.**
+
 ## 5. Recommended path (no fee is paid before all gates)
 
 1. **Verdict from §4 stands**: no challenge-mode config currently passes
