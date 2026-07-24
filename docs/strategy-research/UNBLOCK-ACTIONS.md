@@ -15,12 +15,15 @@ the full universe) → re-run its gauntlet with years of real history.
 
 1. Go to https://developer.finra.org → "Create account" (free tier).
 2. Register with your email; company can be "individual".
-3. In the API console, request access to the "Equity Short Interest"
-   dataset (free/public tier).
-4. Copy the API key and, on the mini PC, add to `~/.trading_desk_env`:
-   `FINRA_API_KEY=<key>` (never commit it).
-5. Tell the agent "FINRA key is on the mini PC" — the fetch + gauntlet
-   re-run is already scripted from there.
+3. In the API console, create an **API credential** — this gives you a
+   CLIENT ID and a SECRET (it's a pair, not a single key).
+4. Set both env vars (laptop shell, or mini PC `~/.trading_desk_env`):
+   `FINRA_API_CLIENT_ID=<id>` and `FINRA_API_CLIENT_SECRET=<secret>`
+   (never commit them).
+5. Run `python scripts/fetch_short_interest.py` then
+   `python scripts/validate_short_interest_signal.py` — the fetch AND the
+   pre-registered gauntlet are already built and waiting (the trial plan
+   was frozen in git BEFORE the data, so the result is untainted).
 
 ## Action 2 — Alpaca account (news wire, ~10 minutes, free)
 
