@@ -390,6 +390,39 @@ def main(argv=None) -> int:
             )
             target_exits += 1
 
+    # held-position news review (added 2026-07-25 post-mortem): the gate
+    # that blocks ENTRIES on hard news also reviews HELD names each
+    # session; an active BLOCK (halt / hard keyword) is a risk-reduction
+    # exit by policy. Evidence: the IP short squeeze rode +15% to its stop
+    # while the system held through the move it would never have entered
+    # into. UNAVAILABLE never forces an exit (flying blind must not sell).
+    news_exits = 0
+    for sym, pos in broker.positions.items():
+        if any(x.symbol == sym for x in exits):
+            continue
+        held_news = news_reader.read(sym)
+        time.sleep(0.05)
+        if str(getattr(held_news, "status", "")).upper().endswith("BLOCK"):
+            exits.append(
+                PaperOrder(
+                    order_id=f"n-{sym}-{session_date.isoformat()}",
+                    symbol=sym,
+                    direction="SELL" if pos.quantity > 0 else "BUY_TO_COVER",
+                    quantity=abs(pos.quantity),
+                    stop_distance_fraction=D("0"),
+                )
+            )
+            news_exits += 1
+            journal(
+                root,
+                {
+                    "type": "held_news_exit",
+                    "session": session_date,
+                    "symbol": sym,
+                    "keywords": list(getattr(held_news, "matched_keywords", ()))[:5],
+                },
+            )
+
     # exits bypass opportunity gates by policy (risk reduction), but not health
     healthy_enough = (
         health.kill_switch_inactive
@@ -592,6 +625,7 @@ def main(argv=None) -> int:
             "positions": len(broker.positions),
             "exits_queued": queued_exits,
             "target_exits": target_exits,
+            "news_exits": news_exits,
             "entries_approved": approved,
             "entries_rejected": rejected,
             "gross_target": gross,
