@@ -1,26 +1,18 @@
 import { useState } from "react";
 import {
   Activity,
-  AlertTriangle,
   BarChart3,
   BookOpen,
   Bot,
   BriefcaseBusiness,
-  CircleHelp,
-  Database,
-  FileClock,
   Gauge,
-  GitBranch,
-  HeartPulse,
-  Landmark,
   Radar,
-  Search as SearchIcon,
   Settings,
-  ShieldCheck,
+  TrendingUp,
   Waypoints,
-  ListFilter,
 } from "lucide-react";
 
+import { Tabs } from "./components/Tabs";
 import { Configuration } from "./pages/Configuration";
 import { EquityPaperMonitor } from "./pages/EquityPaper";
 import {
@@ -59,76 +51,103 @@ import {
   StrategyValidationMatrix,
 } from "./pages/OpportunityViews";
 
-const navigation = [
-  ["Overview", Activity],
-  ["Equity Paper", BookOpen],
-  ["Opportunities", ListFilter],
-  ["Activity Dashboard", Activity],
-  ["Strategy Leaderboard", BarChart3],
-  ["Strategy Validation", ShieldCheck],
-  ["Strategy Comparison", BarChart3],
-  ["Strategy-Regime Matrix", GitBranch],
-  ["Portfolio Contribution", BriefcaseBusiness],
-  ["Strategy Breakers", AlertTriangle],
-  ["Instrument Performance", Landmark],
-  ["Regime Performance", Radar],
-  ["Inactivity Diagnostics", CircleHelp],
-  ["Demo Campaign", Gauge],
-  ["Market", Radar],
-  ["Router", GitBranch],
-  ["Why No Trade", CircleHelp],
-  ["Risk", ShieldCheck],
-  ["Execution", Waypoints],
-  ["Lifecycle", HeartPulse],
-  ["Positions", BriefcaseBusiness],
-  ["Trades", Landmark],
-  ["Performance", BarChart3],
-  ["AI Reviews", Bot],
-  ["Alerts", AlertTriangle],
-  ["Journal", Database],
-  ["Replay", FileClock],
-  ["Search", SearchIcon],
-  ["Configuration", Settings],
-] as const;
-
-function CurrentPage({ page }: { page: string }) {
-  const pages: Record<string, React.ReactNode> = {
-    Overview: <Overview />,
-    "Equity Paper": <EquityPaperMonitor />,
-    Opportunities: <OpportunityBoard />,
-    "Activity Dashboard": <ActivityDashboard />,
-    "Strategy Leaderboard": <StrategyLeaderboard />,
-    "Strategy Validation": <StrategyValidationMatrix />,
-    "Strategy Comparison": <StrategyPerformanceComparison />,
-    "Strategy-Regime Matrix": <StrategyRegimeMatrix />,
-    "Portfolio Contribution": <StrategyPortfolioContribution />,
-    "Strategy Breakers": <StrategyCircuitBreakers />,
-    "Instrument Performance": <InstrumentPerformance />,
-    "Regime Performance": <RegimePerformance />,
-    "Inactivity Diagnostics": <InactivityDiagnostics />,
-    "Demo Campaign": <DemoCampaign />,
-    Market: <MarketContext />,
-    Router: <RouterMonitor />,
-    "Why No Trade": <WhyNoTrade />,
-    Risk: <RiskMonitor />,
-    Execution: <ExecutionMonitor />,
-    Lifecycle: <LifecycleMonitor />,
-    Positions: <PositionsMonitor />,
-    Trades: <TradesMonitor />,
-    Performance: <Performance />,
-    "AI Reviews": <AIReviews />,
-    Alerts: <AlertsMonitor />,
-    Journal: <JournalMonitor />,
-    Replay: <Replay />,
-    Search: <Search />,
-    Configuration: <Configuration />,
-  };
-  return pages[page];
+interface Section {
+  label: string;
+  icon: typeof Activity;
+  subtitle: string;
+  tabs: Record<string, React.ReactNode>;
 }
 
+const SECTIONS: Section[] = [
+  {
+    label: "Overview",
+    icon: Activity,
+    subtitle: "System health and live status",
+    tabs: { Overview: <Overview /> },
+  },
+  {
+    label: "Equity Paper",
+    icon: TrendingUp,
+    subtitle: "The $1,000 account: curve, sessions, confidence calibration",
+    tabs: { Account: <EquityPaperMonitor /> },
+  },
+  {
+    label: "Opportunities",
+    icon: Radar,
+    subtitle: "Signal flow and campaign activity",
+    tabs: {
+      Board: <OpportunityBoard />,
+      Activity: <ActivityDashboard />,
+      "Demo Campaign": <DemoCampaign />,
+      Inactivity: <InactivityDiagnostics />,
+      "Why No Trade": <WhyNoTrade />,
+    },
+  },
+  {
+    label: "Strategies",
+    icon: BarChart3,
+    subtitle: "Validation, comparison and portfolio contribution",
+    tabs: {
+      Leaderboard: <StrategyLeaderboard />,
+      Validation: <StrategyValidationMatrix />,
+      Comparison: <StrategyPerformanceComparison />,
+      "Regime Matrix": <StrategyRegimeMatrix />,
+      Contribution: <StrategyPortfolioContribution />,
+      Breakers: <StrategyCircuitBreakers />,
+    },
+  },
+  {
+    label: "Trading",
+    icon: Waypoints,
+    subtitle: "Positions, executions and order lifecycle",
+    tabs: {
+      Positions: <PositionsMonitor />,
+      Trades: <TradesMonitor />,
+      Execution: <ExecutionMonitor />,
+      Lifecycle: <LifecycleMonitor />,
+      Risk: <RiskMonitor />,
+    },
+  },
+  {
+    label: "Markets",
+    icon: Gauge,
+    subtitle: "Regime context and routing decisions",
+    tabs: {
+      Context: <MarketContext />,
+      Router: <RouterMonitor />,
+      Performance: <Performance />,
+      Instruments: <InstrumentPerformance />,
+      Regimes: <RegimePerformance />,
+    },
+  },
+  {
+    label: "Intelligence",
+    icon: Bot,
+    subtitle: "Reviews, alerts, journal evidence and replay",
+    tabs: {
+      "AI Reviews": <AIReviews />,
+      Alerts: <AlertsMonitor />,
+      Journal: <JournalMonitor />,
+      Replay: <Replay />,
+      Search: <Search />,
+    },
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    subtitle: "Operations Center configuration",
+    tabs: { Configuration: <Configuration /> },
+  },
+];
+
 function OperationsShell() {
-  const [page, setPage] = useState("Overview");
+  const [section, setSection] = useState(SECTIONS[0]);
+  const [tabBySection, setTabBySection] = useState<Record<string, string>>({});
   const { connected, lastEvent } = useOperationsEvents();
+
+  const tabNames = Object.keys(section.tabs);
+  const activeTab = tabBySection[section.label] ?? tabNames[0];
+
   return (
     <div className="app-shell">
       <aside>
@@ -136,18 +155,18 @@ function OperationsShell() {
           <Gauge size={22} />
           <div>
             <strong>Trading Desk</strong>
-            <span>Operations Center</span>
+            <span>Operations</span>
           </div>
         </div>
         <nav aria-label="Operations views">
-          {navigation.map(([label, Icon]) => (
+          {SECTIONS.map((entry) => (
             <button
-              className={page === label ? "active" : ""}
-              key={label}
-              onClick={() => setPage(label)}
+              className={section.label === entry.label ? "active" : ""}
+              key={entry.label}
+              onClick={() => setSection(entry)}
             >
-              <Icon size={16} />
-              {label}
+              <entry.icon size={16} />
+              <span>{entry.label}</span>
             </button>
           ))}
         </nav>
@@ -158,23 +177,33 @@ function OperationsShell() {
       <main>
         <header className="topbar">
           <div>
-            <h1>{page}</h1>
-            <p>Supervision and historical evidence</p>
+            <h1>{section.label}</h1>
+            <p>{section.subtitle}</p>
           </div>
           <div className="top-status">
             <span className={connected ? "dot online" : "dot"} />
             {connected
-              ? `Live events${lastEvent ? `: ${lastEvent.event_type}` : ""}`
-              : "Event stream offline"}
+              ? `Live${lastEvent ? `: ${lastEvent.event_type}` : ""}`
+              : "Polling every 10s"}
           </div>
         </header>
         <div className="safety-banner">
-          <strong>Environment: IG DEMO</strong>
-          <span>Live trading: DISABLED</span>
-          <span>Dashboard authority: READ ONLY</span>
+          <strong>Demo environment</strong>
+          <span>Live trading disabled</span>
+          <span>Read only</span>
         </div>
-        <div className="content">
-          <CurrentPage page={page} />
+        <Tabs
+          tabs={tabNames}
+          active={activeTab}
+          onSelect={(tab) =>
+            setTabBySection((previous) => ({
+              ...previous,
+              [section.label]: tab,
+            }))
+          }
+        />
+        <div className="content" key={`${section.label}:${activeTab}`}>
+          {section.tabs[activeTab]}
         </div>
       </main>
     </div>

@@ -58,19 +58,23 @@ function EquityCurve({ sessions }: { sessions: EquityPaperSession[] }) {
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
+  const fillPoints = `4,${height - 4} ${points} ${width - 4},${height - 4}`;
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-label="Equity curve"
+      className="sparkline"
       style={{ width: "100%", height: "auto" }}
     >
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
+      <defs>
+        <linearGradient id="sparkgrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon className="sparkfill" points={fillPoints} fill="url(#sparkgrad)" />
+      <polyline points={points} fill="none" strokeWidth="2" />
     </svg>
   );
 }

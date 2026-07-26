@@ -128,12 +128,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+async function go(section: string, tab?: string) {
+  await userEvent.click(screen.getByRole("button", { name: section }));
+  if (tab) await userEvent.click(await screen.findByRole("tab", { name: tab }));
+}
+
 it("renders immutable Demo and read-only status", async () => {
   render(<App />);
-  expect(screen.getByText("Environment: IG DEMO")).toBeInTheDocument();
-  expect(
-    screen.getByText("Dashboard authority: READ ONLY"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Demo environment")).toBeInTheDocument();
+  expect(screen.getByText("Read only")).toBeInTheDocument();
   await waitFor(() =>
     expect(screen.getByText("Application")).toBeInTheDocument(),
   );
@@ -141,7 +144,7 @@ it("renders immutable Demo and read-only status", async () => {
 
 it("navigates to deterministic why-no-trade evidence", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Why No Trade" }));
+  await go("Opportunities", "Why No Trade");
   expect(
     await screen.findByText("EUR/USD: MOMENTUM_THRESHOLD"),
   ).toBeInTheDocument();
@@ -150,13 +153,13 @@ it("navigates to deterministic why-no-trade evidence", async () => {
 
 it("labels research strategies and AI as non-operational", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Router" }));
+  await go("Markets", "Router");
   expect(
-    screen.getByText(
+    await screen.findByText(
       "Research strategies: RESEARCH ONLY - EXECUTION PROHIBITED",
     ),
   ).toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "AI Reviews" }));
+  await go("Intelligence", "AI Reviews");
   expect(
     await screen.findByText(/AI authority: ADVISORY ONLY/),
   ).toBeInTheDocument();
@@ -181,35 +184,35 @@ it("refreshes authoritative REST data after a typed websocket event", async () =
     expect(fetchMock.mock.calls.length).toBeGreaterThan(initialCalls),
   );
   expect(
-    screen.getByText(/Live events: MARKET_CONTEXT_UPDATED/),
+    screen.getByText(/Live: MARKET_CONTEXT_UPDATED/),
   ).toBeInTheDocument();
 });
 
 it("renders dedicated market and position states", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Market" }));
+  await go("Markets");
   expect(
     await screen.findByText("Authoritative market context"),
   ).toBeInTheDocument();
   expect(screen.getByText("BULL_LOW_VOL")).toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "Positions" }));
+  await go("Trading", "Positions");
   expect(await screen.findByText("Paper positions")).toBeInTheDocument();
   expect(screen.getByText("IG Demo positions")).toBeInTheDocument();
 });
 
 it("renders execution lifecycle and alert empty states safely", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Execution" }));
+  await go("Trading", "Execution");
   expect(
     await screen.findByText("No execution lifecycle recorded."),
   ).toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: "Alerts" }));
+  await go("Intelligence", "Alerts");
   expect(await screen.findByText("No active alerts.")).toBeInTheDocument();
 });
 
 it("renders the read-only Demo position lifecycle without close controls", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Lifecycle" }));
+  await go("Trading", "Lifecycle");
   expect(
     await screen.findByText("No position lifecycle evidence recorded."),
   ).toBeInTheDocument();
@@ -223,7 +226,7 @@ it("renders the read-only Demo position lifecycle without close controls", async
 
 it("exposes bounded sanitized evidence export formats", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Performance" }));
+  await go("Markets", "Performance");
   expect(
     await screen.findByText("Bounded evidence exports"),
   ).toBeInTheDocument();
@@ -235,7 +238,7 @@ it("exposes bounded sanitized evidence export formats", async () => {
 
 it("renders dedicated risk gate evidence", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Risk" }));
+  await go("Trading", "Risk");
   expect(
     await screen.findByText("Deterministic risk gates"),
   ).toBeInTheDocument();
@@ -244,7 +247,7 @@ it("renders dedicated risk gate evidence", async () => {
 
 it("renders journal integrity health without mutation controls", async () => {
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Journal" }));
+  await go("Intelligence", "Journal");
   expect(
     await screen.findByText("Journal integrity evidence"),
   ).toBeInTheDocument();
@@ -263,7 +266,7 @@ it("fails closed when a domain projection is unavailable", async () => {
     return existing(input, init);
   });
   render(<App />);
-  await userEvent.click(screen.getByRole("button", { name: "Market" }));
+  await go("Markets");
   expect(
     await screen.findByText(/Data unavailable: projection offline/),
   ).toBeInTheDocument();
