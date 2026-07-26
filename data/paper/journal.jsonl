@@ -1,0 +1,101 @@
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "C", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "TTD", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "TSCO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "GIS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "EXE", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "FIS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "FDS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "BRO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "PYPL", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "BSX", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "BR", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "EFX", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "INTU", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "ACN", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-21", "symbol": "NRG", "type": "rejection"}
+{"entries_approved": 47, "entries_rejected": {"NEWS_OR_CORPORATE_EVENT": 15}, "equity": "1000", "exits_queued": 0, "gross_target": "0.375", "positions": 0, "session": "2026-07-21", "type": "session"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-ECHO-2026-07-21", "price": "95.1032741947174084770", "protection_armed": true, "quantity": "0.0641", "session": "2026-07-22", "stop_price": "80.837783065509797205450", "symbol": "ECHO", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-ROST-2026-07-21", "price": "237.7331713943481495330", "protection_armed": true, "quantity": "0.0255", "session": "2026-07-22", "stop_price": "202.073195685195927103050", "symbol": "ROST", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-TPR-2026-07-21", "price": "141.599545552825915230", "protection_armed": true, "quantity": "0.0427", "session": "2026-07-22", "stop_price": "120.35961371990202794550", "symbol": "TPR", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-GM-2026-07-21", "price": "80.528175", "protection_armed": true, "quantity": "0.0758", "session": "2026-07-22", "stop_price": "68.44894875", "symbol": "GM", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-CASY-2026-07-21", "price": "864.29238673095703125", "protection_armed": true, "quantity": "0.0070", "session": "2026-07-22", "stop_price": "734.6485287213134765625", "symbol": "CASY", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-MNST-2026-07-21", "price": "94.6631177524566662895", "protection_armed": true, "quantity": "0.0635", "session": "2026-07-22", "stop_price": "80.463650089588166346075", "symbol": "MNST", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-VLO-2026-07-21", "price": "319.3617375", "protection_armed": true, "quantity": "0.0193", "session": "2026-07-22", "stop_price": "271.457476875", "symbol": "VLO", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-IVZ-2026-07-21", "price": "30.010500", "protection_armed": true, "quantity": "0.2023", "session": "2026-07-22", "stop_price": "25.50892500", "symbol": "IVZ", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-IBKR-2026-07-21", "price": "92.9675248077392578125", "protection_armed": true, "quantity": "0.0642", "session": "2026-07-22", "stop_price": "79.022396086578369140625", "symbol": "IBKR", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-STT-2026-07-21", "price": "182.773955216217053520", "protection_armed": true, "quantity": "0.0329", "session": "2026-07-22", "stop_price": "155.35786193378449549200", "symbol": "STT", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-GS-2026-07-21", "price": "1078.8975015380859375", "protection_armed": true, "quantity": "0.0056", "session": "2026-07-22", "stop_price": "917.062876307373046875", "symbol": "GS", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-MRNA-2026-07-21", "price": "59.39077843151092566810", "protection_armed": true, "quantity": "0.1018", "session": "2026-07-22", "stop_price": "50.4821616667842868178850", "symbol": "MRNA", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-VTRS-2026-07-21", "price": "17.5761491947174084770", "protection_armed": true, "quantity": "0.3457", "session": "2026-07-22", "stop_price": "14.939726815509797205450", "symbol": "VTRS", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-BIIB-2026-07-21", "price": "203.771291947174084770", "protection_armed": true, "quantity": "0.0298", "session": "2026-07-22", "stop_price": "173.20559815509797205450", "symbol": "BIIB", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-JNJ-2026-07-21", "price": "252.8484605049133325790", "protection_armed": true, "quantity": "0.0242", "session": "2026-07-22", "stop_price": "214.921191429176332692150", "symbol": "JNJ", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-FIX-2026-07-21", "price": "1717.600950", "protection_armed": true, "quantity": "0.0034", "session": "2026-07-22", "stop_price": "1459.96080750", "symbol": "FIX", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-VRT-2026-07-21", "price": "294.357994134521484375", "protection_armed": true, "quantity": "0.0200", "session": "2026-07-22", "stop_price": "250.20429501434326171875", "symbol": "VRT", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-CAT-2026-07-21", "price": "877.597029519653370330", "protection_armed": true, "quantity": "0.0068", "session": "2026-07-22", "stop_price": "745.95747509170536478050", "symbol": "CAT", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-CMI-2026-07-21", "price": "654.96914923095703125", "protection_armed": true, "quantity": "0.0092", "session": "2026-07-22", "stop_price": "556.7237768463134765625", "symbol": "CMI", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-GEV-2026-07-21", "price": "1021.36736326904296875", "protection_armed": true, "quantity": "0.0056", "session": "2026-07-22", "stop_price": "868.1622587786865234375", "symbol": "GEV", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-SNDK-2026-07-21", "price": "1528.434789422607421875", "protection_armed": true, "quantity": "0.0039", "session": "2026-07-22", "stop_price": "1299.16957100921630859375", "symbol": "SNDK", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-WDC-2026-07-21", "price": "525.92399923095703125", "protection_armed": true, "quantity": "0.0111", "session": "2026-07-22", "stop_price": "447.0353993463134765625", "symbol": "WDC", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-LITE-2026-07-21", "price": "810.50354769287109375", "protection_armed": true, "quantity": "0.0073", "session": "2026-07-22", "stop_price": "688.9280155389404296875", "symbol": "LITE", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-MU-2026-07-21", "price": "938.763449807739307830", "protection_armed": true, "quantity": "0.0063", "session": "2026-07-22", "stop_price": "797.94893233657841165550", "symbol": "MU", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-ALB-2026-07-21", "price": "119.441791526412957615", "protection_armed": true, "quantity": "0.0512", "session": "2026-07-22", "stop_price": "101.52552279745101397275", "symbol": "ALB", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-NUE-2026-07-21", "price": "234.6120842788696339080", "protection_armed": true, "quantity": "0.0260", "session": "2026-07-22", "stop_price": "199.420271637039188821800", "symbol": "NUE", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-HST-2026-07-21", "price": "24.508575", "protection_armed": true, "quantity": "0.2488", "session": "2026-07-22", "stop_price": "20.83228875", "symbol": "HST", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-SPG-2026-07-21", "price": "227.2294963943481495330", "protection_armed": true, "quantity": "0.0266", "session": "2026-07-22", "stop_price": "193.145071935195927103050", "symbol": "SPG", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-EIX-2026-07-21", "price": "79.0376556369781506645", "protection_armed": true, "quantity": "0.0774", "session": "2026-07-22", "stop_price": "67.182007291431428064825", "symbol": "EIX", "type": "fill"}
+{"direction": "BUY", "fill_date": "2026-07-22", "order_id": "e-AES-2026-07-21", "price": "14.83519042367935211925", "protection_armed": true, "quantity": "0.4087", "session": "2026-07-22", "stop_price": "12.6099118601274493013625", "symbol": "AES", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-LULU-2026-07-21", "price": "116.059363474655157615", "protection_armed": true, "quantity": "0.0519", "session": "2026-07-22", "stop_price": "133.46826799585343125725", "symbol": "LULU", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-CMG-2026-07-21", "price": "33.35831943225860633190", "protection_armed": true, "quantity": "0.1801", "session": "2026-07-22", "stop_price": "38.3620673470973972816850", "symbol": "CMG", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-MKC-2026-07-21", "price": "53.01143827972412109375", "protection_armed": true, "quantity": "0.1154", "session": "2026-07-22", "stop_price": "60.9631540216827392578125", "symbol": "MKC", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-FISV-2026-07-21", "price": "50.7322375", "protection_armed": true, "quantity": "0.1190", "session": "2026-07-22", "stop_price": "58.342073125", "symbol": "FISV", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-PODD-2026-07-21", "price": "165.642001949310315230", "protection_armed": true, "quantity": "0.0370", "session": "2026-07-22", "stop_price": "190.48830224170686251450", "symbol": "PODD", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-ZTS-2026-07-21", "price": "75.7534757797241260920", "protection_armed": true, "quantity": "0.0804", "session": "2026-07-22", "stop_price": "87.116497146682745005800", "symbol": "ZTS", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-VEEV-2026-07-21", "price": "189.763561330413830855", "protection_armed": true, "quantity": "0.0319", "session": "2026-07-22", "stop_price": "218.22809552997590548325", "symbol": "VEEV", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-AXON-2026-07-21", "price": "510.991103923034692960", "protection_armed": true, "quantity": "0.0118", "session": "2026-07-22", "stop_price": "587.63976951148989690400", "symbol": "AXON", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-VRSK-2026-07-21", "price": "197.6208109405517578125", "protection_armed": true, "quantity": "0.0308", "session": "2026-07-22", "stop_price": "227.263932581634521484375", "symbol": "VRSK", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-CPRT-2026-07-21", "price": "27.47038154239654528520", "protection_armed": true, "quantity": "0.2236", "session": "2026-07-22", "stop_price": "31.5909387737560270779800", "symbol": "CPRT", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-IT-2026-07-21", "price": "135.3925984405517578125", "protection_armed": true, "quantity": "0.0446", "session": "2026-07-22", "stop_price": "155.701488206634521484375", "symbol": "IT", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-GDDY-2026-07-21", "price": "92.8274996101379369540", "protection_armed": true, "quantity": "0.0653", "session": "2026-07-22", "stop_price": "106.751624551658627497100", "symbol": "GDDY", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-MOS-2026-07-21", "price": "22.54210673732757580855", "protection_armed": true, "quantity": "0.2751", "session": "2026-07-22", "stop_price": "25.9234227479267121798325", "symbol": "MOS", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-IP-2026-07-21", "price": "36.4072511695861791415", "protection_armed": true, "quantity": "0.1658", "session": "2026-07-22", "stop_price": "41.868338845024106012725", "symbol": "IP", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-CSGP-2026-07-21", "price": "28.8099126949310315230", "protection_armed": true, "quantity": "0.2109", "session": "2026-07-22", "stop_price": "33.131399599170686251450", "symbol": "CSGP", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-ARE-2026-07-21", "price": "50.982150", "protection_armed": true, "quantity": "0.1196", "session": "2026-07-22", "stop_price": "58.62947250", "symbol": "ARE", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-22", "order_id": "e-CEG-2026-07-21", "price": "263.162865631103515625", "protection_armed": true, "quantity": "0.0231", "session": "2026-07-22", "stop_price": "302.63729547576904296875", "symbol": "CEG", "type": "fill"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "TTD", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "TSCO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "GIS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "EXE", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "FDS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "BRO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "COIN", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "BSX", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "EFX", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "INTU", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "ACN", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-22", "symbol": "AWK", "type": "rejection"}
+{"entries_approved": 3, "entries_rejected": {"NEWS_OR_CORPORATE_EVENT": 12}, "equity": "1002.668951384259235277141860", "exits_queued": 0, "gross_target": "0.375", "positions": 47, "session": "2026-07-22", "type": "session"}
+{"direction": "BUY", "fill_date": "2026-07-23", "order_id": "e-C-2026-07-22", "price": "130.545675", "protection_armed": true, "quantity": "0.0459", "session": "2026-07-23", "stop_price": "110.96382375", "symbol": "C", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-23", "order_id": "e-FIS-2026-07-22", "price": "40.38586152534484838290", "protection_armed": true, "quantity": "0.1496", "session": "2026-07-23", "stop_price": "46.4437407541465756403350", "symbol": "FIS", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-23", "order_id": "e-BR-2026-07-22", "price": "144.239491788482653520", "protection_armed": true, "quantity": "0.0421", "session": "2026-07-23", "stop_price": "165.87541555675505154800", "symbol": "BR", "type": "fill"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "TSCO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "EXE", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "COIN", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "FDS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "BRO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "BSX", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "ACN", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-23", "symbol": "VST", "type": "rejection"}
+{"entries_approved": 4, "entries_rejected": {"NEWS_OR_CORPORATE_EVENT": 8}, "equity": "1003.368973560347111301715700", "exits_queued": 0, "gross_target": "0.375", "positions": 50, "session": "2026-07-23", "type": "session"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-24", "order_id": "e-TTD-2026-07-23", "price": "16.94406826267242419145", "protection_armed": true, "quantity": "0.3615", "session": "2026-07-24", "stop_price": "19.4856785020732878201675", "symbol": "TTD", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-24", "order_id": "e-GIS-2026-07-23", "price": "35.7874692373275788075", "protection_armed": true, "quantity": "0.1707", "session": "2026-07-24", "stop_price": "41.155589622926715628625", "symbol": "GIS", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-24", "order_id": "e-EFX-2026-07-23", "price": "165.492060550689684770", "protection_armed": true, "quantity": "0.0364", "session": "2026-07-24", "stop_price": "190.31586963329313748550", "symbol": "EFX", "type": "fill"}
+{"direction": "SELL_SHORT", "fill_date": "2026-07-24", "order_id": "e-INTU-2026-07-23", "price": "286.539690643310546875", "protection_armed": true, "quantity": "0.0216", "session": "2026-07-24", "stop_price": "329.52064423980712890625", "symbol": "INTU", "type": "fill"}
+{"direction": "BUY_TO_COVER", "fill_date": "2026-07-24", "order_id": "stop-IP-2026-07-24", "price": "41.868338845024106012725", "protection_armed": false, "quantity": "0.1658", "session": "2026-07-24", "stop_price": "41.868338845024106012725", "symbol": "IP", "type": "fill"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "TSCO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "EXE", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "COIN", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "FDS", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "BRO", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "BSX", "type": "rejection"}
+{"codes": ["NEWS_OR_CORPORATE_EVENT"], "session": "2026-07-24", "symbol": "IP", "type": "rejection"}
+{"entries_approved": 2, "entries_rejected": {"NEWS_OR_CORPORATE_EVENT": 7}, "equity": "997.019362074382900999183320", "exits_queued": 0, "gross_target": "0.375", "positions": 53, "session": "2026-07-24", "type": "session"}

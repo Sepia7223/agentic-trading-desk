@@ -1,0 +1,465 @@
+{
+ "cash": "946.3864620059090821099833200",
+ "start_equity": "1000",
+ "positions": {
+  "ECHO": {
+   "symbol": "ECHO",
+   "quantity": "0.0641",
+   "entry_price": "95.1032741947174084770",
+   "stop_price": "80.837783065509797205450",
+   "opened": "2026-07-22"
+  },
+  "ROST": {
+   "symbol": "ROST",
+   "quantity": "0.0255",
+   "entry_price": "237.7331713943481495330",
+   "stop_price": "202.073195685195927103050",
+   "opened": "2026-07-22"
+  },
+  "TPR": {
+   "symbol": "TPR",
+   "quantity": "0.0427",
+   "entry_price": "141.599545552825915230",
+   "stop_price": "120.35961371990202794550",
+   "opened": "2026-07-22"
+  },
+  "GM": {
+   "symbol": "GM",
+   "quantity": "0.0758",
+   "entry_price": "80.528175",
+   "stop_price": "68.44894875",
+   "opened": "2026-07-22"
+  },
+  "CASY": {
+   "symbol": "CASY",
+   "quantity": "0.0070",
+   "entry_price": "864.29238673095703125",
+   "stop_price": "734.6485287213134765625",
+   "opened": "2026-07-22"
+  },
+  "MNST": {
+   "symbol": "MNST",
+   "quantity": "0.0635",
+   "entry_price": "94.6631177524566662895",
+   "stop_price": "80.463650089588166346075",
+   "opened": "2026-07-22"
+  },
+  "VLO": {
+   "symbol": "VLO",
+   "quantity": "0.0193",
+   "entry_price": "319.3617375",
+   "stop_price": "271.457476875",
+   "opened": "2026-07-22"
+  },
+  "IVZ": {
+   "symbol": "IVZ",
+   "quantity": "0.2023",
+   "entry_price": "30.010500",
+   "stop_price": "25.50892500",
+   "opened": "2026-07-22"
+  },
+  "IBKR": {
+   "symbol": "IBKR",
+   "quantity": "0.0642",
+   "entry_price": "92.9675248077392578125",
+   "stop_price": "79.022396086578369140625",
+   "opened": "2026-07-22"
+  },
+  "STT": {
+   "symbol": "STT",
+   "quantity": "0.0329",
+   "entry_price": "182.773955216217053520",
+   "stop_price": "155.35786193378449549200",
+   "opened": "2026-07-22"
+  },
+  "GS": {
+   "symbol": "GS",
+   "quantity": "0.0056",
+   "entry_price": "1078.8975015380859375",
+   "stop_price": "917.062876307373046875",
+   "opened": "2026-07-22"
+  },
+  "MRNA": {
+   "symbol": "MRNA",
+   "quantity": "0.1018",
+   "entry_price": "59.39077843151092566810",
+   "stop_price": "50.4821616667842868178850",
+   "opened": "2026-07-22"
+  },
+  "VTRS": {
+   "symbol": "VTRS",
+   "quantity": "0.3457",
+   "entry_price": "17.5761491947174084770",
+   "stop_price": "14.939726815509797205450",
+   "opened": "2026-07-22"
+  },
+  "BIIB": {
+   "symbol": "BIIB",
+   "quantity": "0.0298",
+   "entry_price": "203.771291947174084770",
+   "stop_price": "173.20559815509797205450",
+   "opened": "2026-07-22"
+  },
+  "JNJ": {
+   "symbol": "JNJ",
+   "quantity": "0.0242",
+   "entry_price": "252.8484605049133325790",
+   "stop_price": "214.921191429176332692150",
+   "opened": "2026-07-22"
+  },
+  "FIX": {
+   "symbol": "FIX",
+   "quantity": "0.0034",
+   "entry_price": "1717.600950",
+   "stop_price": "1459.96080750",
+   "opened": "2026-07-22"
+  },
+  "VRT": {
+   "symbol": "VRT",
+   "quantity": "0.0200",
+   "entry_price": "294.357994134521484375",
+   "stop_price": "250.20429501434326171875",
+   "opened": "2026-07-22"
+  },
+  "CAT": {
+   "symbol": "CAT",
+   "quantity": "0.0068",
+   "entry_price": "877.597029519653370330",
+   "stop_price": "745.95747509170536478050",
+   "opened": "2026-07-22"
+  },
+  "CMI": {
+   "symbol": "CMI",
+   "quantity": "0.0092",
+   "entry_price": "654.96914923095703125",
+   "stop_price": "556.7237768463134765625",
+   "opened": "2026-07-22"
+  },
+  "GEV": {
+   "symbol": "GEV",
+   "quantity": "0.0056",
+   "entry_price": "1021.36736326904296875",
+   "stop_price": "868.1622587786865234375",
+   "opened": "2026-07-22"
+  },
+  "SNDK": {
+   "symbol": "SNDK",
+   "quantity": "0.0039",
+   "entry_price": "1528.434789422607421875",
+   "stop_price": "1299.16957100921630859375",
+   "opened": "2026-07-22"
+  },
+  "WDC": {
+   "symbol": "WDC",
+   "quantity": "0.0111",
+   "entry_price": "525.92399923095703125",
+   "stop_price": "447.0353993463134765625",
+   "opened": "2026-07-22"
+  },
+  "LITE": {
+   "symbol": "LITE",
+   "quantity": "0.0073",
+   "entry_price": "810.50354769287109375",
+   "stop_price": "688.9280155389404296875",
+   "opened": "2026-07-22"
+  },
+  "MU": {
+   "symbol": "MU",
+   "quantity": "0.0063",
+   "entry_price": "938.763449807739307830",
+   "stop_price": "797.94893233657841165550",
+   "opened": "2026-07-22"
+  },
+  "ALB": {
+   "symbol": "ALB",
+   "quantity": "0.0512",
+   "entry_price": "119.441791526412957615",
+   "stop_price": "101.52552279745101397275",
+   "opened": "2026-07-22"
+  },
+  "NUE": {
+   "symbol": "NUE",
+   "quantity": "0.0260",
+   "entry_price": "234.6120842788696339080",
+   "stop_price": "199.420271637039188821800",
+   "opened": "2026-07-22"
+  },
+  "HST": {
+   "symbol": "HST",
+   "quantity": "0.2488",
+   "entry_price": "24.508575",
+   "stop_price": "20.83228875",
+   "opened": "2026-07-22"
+  },
+  "SPG": {
+   "symbol": "SPG",
+   "quantity": "0.0266",
+   "entry_price": "227.2294963943481495330",
+   "stop_price": "193.145071935195927103050",
+   "opened": "2026-07-22"
+  },
+  "EIX": {
+   "symbol": "EIX",
+   "quantity": "0.0774",
+   "entry_price": "79.0376556369781506645",
+   "stop_price": "67.182007291431428064825",
+   "opened": "2026-07-22"
+  },
+  "AES": {
+   "symbol": "AES",
+   "quantity": "0.4087",
+   "entry_price": "14.83519042367935211925",
+   "stop_price": "12.6099118601274493013625",
+   "opened": "2026-07-22"
+  },
+  "LULU": {
+   "symbol": "LULU",
+   "quantity": "-0.0519",
+   "entry_price": "116.059363474655157615",
+   "stop_price": "133.46826799585343125725",
+   "opened": "2026-07-22"
+  },
+  "CMG": {
+   "symbol": "CMG",
+   "quantity": "-0.1801",
+   "entry_price": "33.35831943225860633190",
+   "stop_price": "38.3620673470973972816850",
+   "opened": "2026-07-22"
+  },
+  "MKC": {
+   "symbol": "MKC",
+   "quantity": "-0.1154",
+   "entry_price": "53.01143827972412109375",
+   "stop_price": "60.9631540216827392578125",
+   "opened": "2026-07-22"
+  },
+  "FISV": {
+   "symbol": "FISV",
+   "quantity": "-0.1190",
+   "entry_price": "50.7322375",
+   "stop_price": "58.342073125",
+   "opened": "2026-07-22"
+  },
+  "PODD": {
+   "symbol": "PODD",
+   "quantity": "-0.0370",
+   "entry_price": "165.642001949310315230",
+   "stop_price": "190.48830224170686251450",
+   "opened": "2026-07-22"
+  },
+  "ZTS": {
+   "symbol": "ZTS",
+   "quantity": "-0.0804",
+   "entry_price": "75.7534757797241260920",
+   "stop_price": "87.116497146682745005800",
+   "opened": "2026-07-22"
+  },
+  "VEEV": {
+   "symbol": "VEEV",
+   "quantity": "-0.0319",
+   "entry_price": "189.763561330413830855",
+   "stop_price": "218.22809552997590548325",
+   "opened": "2026-07-22"
+  },
+  "AXON": {
+   "symbol": "AXON",
+   "quantity": "-0.0118",
+   "entry_price": "510.991103923034692960",
+   "stop_price": "587.63976951148989690400",
+   "opened": "2026-07-22"
+  },
+  "VRSK": {
+   "symbol": "VRSK",
+   "quantity": "-0.0308",
+   "entry_price": "197.6208109405517578125",
+   "stop_price": "227.263932581634521484375",
+   "opened": "2026-07-22"
+  },
+  "CPRT": {
+   "symbol": "CPRT",
+   "quantity": "-0.2236",
+   "entry_price": "27.47038154239654528520",
+   "stop_price": "31.5909387737560270779800",
+   "opened": "2026-07-22"
+  },
+  "IT": {
+   "symbol": "IT",
+   "quantity": "-0.0446",
+   "entry_price": "135.3925984405517578125",
+   "stop_price": "155.701488206634521484375",
+   "opened": "2026-07-22"
+  },
+  "GDDY": {
+   "symbol": "GDDY",
+   "quantity": "-0.0653",
+   "entry_price": "92.8274996101379369540",
+   "stop_price": "106.751624551658627497100",
+   "opened": "2026-07-22"
+  },
+  "MOS": {
+   "symbol": "MOS",
+   "quantity": "-0.2751",
+   "entry_price": "22.54210673732757580855",
+   "stop_price": "25.9234227479267121798325",
+   "opened": "2026-07-22"
+  },
+  "CSGP": {
+   "symbol": "CSGP",
+   "quantity": "-0.2109",
+   "entry_price": "28.8099126949310315230",
+   "stop_price": "33.131399599170686251450",
+   "opened": "2026-07-22"
+  },
+  "ARE": {
+   "symbol": "ARE",
+   "quantity": "-0.1196",
+   "entry_price": "50.982150",
+   "stop_price": "58.62947250",
+   "opened": "2026-07-22"
+  },
+  "CEG": {
+   "symbol": "CEG",
+   "quantity": "-0.0231",
+   "entry_price": "263.162865631103515625",
+   "stop_price": "302.63729547576904296875",
+   "opened": "2026-07-22"
+  },
+  "C": {
+   "symbol": "C",
+   "quantity": "0.0459",
+   "entry_price": "130.545675",
+   "stop_price": "110.96382375",
+   "opened": "2026-07-23"
+  },
+  "FIS": {
+   "symbol": "FIS",
+   "quantity": "-0.1496",
+   "entry_price": "40.38586152534484838290",
+   "stop_price": "46.4437407541465756403350",
+   "opened": "2026-07-23"
+  },
+  "BR": {
+   "symbol": "BR",
+   "quantity": "-0.0421",
+   "entry_price": "144.239491788482653520",
+   "stop_price": "165.87541555675505154800",
+   "opened": "2026-07-23"
+  },
+  "TTD": {
+   "symbol": "TTD",
+   "quantity": "-0.3615",
+   "entry_price": "16.94406826267242419145",
+   "stop_price": "19.4856785020732878201675",
+   "opened": "2026-07-24"
+  },
+  "GIS": {
+   "symbol": "GIS",
+   "quantity": "-0.1707",
+   "entry_price": "35.7874692373275788075",
+   "stop_price": "41.155589622926715628625",
+   "opened": "2026-07-24"
+  },
+  "EFX": {
+   "symbol": "EFX",
+   "quantity": "-0.0364",
+   "entry_price": "165.492060550689684770",
+   "stop_price": "190.31586963329313748550",
+   "opened": "2026-07-24"
+  },
+  "INTU": {
+   "symbol": "INTU",
+   "quantity": "-0.0216",
+   "entry_price": "286.539690643310546875",
+   "stop_price": "329.52064423980712890625",
+   "opened": "2026-07-24"
+  }
+ },
+ "queued_orders": [
+  {
+   "order_id": "e-ACN-2026-07-24",
+   "symbol": "ACN",
+   "direction": "SELL_SHORT",
+   "quantity": "0.0410",
+   "stop_distance_fraction": "0.15",
+   "idempotency_key": "36ad928f460694953f96713420efa5d9"
+  },
+  {
+   "order_id": "e-VST-2026-07-24",
+   "symbol": "VST",
+   "direction": "SELL_SHORT",
+   "quantity": "0.0369",
+   "stop_distance_fraction": "0.15",
+   "idempotency_key": "52cfac089e09edd4c0f57e066587b389"
+  }
+ ],
+ "equity_by_day": {
+  "2026-07-21": "1000",
+  "2026-07-22": "1002.668951384259235277141860",
+  "2026-07-23": "1003.368973560347111301715700",
+  "2026-07-24": "997.019362074382900999183320"
+ },
+ "peak_equity": "1003.368973560347111301715700",
+ "day_start_equity": "997.019362074382900999183320",
+ "day_start_date": "2026-07-24",
+ "trades_today": 0,
+ "consecutive_losses": 1,
+ "seen_idempotency_keys": [
+  "060552bb18ea29758ea535e5f0d148ec",
+  "065e95f413235a1cedde681fb6684926",
+  "118b668953c9f49ec41d2f17b7d5a2f1",
+  "1198d72404072aad9413bc6d9e460d9d",
+  "18e5a4ea50a1b749cd36c7a2aa441385",
+  "24c433c08f93ac1b385c73689e6773a2",
+  "2fea8d6faa36a5fda64a3d114d107bc0",
+  "30a89231021f02d2c2480d03e134d4d7",
+  "30cd457345a0d4f5fea3775db3a426ee",
+  "36ad928f460694953f96713420efa5d9",
+  "44cf007a6f76c9c7fdb3527667ca121a",
+  "4fc0e25cf41eee92b63f023359391c21",
+  "52cfac089e09edd4c0f57e066587b389",
+  "548a7740adec1712b176e8db52cc685f",
+  "583f3a2380a07fe7db39b0599724d1d9",
+  "5e677ddb1fac2e4fb267952babc78408",
+  "63e270b9d4ccb232a1066095dc7dc8ba",
+  "6e2fe4ac5471a74e81ad010cc8e6c3e9",
+  "6f6d226bb4318b58dd2cb631497fc885",
+  "71c2bd7a090d98c3a4d03f801c785ffa",
+  "77749a4ba983342e8a2d7caffedaad34",
+  "7a53ea71ffb9cf0a18767e7a0bf44861",
+  "82e3aa6c276d55f02b7fb7f932fa1277",
+  "8638427a02bcb15a9118677c0111cac4",
+  "89d019af98f2d5ddd9e945615386d1a9",
+  "8affc93ff1e70a8af51f21e206f7d258",
+  "9337ffaceee7c6c2630c13b328a2c877",
+  "952737e6b4da0f3d7f00ac4909cfacef",
+  "96bd84af73a82cd712d0be50d43b9a18",
+  "9836cceeee55832bf9e3b811d54865bd",
+  "9cfb0740ee63d4da0d1893643500f807",
+  "9fdbcc52abd8b6ca83f27af1885f134d",
+  "aad487ba6685b63b85c17505f1e54f7b",
+  "ae2b2c98ea6f64f729b73595db0440ec",
+  "b17d49954d2c6dedc8805e4a430942e1",
+  "b3c7deb3fbb8b56927ebba3435c18083",
+  "b5db8e133b26531a97798b094fb1496a",
+  "c15107e0a3c479530235a27c5c14b7c3",
+  "cc9c4627f84e46ecedef1c8859aa255d",
+  "ce28c9f396bd66b8be2074c971c3e86b",
+  "d13f1af6df9e947ea634bb57e508d945",
+  "d265da0dfac616b7fa8d3a3bf6d14056",
+  "d3868f9b4c0e644c6652f97928ceebf1",
+  "d80423c27c61e2200b18a5681bcf9509",
+  "dab036e45fcbb0df2656d142e0eba21c",
+  "e06cc2473c54043080aa4c4a78c9ccf1",
+  "e08f15442cdc27d5531b46f29eae1ee7",
+  "e7471180f09035a1d8b3707dbaa0fac0",
+  "ea9a1318151338c055c6509e93eff402",
+  "f0e775ad1aa9e9f40a88e9c357b3eb33",
+  "f2159b58b46b85bfec4126ae955fd207",
+  "f43d27e106348610ed314b4960d0bf31",
+  "f894bef5826c586e2a0ed9f3201249e2",
+  "fc627cf2f68733dd534458bf22a1e465",
+  "ff584ae6b0c84fb94483f24c7ba1889b",
+  "ffdba7c6d84c6650bceb834f66dd5b95"
+ ],
+ "last_session": "2026-07-24"
+}
