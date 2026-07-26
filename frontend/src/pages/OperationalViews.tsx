@@ -34,6 +34,13 @@ function RecordState({
   const state = useOperations<RecordProjection>(endpoint);
   if (state.loading)
     return <div className="state">Loading current evidence...</div>;
+  if (state.error?.includes("404"))
+    return (
+      <div className="state">
+        No evidence recorded for this view yet. It fills as the governed
+        journal accrues records.
+      </div>
+    );
   if (state.error || !state.data)
     return (
       <div className="state state-error">Data unavailable: {state.error}</div>
