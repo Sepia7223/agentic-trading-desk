@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { Configuration } from "./pages/Configuration";
+import { EquityPaperMonitor } from "./pages/EquityPaper";
 import {
   OperationsEventProvider,
   useOperationsEvents,
@@ -60,6 +61,7 @@ import {
 
 const navigation = [
   ["Overview", Activity],
+  ["Equity Paper", BookOpen],
   ["Opportunities", ListFilter],
   ["Activity Dashboard", Activity],
   ["Strategy Leaderboard", BarChart3],
@@ -92,6 +94,7 @@ const navigation = [
 function CurrentPage({ page }: { page: string }) {
   const pages: Record<string, React.ReactNode> = {
     Overview: <Overview />,
+    "Equity Paper": <EquityPaperMonitor />,
     Opportunities: <OpportunityBoard />,
     "Activity Dashboard": <ActivityDashboard />,
     "Strategy Leaderboard": <StrategyLeaderboard />,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from trading_desk.api.dependencies import OperationsDependencies
+from trading_desk.api.equity_paper import attach_equity_paper
 from trading_desk.api.websocket import stream_events
 from trading_desk.journal.models import JournalRecordType
 from trading_desk.operations.config import OperationsConfiguration
@@ -39,6 +41,7 @@ def create_operations_app(
         redoc_url=None,
     )
     app.state.operations = dependencies
+    attach_equity_paper(app, Path(os.environ.get("EQUITY_PAPER_DIR", "data/paper")))
 
     @app.exception_handler(ValueError)
     async def invalid_query(_: Request, error: ValueError) -> JSONResponse:

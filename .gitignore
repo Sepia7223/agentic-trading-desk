@@ -72,3 +72,11 @@ data/*
 !data/shadow/
 data/shadow/*
 !data/shadow/*.jsonl
+
+# Equity-paper session outputs: versioned so the dashboard reads them anywhere
+!data/paper/
+data/paper/*
+!data/paper/journal.jsonl
+!data/paper/paper_state.json
+!data/paper/confidence_calibration.jsonl
+!data/paper/confidence_positions.json
