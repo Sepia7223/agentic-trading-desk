@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Operations Center dashboard server (mini PC).
-# Serves the built frontend + read-only API on 0.0.0.0:8000.
+# Governance: the Operations Center binds LOOPBACK ONLY (a reviewed
+# security rule; allow_remote_bind is hard-false). Remote access goes
+# through an SSH tunnel - see scripts/open_dashboard.ps1.
 # Cron entry for boot persistence:
 #   @reboot /home/gusanio/agentic-trading-desk-m12/scripts/run_dashboard.sh
 set -u
@@ -12,7 +14,7 @@ mkdir -p data/operations
 pkill -f "trading_desk.cli operations run" 2>/dev/null || true
 sleep 1
 PYTHONPATH=src nohup "$PY" -m trading_desk.cli operations run \
-  --host 0.0.0.0 --port 8000 \
+  --port 8000 \
   --journal data/operations/journal.db \
   >> data/operations/server.log 2>&1 &
-echo "dashboard starting on :8000 (pid $!)"
+echo "dashboard starting on 127.0.0.1:8000 (pid $!)"
