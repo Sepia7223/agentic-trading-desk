@@ -123,7 +123,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\nrealized stop-outs so far: {len(stop_outs)}")
     for row in stop_outs:
         print(
-            f"  {row.get('symbol')} {row.get('direction')} @ {row.get('price')} on {row.get('session')}"
+            f"  {row.get('symbol')} {row.get('direction')} @ {row.get('price')} "
+            f"on {row.get('session')}"
         )
     print(f"\ntoday: {date.today().isoformat()}")
     return 0
