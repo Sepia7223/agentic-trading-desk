@@ -3,8 +3,6 @@ import {
   Activity,
   BarChart3,
   BookOpen,
-  Bot,
-  BriefcaseBusiness,
   Gauge,
   Radar,
   Settings,
@@ -14,6 +12,13 @@ import {
 
 import { Tabs } from "./components/Tabs";
 import { Configuration } from "./pages/Configuration";
+import {
+  DeskOverview,
+  EvidenceStreams,
+  PaperJournal,
+  PositionsBook,
+  ResearchBoard,
+} from "./pages/DeskViews";
 import { EquityPaperMonitor } from "./pages/EquityPaper";
 import {
   OperationsEventProvider,
@@ -62,69 +67,58 @@ const SECTIONS: Section[] = [
   {
     label: "Overview",
     icon: Activity,
-    subtitle: "System health and live status",
-    tabs: { Overview: <Overview /> },
+    subtitle: "The desk as it actually runs: equity, jobs, news gate",
+    tabs: { Desk: <DeskOverview /> },
   },
   {
     label: "Equity Paper",
     icon: TrendingUp,
-    subtitle: "The $1,000 account: curve, sessions, confidence calibration",
-    tabs: { Account: <EquityPaperMonitor /> },
+    subtitle: "The $1,000 account: curve, positions, confidence calibration",
+    tabs: {
+      Account: <EquityPaperMonitor />,
+      Positions: <PositionsBook />,
+      Journal: <PaperJournal />,
+    },
   },
   {
-    label: "Opportunities",
+    label: "Evidence",
     icon: Radar,
-    subtitle: "Signal flow and campaign activity",
+    subtitle: "Forward shadow streams feeding the September 15 decision",
+    tabs: { Streams: <EvidenceStreams /> },
+  },
+  {
+    label: "Research",
+    icon: BarChart3,
+    subtitle: "Prop-challenge verdicts and validation results",
+    tabs: { Challenge: <ResearchBoard /> },
+  },
+  {
+    label: "IG Program",
+    icon: Waypoints,
+    subtitle: "Governed IG/FX program views (dormant until that journal runs)",
     tabs: {
-      Board: <OpportunityBoard />,
+      Overview: <Overview />,
+      Opportunities: <OpportunityBoard />,
       Activity: <ActivityDashboard />,
       "Demo Campaign": <DemoCampaign />,
       Inactivity: <InactivityDiagnostics />,
       "Why No Trade": <WhyNoTrade />,
-    },
-  },
-  {
-    label: "Strategies",
-    icon: BarChart3,
-    subtitle: "Validation, comparison and portfolio contribution",
-    tabs: {
       Leaderboard: <StrategyLeaderboard />,
       Validation: <StrategyValidationMatrix />,
       Comparison: <StrategyPerformanceComparison />,
       "Regime Matrix": <StrategyRegimeMatrix />,
       Contribution: <StrategyPortfolioContribution />,
       Breakers: <StrategyCircuitBreakers />,
-    },
-  },
-  {
-    label: "Trading",
-    icon: Waypoints,
-    subtitle: "Positions, executions and order lifecycle",
-    tabs: {
       Positions: <PositionsMonitor />,
       Trades: <TradesMonitor />,
       Execution: <ExecutionMonitor />,
       Lifecycle: <LifecycleMonitor />,
       Risk: <RiskMonitor />,
-    },
-  },
-  {
-    label: "Markets",
-    icon: Gauge,
-    subtitle: "Regime context and routing decisions",
-    tabs: {
       Context: <MarketContext />,
       Router: <RouterMonitor />,
       Performance: <Performance />,
       Instruments: <InstrumentPerformance />,
       Regimes: <RegimePerformance />,
-    },
-  },
-  {
-    label: "Intelligence",
-    icon: Bot,
-    subtitle: "Reviews, alerts, journal evidence and replay",
-    tabs: {
       "AI Reviews": <AIReviews />,
       Alerts: <AlertsMonitor />,
       Journal: <JournalMonitor />,

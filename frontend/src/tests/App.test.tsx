@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+﻿import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -54,7 +54,19 @@ beforeEach(() => {
     "fetch",
     vi.fn(async (input: RequestInfo | URL) => {
       const path = String(input);
-      const body = path.includes("/system")
+      const body = path.includes("/ops/desk")
+        ? {
+            equity: 997.02,
+            last_session: "2026-07-24",
+            open_positions: 53,
+            sessions_recorded: 4,
+            held_news_exits_total: 0,
+            rejections_by_session: { "2026-07-24": 7 },
+            jobs: [{ job: "paper session", last_output: snapshot.created_at }],
+            disk_free_gb: 9.5,
+            disk_used_pct: 96,
+          }
+        : path.includes("/system")
         ? snapshot
         : path.includes("/context/latest") ||
             path.includes("/router/latest") ||
@@ -138,13 +150,17 @@ it("renders immutable Demo and read-only status", async () => {
   expect(screen.getByText("Demo environment")).toBeInTheDocument();
   expect(screen.getByText("Read only")).toBeInTheDocument();
   await waitFor(() =>
+    expect(screen.getByText("Nightly jobs")).toBeInTheDocument(),
+  );
+  await go("IG Program", "Overview");
+  await waitFor(() =>
     expect(screen.getByText("Application")).toBeInTheDocument(),
   );
 });
 
 it("navigates to deterministic why-no-trade evidence", async () => {
   render(<App />);
-  await go("Opportunities", "Why No Trade");
+  await go("IG Program", "Why No Trade");
   expect(
     await screen.findByText("EUR/USD: MOMENTUM_THRESHOLD"),
   ).toBeInTheDocument();
@@ -153,13 +169,13 @@ it("navigates to deterministic why-no-trade evidence", async () => {
 
 it("labels research strategies and AI as non-operational", async () => {
   render(<App />);
-  await go("Markets", "Router");
+  await go("IG Program", "Router");
   expect(
     await screen.findByText(
       "Research strategies: RESEARCH ONLY - EXECUTION PROHIBITED",
     ),
   ).toBeInTheDocument();
-  await go("Intelligence", "AI Reviews");
+  await go("IG Program", "AI Reviews");
   expect(
     await screen.findByText(/AI authority: ADVISORY ONLY/),
   ).toBeInTheDocument();
@@ -168,7 +184,7 @@ it("labels research strategies and AI as non-operational", async () => {
 it("refreshes authoritative REST data after a typed websocket event", async () => {
   const fetchMock = vi.mocked(fetch);
   render(<App />);
-  await screen.findByText("Application");
+  await screen.findByText("Nightly jobs");
   const initialCalls = fetchMock.mock.calls.length;
   const emit = (
     globalThis as unknown as { __emitOperationsEvent: (event: object) => void }
@@ -190,29 +206,29 @@ it("refreshes authoritative REST data after a typed websocket event", async () =
 
 it("renders dedicated market and position states", async () => {
   render(<App />);
-  await go("Markets");
+  await go("IG Program", "Context");
   expect(
     await screen.findByText("Authoritative market context"),
   ).toBeInTheDocument();
   expect(screen.getByText("BULL_LOW_VOL")).toBeInTheDocument();
-  await go("Trading", "Positions");
+  await go("IG Program", "Positions");
   expect(await screen.findByText("Paper positions")).toBeInTheDocument();
   expect(screen.getByText("IG Demo positions")).toBeInTheDocument();
 });
 
 it("renders execution lifecycle and alert empty states safely", async () => {
   render(<App />);
-  await go("Trading", "Execution");
+  await go("IG Program", "Execution");
   expect(
     await screen.findByText("No execution lifecycle recorded."),
   ).toBeInTheDocument();
-  await go("Intelligence", "Alerts");
+  await go("IG Program", "Alerts");
   expect(await screen.findByText("No active alerts.")).toBeInTheDocument();
 });
 
 it("renders the read-only Demo position lifecycle without close controls", async () => {
   render(<App />);
-  await go("Trading", "Lifecycle");
+  await go("IG Program", "Lifecycle");
   expect(
     await screen.findByText("No position lifecycle evidence recorded."),
   ).toBeInTheDocument();
@@ -226,7 +242,7 @@ it("renders the read-only Demo position lifecycle without close controls", async
 
 it("exposes bounded sanitized evidence export formats", async () => {
   render(<App />);
-  await go("Markets", "Performance");
+  await go("IG Program", "Performance");
   expect(
     await screen.findByText("Bounded evidence exports"),
   ).toBeInTheDocument();
@@ -238,7 +254,7 @@ it("exposes bounded sanitized evidence export formats", async () => {
 
 it("renders dedicated risk gate evidence", async () => {
   render(<App />);
-  await go("Trading", "Risk");
+  await go("IG Program", "Risk");
   expect(
     await screen.findByText("Deterministic risk gates"),
   ).toBeInTheDocument();
@@ -247,7 +263,7 @@ it("renders dedicated risk gate evidence", async () => {
 
 it("renders journal integrity health without mutation controls", async () => {
   render(<App />);
-  await go("Intelligence", "Journal");
+  await go("IG Program", "Journal");
   expect(
     await screen.findByText("Journal integrity evidence"),
   ).toBeInTheDocument();
@@ -266,7 +282,7 @@ it("fails closed when a domain projection is unavailable", async () => {
     return existing(input, init);
   });
   render(<App />);
-  await go("Markets");
+  await go("IG Program", "Context");
   expect(
     await screen.findByText(/Data unavailable: projection offline/),
   ).toBeInTheDocument();
