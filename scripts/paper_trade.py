@@ -36,10 +36,31 @@ import time
 from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import Literal
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fetch_stocks import fetch as fetch_yahoo  # type: ignore[import-not-found]
+from trading_desk.confidence import (
+    CalibrationLedger,
+    ConfidenceInputs,
+    KellySizer,
+    bucket_of,
+    confidence_score,
+    target_r_multiple,
+)
+from trading_desk.confidence.integration import (
+    DEFAULT_TARGET_R,
+    crowding_penalty,
+    dtc_buckets,
+    load_sidecar,
+    normalize_multipliers,
+    realized_r,
+    regime_vol_percentile,
+    save_sidecar,
+    signal_percentile,
+    sleeve_agreement,
+)
 from trading_desk.newsfeed import CombinedNewsReader
 from trading_desk.paper.broker import PaperBroker, PaperOrder, SessionBar
 from trading_desk.paper.health import build_account_state, build_system_health
@@ -72,6 +93,7 @@ from trading_desk.pretrade.stress import (
 from trading_desk.pretrade.throttle import OrderThrottle
 
 D = Decimal
+EntryDirection = Literal["BUY", "SELL_SHORT"]
 
 # ---- deployment decision (paper): recorded here per the no-silent-change rule.
 # The generic 8-trades/day starting control is for single-signal strategies; a
@@ -233,6 +255,9 @@ def main(argv=None) -> int:
     if state.last_session == (session_date.isoformat() if session_date else ""):
         print("session already processed; nothing to do")
         return 0
+    if session_date is None:
+        print("no bar data at all; nothing to do")
+        return 1
 
     # ---- 2) settle at today's open/high/low
     broker = PaperBroker(state.cash, positions=dict(state.positions), fail_protection=False)
@@ -267,6 +292,29 @@ def main(argv=None) -> int:
             state.record_round_trip((fill.price - prev.entry_price) * prev.quantity)
     state.trades_today += len(fills)
 
+    # confidence calibration: realized R for every CWK-era closed trade
+    # ('how many times that high percentage confidence works' - the ledger
+    # is what lets high confidence EARN bigger size later)
+    ledger = CalibrationLedger(root / "confidence_calibration.jsonl")
+    sidecar = load_sidecar(root / "confidence_positions.json")
+    for sym in {f.symbol for f in stop_fills} | closed_by_exit:
+        prev = pre_positions.get(sym)
+        meta = sidecar.pop(sym, None)
+        if prev is None or meta is None:
+            continue  # pre-CWK position: not part of the calibration record
+        close_fill = next(f for f in (fills + stop_fills) if f.symbol == sym)
+        ledger.record(
+            trade_id=f"{sym}-{meta.get('opened', '?')}",
+            symbol=sym,
+            confidence=float(meta.get("confidence", 0.5)),
+            bucket=str(meta.get("bucket", "base")),
+            outcome_r=realized_r(
+                prev.entry_price, close_fill.price, prev.quantity > 0, STOP_DISTANCE
+            ),
+            opened=str(meta.get("opened", "")),
+            closed=session_date.isoformat(),
+        )
+
     # ---- 3) mark
     closes = {s: b[-1][4] for s, b in bars.items()}
     equity = broker.equity(closes)
@@ -292,21 +340,6 @@ def main(argv=None) -> int:
     )
 
     # ---- 5/6) validate + queue
-    account = build_account_state(
-        state,
-        equity,
-        gross_exposure=broker.gross_exposure(closes, equity),
-        net_exposure=D("0"),
-        max_single_name_weight=weight,
-        max_short_name_weight=weight,
-    )
-    proj_snapshot = PortfolioSnapshot(
-        gross_exposure=gross,
-        net_exposure=D("0.01") * gross,
-        max_single_name_weight=weight,
-        max_short_name_weight=weight,
-    )
-    stress: StressReport = compute_stress_report(proj_snapshot, params)
     # correlation concentration of the TARGET book from trailing returns
     rets: dict[str, list[float]] = {}
     for s in set(new_long) | set(new_short):
@@ -319,14 +352,6 @@ def main(argv=None) -> int:
         ]
     target_weights = {s: weight for s in set(new_long) | set(new_short)}
     cluster_w = max_correlated_cluster_weight(rets, target_weights)
-    projection = PortfolioProjection(
-        gross_exposure=gross,
-        net_exposure=D("0.01") * gross,
-        max_abs_sector_net=D("0"),  # sector-neutral by construction
-        max_single_name_weight=weight,
-        estimated_beta=D("0.05"),  # measured from realized returns as they accrue
-        max_correlated_cluster_weight=cluster_w,
-    )
     news_reader = CombinedNewsReader()
     throttle = OrderThrottle(PAPER_THROTTLE, seen_keys=set(state.seen_idempotency_keys))
     now = datetime.now(UTC)
@@ -344,6 +369,27 @@ def main(argv=None) -> int:
                     stop_distance_fraction=D("0"),
                 )
             )
+    # confidence target exits: bank a winner once it reaches its target R
+    # (the 'stop win' the user asked for - target scales with confidence)
+    target_exits = 0
+    for sym, pos in broker.positions.items():
+        meta = sidecar.get(sym)
+        px_now = closes.get(sym)
+        if meta is None or px_now is None or any(x.symbol == sym for x in exits):
+            continue
+        r_now = realized_r(pos.entry_price, px_now, pos.quantity > 0, STOP_DISTANCE)
+        if r_now >= float(meta.get("target_r", DEFAULT_TARGET_R)):
+            exits.append(
+                PaperOrder(
+                    order_id=f"t-{sym}-{session_date.isoformat()}",
+                    symbol=sym,
+                    direction="SELL" if pos.quantity > 0 else "BUY_TO_COVER",
+                    quantity=abs(pos.quantity),
+                    stop_distance_fraction=D("0"),
+                )
+            )
+            target_exits += 1
+
     # exits bypass opportunity gates by policy (risk reduction), but not health
     healthy_enough = (
         health.kill_switch_inactive
@@ -356,20 +402,76 @@ def main(argv=None) -> int:
             broker.queue(order)
             queued_exits += 1
 
-    approved = 0
-    rejected: dict[str, int] = {}
-    entries = [(s, "BUY") for s in new_long if s not in held_long] + [
-        (s, "SELL_SHORT") for s in new_short if s not in held_short
-    ]
+    # ---- confidence pass 1 (user CWK design 2026-07-25): score every
+    # candidate BEFORE sizing; news is read here and reused downstream
+    si_low, si_high = dtc_buckets(
+        Path(args.pit_dir) / "consolidated_short_interest", set(symbols), today
+    )
+    regime_pct = regime_vol_percentile(bars)
+    sizer = KellySizer(ledger)
+    entries: list[tuple[str, EntryDirection]] = [
+        (s, "BUY") for s in new_long if s not in held_long
+    ] + [(s, "SELL_SHORT") for s in new_short if s not in held_short]
+    candidates = []
     for sym, direction in entries:
         px = closes.get(sym)
         if px is None or px <= 0:
             continue
-        qty = (weight * equity / px).quantize(D("0.0001"))
+        news = news_reader.read(sym)  # mandatory: unread news == no trade
+        time.sleep(0.1)
+        news_state = (
+            "caution" if str(getattr(news, "status", "")).upper().endswith("CAUTION") else "clear"
+        )
+        conf = confidence_score(
+            ConfidenceInputs(
+                signal_percentile=signal_percentile(scores, sym, direction),
+                sleeve_agreement=sleeve_agreement(sym, direction, si_low, si_high),
+                regime_vol_percentile=regime_pct,
+                crowding_penalty=crowding_penalty(cluster_w, gross),
+                news_state=news_state,
+            )
+        )
+        candidates.append((sym, direction, px, news, conf))
+    mults = normalize_multipliers(
+        {sym: sizer.decide(conf).multiplier for sym, _, _, _, conf in candidates}
+    )
+    max_w = max([weight * D(str(m)) for m in mults.values()] or [weight])
+
+    # account/projection validated at the REAL post-confidence weights
+    account = build_account_state(
+        state,
+        equity,
+        gross_exposure=broker.gross_exposure(closes, equity),
+        net_exposure=D("0"),
+        max_single_name_weight=max_w,
+        max_short_name_weight=max_w,
+    )
+    proj_snapshot = PortfolioSnapshot(
+        gross_exposure=gross,
+        net_exposure=D("0.01") * gross,
+        max_single_name_weight=max_w,
+        max_short_name_weight=max_w,
+    )
+    stress: StressReport = compute_stress_report(proj_snapshot, params)
+    projection = PortfolioProjection(
+        gross_exposure=gross,
+        net_exposure=D("0.01") * gross,
+        max_abs_sector_net=D("0"),  # sector-neutral by construction
+        max_single_name_weight=max_w,
+        estimated_beta=D("0.05"),  # measured from realized returns as they accrue
+        max_correlated_cluster_weight=cluster_w,
+    )
+
+    approved = 0
+    rejected: dict[str, int] = {}
+    for sym, direction, px, news, conf in candidates:
+        mult = mults.get(sym, 1.0)
+        w_i = weight * D(str(mult))
+        qty = (w_i * equity / px).quantize(D("0.0001"))
         if qty <= 0:
             continue
         series = bars[sym]
-        adv = sum(x[4] * x[5] for x in series[-20:]) / min(len(series), 20)
+        adv = sum((x[4] * x[5] for x in series[-20:]), start=D("0")) / min(len(series), 20)
         signal = SignalState(
             strategy_id="EQUITY_MOMENTUM_V1",
             signal_type="LONG_ENTRY" if direction == "BUY" else "SHORT_ENTRY",
@@ -377,7 +479,7 @@ def main(argv=None) -> int:
             current_rank=0,
             momentum_score=scores.get(sym, D("0")),
             rebalance_date=now,
-            target_weight=weight,
+            target_weight=w_i,
             history_complete=len(series) >= LOOKBACK + SKIP + 1,
             point_in_time_clean=True,
             corporate_actions_adjusted=True,
@@ -398,7 +500,7 @@ def main(argv=None) -> int:
             quote_age_seconds=D("1"),
             within_trading_hours=True,
         )
-        order = OrderSpec(
+        spec = OrderSpec(
             symbol=sym,
             direction=direction,
             quantity=qty,
@@ -408,8 +510,6 @@ def main(argv=None) -> int:
             strategy_id="EQUITY_MOMENTUM_V1",
             protection_attached=True,
         )
-        news = news_reader.read(sym)  # mandatory: unread news == no trade
-        time.sleep(0.1)
         proposal = TradeProposal(
             signal=signal,
             instrument=instrument,
@@ -419,7 +519,7 @@ def main(argv=None) -> int:
                 order_notional=qty * px,
                 quote_age_seconds=D("1"),
             ),
-            order=order,
+            order=spec,
             projection=projection,
             stress=stress,
             margin=MarginState(
@@ -435,13 +535,13 @@ def main(argv=None) -> int:
                 f"catastrophe stop {STOP_DISTANCE:%}; portfolio stress budget "
                 f"{PAPER_LIMITS.total_open_risk_fraction:%}; kill switches"
             ),
-            max_loss_fraction=weight * STOP_DISTANCE,
+            max_loss_fraction=w_i * STOP_DISTANCE,
             expected_gross_edge_bps=EDGE_GROSS_BPS,
             expected_cost_bps=D("6.5"),
             reference_price=px,
         )
         decision = evaluate_trade(proposal, health, account, PAPER_LIMITS)
-        key = idempotency_key(signal, order)
+        key = idempotency_key(signal, spec)
         if decision.approved:
             ok, throttle_rej = throttle.admit(key, now)
             if ok:
@@ -456,6 +556,13 @@ def main(argv=None) -> int:
                     )
                 )
                 approved += 1
+                sidecar[sym] = {
+                    "confidence": round(conf, 4),
+                    "bucket": bucket_of(conf),
+                    "target_r": round(target_r_multiple(conf), 4),
+                    "multiplier": round(float(mult), 4),
+                    "opened": session_date.isoformat(),
+                }
             else:
                 for r in throttle_rej:
                     rejected[r.code.value] = rejected.get(r.code.value, 0) + 1
@@ -475,6 +582,7 @@ def main(argv=None) -> int:
     state.queued_orders = list(broker.queued)
     state.seen_idempotency_keys = sorted(throttle.seen_keys)
     save_state(root, state)
+    save_sidecar(root / "confidence_positions.json", sidecar)
     journal(
         root,
         {
@@ -483,13 +591,30 @@ def main(argv=None) -> int:
             "equity": equity,
             "positions": len(broker.positions),
             "exits_queued": queued_exits,
+            "target_exits": target_exits,
             "entries_approved": approved,
             "entries_rejected": rejected,
             "gross_target": gross,
         },
     )
+    # the user's calibration table: how often does each confidence bucket
+    # actually work (forward outcomes only)
+    calibration = [
+        {
+            "bucket": s.bucket,
+            "n": s.n,
+            "win_rate": round(s.win_rate, 4),
+            "expectancy_r": round(s.expectancy_r, 4),
+        }
+        for s in ledger.report()
+    ]
+    if calibration:
+        journal(
+            root, {"type": "confidence_report", "session": session_date, "buckets": calibration}
+        )
+        print(f"confidence calibration: {calibration}")
     print(
-        f"queued: {queued_exits} exits, {approved} entries | "
+        f"queued: {queued_exits} exits ({target_exits} at target), {approved} entries | "
         f"rejected: {rejected or 'none'} | state saved"
     )
     return 0

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from trading_desk.newsfeed.alpaca_news import parse_news_payload
 from trading_desk.newsfeed.combined import CombinedNewsReader
@@ -53,19 +53,23 @@ EDGAR_ATOM = b"""<?xml version="1.0" encoding="utf-8"?>
   </entry>
 </feed>"""
 
+# Headline timestamps are RELATIVE to the real clock: the combined reader
+# assesses recency against datetime.now(UTC), so fixed dates rot into
+# staleness and flip BLOCK->CLEAR days later (that bug shipped once).
+_RECENT = datetime.now(UTC) - timedelta(hours=2)
 ALPACA_JSON = {
     "news": [
         {
             "id": 1,
             "headline": "Acme agrees to merger with MegaCorp",
-            "created_at": "2026-07-22T13:00:00Z",
+            "created_at": _RECENT.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "symbols": ["ACME"],
             "url": "https://example.com/1",
         },
         {
             "id": 2,
             "headline": "Quiet product update from Acme",
-            "created_at": "2026-07-22T12:00:00Z",
+            "created_at": (_RECENT - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "symbols": ["ACME"],
             "url": "https://example.com/2",
         },
