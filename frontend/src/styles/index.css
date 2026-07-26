@@ -665,7 +665,7 @@ tbody tr:hover {
 
 .health-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 10px;
 }
 
@@ -683,6 +683,11 @@ tbody tr:hover {
 .health-row div {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.health-row .status {
+  flex: none;
 }
 
 .health-row strong {
@@ -692,6 +697,9 @@ tbody tr:hover {
 .health-row small {
   color: var(--muted);
   font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------ states/notices */
