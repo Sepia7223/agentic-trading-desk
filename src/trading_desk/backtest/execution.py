@@ -103,6 +103,44 @@ def protective_stop_fill(
     )
 
 
+def profit_target_fill(
+    entry_fill: SimulatedFill,
+    bar: BacktestBar,
+    index: int,
+    configuration: BacktestConfiguration,
+) -> SimulatedFill | None:
+    """Bid-side fill at the configured profit target.
+
+    A gap-open above the target fills at the (better) open bid; otherwise the
+    limit level itself fills. Adverse slippage is still charged, matching the
+    engine's conservative fill philosophy.
+    """
+
+    if configuration.profit_target_bps is None:
+        return None
+    if not intrabar_evaluation_allowed(entry_fill, index):
+        return None
+    target_level = entry_fill.fill_price * (1.0 + configuration.profit_target_bps / 10_000.0)
+    if bar.high_bid < target_level:
+        return None
+    quote = max(target_level, bar.open_bid)
+    fill_price = quote * (1.0 - configuration.slippage_bps / 10_000.0)
+    return SimulatedFill(
+        signal_index=index,
+        fill_index=index,
+        timestamp=bar.timestamp,
+        side=FillSide.EXIT,
+        quote_price=quote,
+        midpoint_price=(bar.open_bid + bar.open_ask) / 2,
+        fill_price=fill_price,
+        quantity=configuration.fixed_quantity,
+        slippage_cost=abs(fill_price - quote) * configuration.fixed_quantity,
+        commission_cost=_commission(fill_price, configuration),
+        variant=entry_fill.variant,
+        fill_price_mode=FillPriceMode.PROFIT_TARGET_LEVEL,
+    )
+
+
 def end_of_data_fill(
     entry_fill: SimulatedFill,
     bars: tuple[BacktestBar, ...],

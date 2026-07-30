@@ -1,0 +1,64 @@
+{
+  "bars": 116150,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 58,
+      "evaluation_count": 84928,
+      "forced_exit_count": 0,
+      "rejection_count": 84870,
+      "rejection_reasons": {
+        "DIRECTIONAL_TREND_PRESENT": 5962,
+        "EXCESSIVE_SPREAD": 117,
+        "INVALID_MARKET_CONTEXT": 49697,
+        "INVALID_REWARD_RISK": 12629,
+        "LIQUIDITY_INELIGIBLE": 4829,
+        "NOT_AT_LOWER_RANGE_REGION": 11713,
+        "STABLE_RANGE_REQUIRED": 21243,
+        "UNSTABLE_RANGE_WIDTH": 1539,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 9386
+      },
+      "session_closed_skips": 6053,
+      "trade_count": 58
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 168,
+      "evaluation_count": 83974,
+      "forced_exit_count": 0,
+      "rejection_count": 83806,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 33243,
+        "DISORDERLY_VOLATILITY": 2,
+        "ENTRY_TOO_EXTENDED": 98,
+        "EXCESSIVE_SPREAD": 117,
+        "INVALID_MARKET_CONTEXT": 49528,
+        "LIQUIDITY_INELIGIBLE": 4786,
+        "PULLBACK_DEPTH_INVALID": 828,
+        "RECOVERY_NOT_CONFIRMED": 460,
+        "TREND_TOO_WEAK": 214
+      },
+      "session_closed_skips": 5973,
+      "trade_count": 168
+    },
+    "volatility-breakout": {
+      "candidate_count": 0,
+      "evaluation_count": 85051,
+      "forced_exit_count": 0,
+      "rejection_count": 85051,
+      "rejection_reasons": {
+        "CONFIRMED_EXPANSION_REQUIRED": 35344,
+        "CONSOLIDATION_TOO_WIDE": 1,
+        "EXCESSIVE_SPREAD": 117,
+        "INVALID_MARKET_CONTEXT": 49706,
+        "LIQUIDITY_INELIGIBLE": 4835
+      },
+      "session_closed_skips": 6056,
+      "trade_count": 0
+    }
+  },
+  "finished_at": "2026-07-19T07:13:33.273450+00:00",
+  "pair": "USDCAD",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T06:17:21.925358+00:00",
+  "timeframe": "MINUTE_15",
+  "trades_fingerprint": "8a738df21eca9d5a4856e583dd7078b908aa2b229ce3b6c81936b1d7e49272fd"
+}

@@ -1,0 +1,20 @@
+{
+  "approver": "Sepia7223",
+  "automatic_promotion": false,
+  "decided_at": "2026-07-19T07:23:20.129570+00:00",
+  "decision": "REMAIN_RESEARCH_ONLY",
+  "failed_gates": [
+    "POSITIVE_EXPECTANCY",
+    "MINIMUM_PROFIT_FACTOR",
+    "MAXIMUM_CONSECUTIVE_LOSSES",
+    "WALK_FORWARD_CONSISTENCY",
+    "COST_STRESS_SENSITIVITY",
+    "REGIME_COVERAGE",
+    "RISK_ADJUSTED_RETURN"
+  ],
+  "final_test_report_id": null,
+  "new_state": "RESEARCH_ONLY",
+  "notes": "Pre-authorized decision rule applied after governed historical validation against the approved Dukascopy dataset (2019-2026, six governed pairs, HOUR and MINUTE_15): one or more predetermined validation gates failed, so promotion is prohibited and the strategy remains research-only. The locked final-test partition was not consumed.",
+  "previous_state": "RESEARCH_ONLY",
+  "validation_report_id": "b307e0c6abcb0d5bb8c6e40656ee805fb2cd3da0aa7ff42c871d70f4da69db3d"
+}

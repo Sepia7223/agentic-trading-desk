@@ -168,3 +168,33 @@ value subtracts fresh spread, slippage, commission, funding, uncertainty, low-li
 and event-risk costs. Decimal score components are bounded and weighted to exactly one.
 Stable SHA-256 identities cover configuration, evidence, candidates, rankings, cycles,
 diagnostics, campaign snapshots, and persisted state.
+
+## Milestone 12 Portfolio Mathematics
+
+All windows are inclusive of the completed evaluation bar unless explicitly called
+`prior`; prior range and consolidation windows exclude that bar. Financial thresholds
+and candidate prices use `Decimal`; source price arrays are converted from validated
+finite positive observations before comparisons.
+
+True range is `TR_t = max(H_t-L_t, |H_t-C_(t-1)|, |L_t-C_(t-1)|)` and ATR is the
+arithmetic mean of the last configured true ranges. Linear trend slope is ordinary
+least squares, `sum((i-i_bar)(C_i-C_bar)) / sum((i-i_bar)^2)`, normalized by ATR.
+
+For pullbacks, retracement depth is `(recent_peak-recent_low)/ATR`, recovery is
+`(current_close-recent_low)/(recent_peak-recent_low)`, and extension is
+`(current_close-recent_peak)/ATR`. The stop is below pullback structure by an ATR
+buffer; target is a fixed configured multiple of entry risk.
+
+For breakouts, prior consolidation boundaries are `min(low)` and `max(high)` over the
+prior window. Width, close breakout distance, and maximum chase are ATR-normalized.
+Expansion is current completed-bar range divided by mean prior completed-bar range.
+Intrabar touches do not confirm a breakout.
+
+For ranges, equilibrium is `(upper+lower)/2`, location is
+`(close-lower)/(upper-lower)`, and recovery is `(close-current_low)/range_width`.
+Eligibility requires bounded normalized slope, no confirmed breakout, and configured
+volatility. The long-only stop lies outside the lower boundary and target is
+equilibrium. Zero width, invalid prices, NaN, infinity, and insufficient reward/risk
+reject the signal.
+
+Material definition changes require a new indicator-definition and strategy version.

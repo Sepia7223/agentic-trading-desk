@@ -60,3 +60,23 @@ artifacts/ig_demo_certification/runtime/
 
 # Docker local overrides
 docker-compose.override.yml
+artifacts/strategy_validation/evidence/logs/
+data/crypto/
+data/stocks/
+data/pit/
+data/paper/
+
+# Forward shadow evidence is append-only research record: versioned on purpose
+!data/
+data/*
+!data/shadow/
+data/shadow/*
+!data/shadow/*.jsonl
+
+# Equity-paper session outputs: versioned so the dashboard reads them anywhere
+!data/paper/
+data/paper/*
+!data/paper/journal.jsonl
+!data/paper/paper_state.json
+!data/paper/confidence_calibration.jsonl
+!data/paper/confidence_positions.json

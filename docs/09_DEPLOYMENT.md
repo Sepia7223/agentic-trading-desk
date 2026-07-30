@@ -182,3 +182,12 @@ and execution flags. Persist scheduler state, trade ledger, campaign state, life
 state, journal, and entry halts on durable local storage. Submitted-order limits use a
 UTC date boundary. Never run two owners against the same state: the exclusive lock and
 tested stale-lock policy are part of the safety boundary.
+
+## Milestone 12 Deployment State
+
+Validation artifacts are non-secret local or tracked evidence, not runtime
+configuration. Promotion requires an explicit reviewed record outside the dashboard.
+Persistent strategy-breaker state belongs under ignored durable runtime storage and
+must survive restart. A triggered breaker blocks entries for that strategy only;
+position monitoring and exits continue. The three new strategies deploy as
+`RESEARCH_ONLY`. Live activation and runtime parameter mutation are unavailable.

@@ -1,0 +1,352 @@
+{
+  "failed_window_count": 7,
+  "parameter_instability": "0",
+  "profitable_window_fraction": "0",
+  "result_fingerprint": "46d612936567ce3adbe223f6a8875adfa306587f048869b204b5b873b7eacaa9",
+  "strategy_id": "range-mean-reversion",
+  "windows": [
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2022-07-02T10:17:08.428571Z",
+      "forward_start": "2022-01-01T00:00:00Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "2228.571428571428571428571429",
+        "average_loss": "0.0005894688235294117647058823529",
+        "average_win": "0.0005669475",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 21,
+        "drawdown_duration": 21,
+        "estimated_slippage": "0.00209982",
+        "estimated_spread_cost": "0.00165865",
+        "expectancy": "-0.0003691990476190476190476190476",
+        "exposure_time": "46800.0",
+        "funding_cost": "0.00004331",
+        "gross_return": "-0.00395140",
+        "largest_loss": "-0.00174584",
+        "largest_win": "0.00073975",
+        "maximum_consecutive_losses": 8,
+        "maximum_consecutive_wins": 2,
+        "maximum_drawdown": "0.00916449",
+        "median_holding_period_seconds": "1800.0",
+        "net_return": "-0.00775318",
+        "payoff_ratio": "0.9617938682582624236975063293",
+        "profit_factor": "0.2263044395901793938111779598",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.6852390208899021767414781310",
+        "sortino_ratio": "-1.878551931418940836954422341",
+        "trade_count": 21,
+        "turnover": "41.99604860",
+        "win_rate": "0.1904761904761904761904761905"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          21
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2021-12-31T23:59:59Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-1"
+    },
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2022-12-31T20:34:16.857142Z",
+      "forward_start": "2022-07-02T10:17:08.428571Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "2880.0",
+        "average_loss": "0.000537705",
+        "average_win": "0.001120985",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 20,
+        "drawdown_duration": 20,
+        "estimated_slippage": "0.00199997",
+        "estimated_spread_cost": "0.00181485",
+        "expectancy": "-0.000205967",
+        "exposure_time": "57600.0",
+        "funding_cost": "0.00005334",
+        "gross_return": "-0.00025118",
+        "largest_loss": "-0.00085011",
+        "largest_win": "0.00192886",
+        "maximum_consecutive_losses": 8,
+        "maximum_consecutive_wins": 2,
+        "maximum_drawdown": "0.00709627",
+        "median_holding_period_seconds": "1800.0",
+        "net_return": "-0.00411934",
+        "payoff_ratio": "2.084758371225858044838712677",
+        "profit_factor": "0.5211895928064645112096781693",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.2812042649285460151029967115",
+        "sortino_ratio": "-2.613084419096479538582036146",
+        "trade_count": 20,
+        "turnover": "39.99974882",
+        "win_rate": "0.2"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          20
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2022-07-02T10:17:07.428571Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-2"
+    },
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2023-07-02T06:51:25.285713Z",
+      "forward_start": "2022-12-31T20:34:16.857142Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "3115.384615384615384615384615",
+        "average_loss": "0.0005779925",
+        "average_win": "0.000680416",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 13,
+        "drawdown_duration": 10,
+        "estimated_slippage": "0.00130003",
+        "estimated_spread_cost": "0.00117317",
+        "expectancy": "-0.00009398923076923076923076923077",
+        "exposure_time": "40500.0",
+        "funding_cost": "0.00003748",
+        "gross_return": "0.00128882",
+        "largest_loss": "-0.00117506",
+        "largest_win": "0.00112480",
+        "maximum_consecutive_losses": 8,
+        "maximum_consecutive_wins": 3,
+        "maximum_drawdown": "0.00462394",
+        "median_holding_period_seconds": "2700.0",
+        "net_return": "-0.00122186",
+        "payoff_ratio": "1.177205586577680506234942495",
+        "profit_factor": "0.7357534916110503163968390593",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.1384946895946751642416060559",
+        "sortino_ratio": "-2.059302825099046666086773099",
+        "trade_count": 13,
+        "turnover": "26.00128882",
+        "win_rate": "0.3846153846153846153846153846"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          13
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2022-12-31T20:34:15.857142Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-3"
+    },
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2023-12-31T17:08:33.714284Z",
+      "forward_start": "2023-07-02T06:51:25.285713Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "2991.176470588235294117647059",
+        "average_loss": "0.0004412825925925925925925925926",
+        "average_win": "0.0007033657142857142857142857143",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 34,
+        "drawdown_duration": 34,
+        "estimated_slippage": "0.00339995",
+        "estimated_spread_cost": "0.00226471",
+        "expectancy": "-0.0002056197058823529411764705882",
+        "exposure_time": "101700.0",
+        "funding_cost": "0.00009416",
+        "gross_return": "-0.00123225",
+        "largest_loss": "-0.00061015",
+        "largest_win": "0.00111977",
+        "maximum_consecutive_losses": 7,
+        "maximum_consecutive_wins": 2,
+        "maximum_drawdown": "0.00699107",
+        "median_holding_period_seconds": "1800.0",
+        "net_return": "-0.00699107",
+        "payoff_ratio": "1.593912214287332943976079348",
+        "profit_factor": "0.4132365000004196521419464977",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.4223481483954218739225489162",
+        "sortino_ratio": "-3.881614920434166241883494184",
+        "trade_count": 34,
+        "turnover": "67.99876775",
+        "win_rate": "0.2058823529411764705882352941"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          34
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2023-07-02T06:51:24.285713Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-4"
+    },
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2024-07-01T03:25:42.142855Z",
+      "forward_start": "2023-12-31T17:08:33.714284Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "3425.0",
+        "average_loss": "0.0004253195833333333333333333333",
+        "average_win": "0.0005943533333333333333333333333",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 36,
+        "drawdown_duration": 20,
+        "estimated_slippage": "0.00360014",
+        "estimated_spread_cost": "0.00240073",
+        "expectancy": "-0.00008542861111111111111111111111",
+        "exposure_time": "123300.0",
+        "funding_cost": "0.00011418",
+        "gross_return": "0.00303962",
+        "largest_loss": "-0.00098330",
+        "largest_win": "0.00144183",
+        "maximum_consecutive_losses": 9,
+        "maximum_consecutive_wins": 3,
+        "maximum_drawdown": "0.00409116",
+        "median_holding_period_seconds": "1800.0",
+        "net_return": "-0.00307543",
+        "payoff_ratio": "1.397427620602938770551947702",
+        "profit_factor": "0.6987138103014693852759738510",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.1563171559725595835247496751",
+        "sortino_ratio": "-2.363247731367964817083824950",
+        "trade_count": 36,
+        "turnover": "72.00303962",
+        "win_rate": "0.3333333333333333333333333333"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          36
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2023-12-31T17:08:32.714284Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-5"
+    },
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2024-12-30T13:42:50.571426Z",
+      "forward_start": "2024-07-01T03:25:42.142855Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "3000.0",
+        "average_loss": "0.00045509",
+        "average_win": "0.0006262322222222222222222222222",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 36,
+        "drawdown_duration": 36,
+        "estimated_slippage": "0.00360001",
+        "estimated_spread_cost": "0.00251419",
+        "expectancy": "-0.0001847594444444444444444444444",
+        "exposure_time": "108000.0",
+        "funding_cost": "0.00009996",
+        "gross_return": "-0.00043718",
+        "largest_loss": "-0.00100761",
+        "largest_win": "0.00164466",
+        "maximum_consecutive_losses": 7,
+        "maximum_consecutive_wins": 2,
+        "maximum_drawdown": "0.00665134",
+        "median_holding_period_seconds": "1800.0",
+        "net_return": "-0.00665134",
+        "payoff_ratio": "1.376062366174212182694021451",
+        "profit_factor": "0.4586874553914040608980071504",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.3415229802374441907691803290",
+        "sortino_ratio": "-2.255677503667142128050803241",
+        "trade_count": 36,
+        "turnover": "71.99956282",
+        "win_rate": "0.25"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          36
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2024-07-01T03:25:41.142855Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-6"
+    },
+    {
+      "failed": true,
+      "failure_reasons": [
+        "NON_POSITIVE_FORWARD_EXPECTANCY"
+      ],
+      "forward_end": "2025-06-30T23:59:59Z",
+      "forward_start": "2024-12-30T13:42:50.571426Z",
+      "metrics": {
+        "annualized_return": null,
+        "average_holding_period_seconds": "2772.0",
+        "average_loss": "0.0004932611111111111111111111111",
+        "average_win": "0.00074877",
+        "calmar_ratio": null,
+        "candidate_to_trade_conversion": null,
+        "closed_trade_count": 25,
+        "drawdown_duration": 19,
+        "estimated_slippage": "0.00250003",
+        "estimated_spread_cost": "0.00192173",
+        "expectancy": "-0.0001454924",
+        "exposure_time": "69300.0",
+        "funding_cost": "0.00006417",
+        "gross_return": "0.00084862",
+        "largest_loss": "-0.00108764",
+        "largest_win": "0.00151123",
+        "maximum_consecutive_losses": 4,
+        "maximum_consecutive_wins": 3,
+        "maximum_drawdown": "0.00444417",
+        "median_holding_period_seconds": "1800.0",
+        "net_return": "-0.00363731",
+        "payoff_ratio": "1.517999256647932692849178371",
+        "profit_factor": "0.5903330442519738249969026997",
+        "rejection_count": 0,
+        "sharpe_ratio": "-0.2341256682196863315721008396",
+        "sortino_ratio": "-2.011083067026769668822809347",
+        "trade_count": 25,
+        "turnover": "50.00084862",
+        "win_rate": "0.28"
+      },
+      "regime_distribution": [
+        [
+          "BULL_LOW_VOL",
+          25
+        ]
+      ],
+      "selected_parameter_fingerprint": "158e4b1de5d54135b2650f3e31d9d3e6675b95a16555b57063ad9effdbe19846",
+      "training_end": "2024-12-30T13:42:49.571426Z",
+      "training_start": "2019-07-01T00:00:00Z",
+      "window_id": "window-7"
+    }
+  ]
+}

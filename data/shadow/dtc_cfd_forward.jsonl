@@ -1,0 +1,4 @@
+{"date": "2026-07-23", "partition": "2026-06-30", "gross": -0.01349885, "net": -0.01359805, "turnover": 0.0, "longs": ["AMD", "AMZN", "INTC", "MSFT", "ORCL", "QCOM"], "shorts": ["CRM", "JNJ", "JPM", "PEP", "PFE", "WMT"]}
+{"date": "2026-07-24", "partition": "2026-06-30", "gross": -0.02135406, "net": -0.02145327, "turnover": 0.0, "longs": ["AMD", "AMZN", "INTC", "MSFT", "ORCL", "QCOM"], "shorts": ["CRM", "JNJ", "JPM", "PEP", "PFE", "WMT"]}
+{"date": "2026-07-27", "partition": "2026-06-30", "gross": -0.009114, "net": -0.00921321, "turnover": 0.0, "longs": ["AMD", "AMZN", "INTC", "MSFT", "ORCL", "QCOM"], "shorts": ["CRM", "JNJ", "JPM", "PEP", "PFE", "WMT"]}
+{"date": "2026-07-29", "partition": "2026-07-15", "gross": -0.0228273, "net": -0.02332651, "turnover": 0.5, "longs": ["AMD", "DIS", "INTC", "META", "ORCL", "TSLA"], "shorts": ["ADBE", "CRM", "GOOGL", "JNJ", "PFE", "UBER"]}

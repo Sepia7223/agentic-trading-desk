@@ -29,6 +29,7 @@ from trading_desk.operations.position_views import build_open_positions
 from trading_desk.operations.projections import project_record, sanitize_mapping
 from trading_desk.operations.queries import bounded_query
 from trading_desk.operations.replay import build_replay
+from trading_desk.router.registry import StrategyRegistry
 
 if TYPE_CHECKING:
     from trading_desk.operations.models import ReplayTimeline
@@ -246,6 +247,82 @@ class OperationsService:
             record_type=JournalRecordType.PAPER_CLOSED_TRADE, limit=limit
         ).records
         return build_performance(records, self.latest(JournalRecordType.PAPER_PORTFOLIO_EVENT))
+
+    def strategy_validation_matrix(self) -> dict[str, object]:
+        strategies = StrategyRegistry().strategies
+        return {
+            "authority": "READ_ONLY",
+            "strategies": [
+                {
+                    "strategy": item.strategy_id,
+                    "version": item.strategy_version,
+                    "validation_state": item.validation_status.value,
+                    "supported_instruments": item.supported_instruments,
+                    "supported_timeframes": tuple(
+                        value.value for value in item.supported_timeframes
+                    ),
+                    "supported_regimes": tuple(value.value for value in item.eligible_trend_states),
+                    "validation_report": item.validation_report_id,
+                    "dataset_fingerprint": item.validation_dataset_fingerprint,
+                    "promotion_timestamp": item.promotion_timestamp,
+                    "promotion_authority": item.promotion_authority,
+                    "failed_gates": ()
+                    if item.validation_report_id
+                    else ("VALIDATION_EVIDENCE_INCOMPLETE",),
+                }
+                for item in strategies
+            ],
+        }
+
+    def strategy_regime_matrix(self) -> dict[str, object]:
+        return {
+            "authority": "READ_ONLY",
+            "strategies": [
+                {
+                    "strategy": item.strategy_id,
+                    "eligible_trends": tuple(value.value for value in item.eligible_trend_states),
+                    "eligible_volatility": tuple(
+                        value.value for value in item.eligible_volatility_states
+                    ),
+                    "eligible_events": tuple(value.value for value in item.eligible_event_states),
+                }
+                for item in StrategyRegistry().strategies
+            ],
+        }
+
+    def strategy_comparison(self) -> dict[str, object]:
+        performance = self.performance()
+        return {
+            "authority": "READ_ONLY",
+            "performance": tuple(item.model_dump(mode="json") for item in performance.by_strategy),
+            "validation_events": sum(
+                1
+                for item in self.all_records()
+                if item.record_type
+                in {
+                    JournalRecordType.STRATEGY_VALIDATION_COMPLETED.value,
+                    JournalRecordType.STRATEGY_WALK_FORWARD_COMPLETED.value,
+                    JournalRecordType.STRATEGY_COST_STRESS_COMPLETED.value,
+                }
+            ),
+        }
+
+    def strategy_portfolio_contribution(self) -> dict[str, object]:
+        records = self.all_records()
+        events = tuple(
+            item
+            for item in records
+            if item.record_type == JournalRecordType.STRATEGY_PORTFOLIO_TEST_COMPLETED.value
+        )
+        return {"authority": "READ_ONLY", "records": events, "total_matches": len(events)}
+
+    def strategy_circuit_breakers(self) -> dict[str, object]:
+        types = {
+            JournalRecordType.STRATEGY_CIRCUIT_BREAKER_TRIGGERED.value,
+            JournalRecordType.STRATEGY_CIRCUIT_BREAKER_CLEARED.value,
+        }
+        records = tuple(item for item in self.all_records() if item.record_type in types)
+        return {"authority": "READ_ONLY", "records": records, "total_matches": len(records)}
 
     def lifecycle(self, *, limit: int = 100, offset: int = 0) -> SearchResult:
         lifecycle_types = {

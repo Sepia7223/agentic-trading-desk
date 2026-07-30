@@ -722,3 +722,67 @@ Demo Exploration daily maximum; ambiguous submissions consume a slot. The standa
 automated Demo smoke runner keeps its independent one-order-per-day limit. Automated
 tests use deterministic or mocked broker inputs; no real IG Demo scan, order, or close
 was performed for this correction.
+
+## Milestone 12 Multi-Regime Portfolio
+
+**Implemented:** a common immutable evaluator contract now supports the preserved
+`trend-regime-v1` baseline plus deterministic long-only trend-pullback,
+volatility-breakout, and lower-range mean-reversion evaluators. Shared ATR, range, and
+slope definitions use completed observations only. Results are cutoff-stamped and
+fingerprinted, with explicit evidence and rejection reasons but no quantity or broker
+instruction.
+
+**Governed:** states are `RESEARCH_ONLY`, `BACKTEST_VALIDATED`,
+`DEMO_EXPLORATION_ENABLED`, and `DISABLED`. Promotion requires an integrity-checked
+artifact and explicit human-authored decision. Backtest completion, AI output,
+activity targets, and dashboard actions cannot promote a strategy. Per-strategy
+persistent circuit breakers halt new entries only; lifecycle exits remain active.
+
+**Validated:** governed historical validation was performed against an approved
+real bid/ask dataset (Dukascopy public archives, six governed pairs, 2019-01
+through 2026-06, committed fingerprinted manifest at
+`artifacts/strategy_validation/dataset/manifest.json`). The research harness
+(`trading_desk.strategy.validation_runner`, `validation_orchestration`,
+`validation_cli`) replays completed bars strictly forward in time: bounded
+trailing context windows, causal HMM refits, next-bar ask entries with adverse
+slippage, bid-side exits, adverse-first intrabar ambiguity, and per-trade
+itemized spread, slippage, commission, and funding. Trade values are recorded
+as fractions of entry notional so cross-instrument aggregation uses one scale.
+The final-test partition (2025-07 through 2026-06) is technically locked:
+development and validation simulation never read past the validation boundary,
+and final-test evaluation requires a pre-existing immutable fingerprinted lock.
+
+**Current state:** `trend-regime-v1` retains its accepted Demo-exploration
+lineage; that original acceptance evidence predates this framework and is not
+equivalent to a Milestone 12 validation artifact. The three new families were
+validated against real history — 2,681 scored closed trades across six pairs
+and two intraday timeframes in the 2022-01 through 2025-06 walk-forward
+window — and **all three remain `RESEARCH_ONLY` on evidence**: every family
+failed one or more predetermined gates (trend-pullback: 2,491 trades with
+negative net expectancy; volatility-breakout: 5 trades, far below the
+evidence minimum; range-mean-reversion: 185 trades with negative net
+expectancy). The sealed artifact packages record the real failed gates and
+the explicit human `REMAIN_RESEARCH_ONLY` decisions, and the locked
+final-test partition (2025-07 through 2026-06) was never consumed.
+Historical validation also surfaced and fixed a zero-ATR division defect in
+the range and breakout evaluators that synthetic fixtures had not exercised,
+and established that intraday context classification requires an explicitly
+calibrated `hmm_covariance_floor` (the default is daily-scale and fails
+closed on every intraday window).
+
+```bash
+python -m trading_desk.cli strategy list
+python -m trading_desk.cli strategy describe trend-pullback-v1
+python -m trading_desk.cli strategy validate-config
+python -m trading_desk.cli strategy promotion-status
+
+python -m trading_desk.strategy.validation_cli manifest --help
+python -m trading_desk.strategy.validation_cli simulate --help
+python -m trading_desk.strategy.validation_cli report --help
+python -m trading_desk.strategy.validation_cli seal --help
+```
+
+The Operations Center adds GET-only validation, performance, regime, portfolio-
+contribution, and circuit-breaker views. Live remains technically unavailable; Risk
+alone sizes and approves, controlled IG Demo execution alone opens, and the lifecycle
+engine alone closes positions.

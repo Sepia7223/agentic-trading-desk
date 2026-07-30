@@ -1,0 +1,21 @@
+{
+  "atr_window": 14,
+  "configuration_fingerprint": "29fa854e44b72ba17ec1c06aad4b66e87c49304ad8918eb48716fdf353a1f79d",
+  "long_only": true,
+  "maximum_entry_extension_atr": "0.75",
+  "maximum_holding_bars": 24,
+  "maximum_retracement_atr": "3.0",
+  "maximum_signal_age_bars": 1,
+  "maximum_spread_bps": "10",
+  "minimum_history": 60,
+  "minimum_normalized_slope": "0.03",
+  "minimum_retracement_atr": "0.25",
+  "minimum_reward_to_risk": "1.5",
+  "parameter_definition_version": "portfolio-parameters-v1",
+  "pullback_lookback": 8,
+  "recovery_fraction": "0.35",
+  "schema_version": "portfolio-strategy-config-v1",
+  "stop_buffer_atr": "0.25",
+  "target_r_multiple": "2",
+  "trend_window": 40
+}

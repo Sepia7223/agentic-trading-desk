@@ -311,3 +311,18 @@ trade rule.
 
 **Campaign Entry Halt:** persistent prohibition on new campaign entries after a hard
 safety breach; position monitoring and governed exits continue.
+
+**Strategy Evaluation Context:** immutable market and context evidence ending at one
+completed cutoff; future lower- or higher-timeframe observations are prohibited.
+
+**Validation Artifact:** complete machine-readable evidence package with per-file and
+package fingerprints. It is not a promotion by itself.
+
+**Promotion Decision:** immutable explicit governance record permitting one valid
+strategy lifecycle transition after evidence review.
+
+**Strategy Circuit Breaker:** persistent per-strategy block on new entries after a
+configured loss, cost, slippage, incident, or data-quality breach. It does not stop exits.
+
+**Portfolio Contribution:** marginal performance, drawdown, turnover, and trade impact
+of including one strategy relative to the same portfolio without it.

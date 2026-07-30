@@ -1,0 +1,67 @@
+{
+  "bars": 46731,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 4,
+      "evaluation_count": 35990,
+      "forced_exit_count": 0,
+      "rejection_count": 35986,
+      "rejection_reasons": {
+        "BREAKOUT_OR_VOLATILITY_BLOCK": 2,
+        "DIRECTIONAL_TREND_PRESENT": 1340,
+        "EXCESSIVE_SPREAD": 10,
+        "INVALID_MARKET_CONTEXT": 22952,
+        "INVALID_REWARD_RISK": 3606,
+        "LIQUIDITY_INELIGIBLE": 2980,
+        "NOT_AT_LOWER_RANGE_REGION": 3385,
+        "STABLE_RANGE_REQUIRED": 9302,
+        "UNSTABLE_RANGE_WIDTH": 619,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 2673
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 4
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 212,
+      "evaluation_count": 34355,
+      "forced_exit_count": 0,
+      "rejection_count": 34143,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 10079,
+        "DISORDERLY_VOLATILITY": 20,
+        "ENTRY_TOO_EXTENDED": 107,
+        "EXCESSIVE_SPREAD": 10,
+        "INVALID_MARKET_CONTEXT": 22729,
+        "LIQUIDITY_INELIGIBLE": 2882,
+        "PULLBACK_DEPTH_INVALID": 948,
+        "RECOVERY_NOT_CONFIRMED": 691,
+        "TREND_TOO_WEAK": 435
+      },
+      "session_closed_skips": 1386,
+      "trade_count": 211
+    },
+    "volatility-breakout": {
+      "candidate_count": 0,
+      "evaluation_count": 35991,
+      "forced_exit_count": 0,
+      "rejection_count": 35991,
+      "rejection_reasons": {
+        "BREAKOUT_NOT_CONFIRMED_ON_CLOSE": 1,
+        "BREAKOUT_TOO_EXTENDED": 8,
+        "CONFIRMED_EXPANSION_REQUIRED": 13023,
+        "CONSOLIDATION_TOO_WIDE": 16,
+        "EXCESSIVE_SPREAD": 10,
+        "INVALID_MARKET_CONTEXT": 22952,
+        "LIQUIDITY_INELIGIBLE": 2980
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 0
+    }
+  },
+  "finished_at": "2026-07-19T06:11:28.599777+00:00",
+  "pair": "EURUSD",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T05:47:53.586541+00:00",
+  "timeframe": "HOUR",
+  "trades_fingerprint": "bbb6b770a34ec26140095b4d46ee93df50e416202e011158f69cfa481eee3399"
+}

@@ -679,3 +679,29 @@ controlled execution, while lifecycle monitoring remains independently authorita
 
 Instrument, timeframe, completed-bar timestamp, and strategy fingerprint form the
 restart-safe evaluation key. Cycle timestamps cannot make the same bar appear new.
+
+# Milestone 12 Decisions
+
+## ADR-062 --- Promotion Requires Explicit Validation Artifacts
+
+**Status:** Accepted. A complete fingerprinted package and immutable human-authored
+decision are required. Automatic promotion from metrics, AI, activity, or dashboard
+state is rejected.
+
+## ADR-063 --- Multi-Regime Coverage Uses Separate Strategies
+
+**Status:** Accepted. Trend, pullback, breakout, and range hypotheses have separate
+eligibility, parameters, evidence, versioning, and breakers. One universal strategy
+would obscure regime assumptions and validation lineage.
+
+## ADR-064 --- Portfolio Contribution Is Required
+
+**Status:** Accepted. Isolated return is insufficient. Promotion evidence must include
+marginal return/drawdown, diversification, turnover, suppression, exposure, and Risk
+effects. A redundant profitable strategy may remain research-only.
+
+## ADR-065 --- Final-Test Results Never Select Parameters
+
+**Status:** Accepted. Rules, parameters, costs, Risk policy, and metrics are frozen
+before final-test exposure. Material changes after exposure require a new untouched
+period or equivalent separately reviewed procedure.

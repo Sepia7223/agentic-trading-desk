@@ -1,0 +1,39 @@
+{
+  "label": "b025_s25",
+  "trades": 405,
+  "expectancy": "0.00008960155555555555555555555556",
+  "profit_factor": "1.120495697304443689809853002",
+  "sharpe_ratio": "0.03294566602501757736543422795",
+  "maximum_drawdown": "0.05718752",
+  "walk_forward_windows_populated": 7,
+  "walk_forward_profitable": 5,
+  "walk_forward_profitable_fraction": "0.7142857142857142857142857143",
+  "window_expectancies": [
+    "0.0001648788235294117647058823529",
+    "0.0003718487301587301587301587302",
+    "0.0003070330985915492957746478873",
+    "0.0003812257407407407407407407407",
+    "-0.0007142238775510204081632653061",
+    "0.0002209592727272727272727272727",
+    "-0.0003975762222222222222222222222"
+  ],
+  "cost_stress_expectancy": {
+    "1.25": "0.00004526335802469135802469135802",
+    "1.50": "9.251604938271604938271604938E-7",
+    "2.00": "-0.00008775123456790123456790123457"
+  },
+  "cost_sensitivity": "1.979349454636342016769439904",
+  "regimes": [
+    "BEAR_HIGH_VOL",
+    "BULL_LOW_VOL"
+  ],
+  "extended_gate_checks": {
+    "walk_forward_consistency": true,
+    "cost_stress_2x_positive": false,
+    "cost_sensitivity_bounded": false,
+    "regime_coverage": true,
+    "risk_adjusted_positive": true
+  },
+  "all_extended_gates_pass": false,
+  "advisory": "research screen; authoritative gates are the M12 CLI + locked final-test"
+}

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Protocol
@@ -34,6 +35,7 @@ from trading_desk.opportunity.models import (
 )
 from trading_desk.router.engine import StrategyRouter
 from trading_desk.router.models import RouteStatus
+from trading_desk.strategy.circuit_breakers import StrategyCircuitBreaker
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
 from trading_desk.strategy.models import (
@@ -87,6 +89,7 @@ class OperationalOpportunityEvidenceProvider:
         holding_epics: tuple[str, ...] = (),
         router: StrategyRouter | None = None,
         strategy_configuration: StrategyConfiguration | None = None,
+        circuit_breakers: Mapping[str, StrategyCircuitBreaker] | None = None,
         maximum_history_points: int = 500,
     ) -> None:
         if maximum_history_points < 220:
@@ -97,6 +100,7 @@ class OperationalOpportunityEvidenceProvider:
         self._router = router or StrategyRouter()
         self._strategy_configuration = strategy_configuration or StrategyConfiguration()
         self._pipeline = RegimeAwareStrategyPipeline(self._strategy_configuration)
+        self._circuit_breakers = dict(circuit_breakers or {})
         self._maximum_history_points = maximum_history_points
         self._history_cache: dict[tuple[str, PriceResolution], HistoricalPricePage] = {}
         self._details_cache_cycle: datetime | None = None
@@ -260,6 +264,10 @@ class OperationalOpportunityEvidenceProvider:
             )
             return ()
         routed = self._router.route_candidate(context, completed, preliminary)
+        selected = routed.decision.selected_strategy_id
+        breaker = self._circuit_breakers.get(selected or "")
+        if breaker is not None and not breaker.entries_allowed:
+            return ()
         if (
             routed.decision.route_status is not RouteStatus.STRATEGY_SELECTED
             or routed.candidate is None

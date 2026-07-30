@@ -1,0 +1,65 @@
+{
+  "bars": 46730,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 5,
+      "evaluation_count": 35982,
+      "forced_exit_count": 0,
+      "rejection_count": 35977,
+      "rejection_reasons": {
+        "DIRECTIONAL_TREND_PRESENT": 947,
+        "EXCESSIVE_SPREAD": 55,
+        "INVALID_MARKET_CONTEXT": 23093,
+        "INVALID_REWARD_RISK": 3034,
+        "LIQUIDITY_INELIGIBLE": 2917,
+        "NOT_AT_LOWER_RANGE_REGION": 2849,
+        "STABLE_RANGE_REQUIRED": 9749,
+        "UNSTABLE_RANGE_WIDTH": 297,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 2128
+      },
+      "session_closed_skips": 1438,
+      "trade_count": 5
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 187,
+      "evaluation_count": 34555,
+      "forced_exit_count": 0,
+      "rejection_count": 34368,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 10382,
+        "DISORDERLY_VOLATILITY": 3,
+        "ENTRY_TOO_EXTENDED": 81,
+        "EXCESSIVE_SPREAD": 54,
+        "INVALID_MARKET_CONTEXT": 22879,
+        "LIQUIDITY_INELIGIBLE": 2825,
+        "PULLBACK_DEPTH_INVALID": 764,
+        "RECOVERY_NOT_CONFIRMED": 541,
+        "TREND_TOO_WEAK": 476
+      },
+      "session_closed_skips": 1401,
+      "trade_count": 187
+    },
+    "volatility-breakout": {
+      "candidate_count": 0,
+      "evaluation_count": 35990,
+      "forced_exit_count": 0,
+      "rejection_count": 35990,
+      "rejection_reasons": {
+        "BREAKOUT_TOO_EXTENDED": 3,
+        "CONFIRMED_EXPANSION_REQUIRED": 12890,
+        "CONSOLIDATION_TOO_WIDE": 3,
+        "EXCESSIVE_SPREAD": 55,
+        "INVALID_MARKET_CONTEXT": 23096,
+        "LIQUIDITY_INELIGIBLE": 2918
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 0
+    }
+  },
+  "finished_at": "2026-07-19T06:11:24.668412+00:00",
+  "pair": "USDCAD",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T05:47:52.723153+00:00",
+  "timeframe": "HOUR",
+  "trades_fingerprint": "8b96f6b88367dc26c64d43111f4e590c148f054c11d0a1b1d69bfee7cbd5776c"
+}

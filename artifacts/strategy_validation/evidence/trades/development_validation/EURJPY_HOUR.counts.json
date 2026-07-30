@@ -1,0 +1,68 @@
+{
+  "bars": 46731,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 0,
+      "evaluation_count": 35991,
+      "forced_exit_count": 0,
+      "rejection_count": 35991,
+      "rejection_reasons": {
+        "BREAKOUT_OR_VOLATILITY_BLOCK": 1,
+        "DIRECTIONAL_TREND_PRESENT": 691,
+        "EXCESSIVE_SPREAD": 86,
+        "INVALID_MARKET_CONTEXT": 23464,
+        "INVALID_REWARD_RISK": 2206,
+        "LIQUIDITY_INELIGIBLE": 2958,
+        "NOT_AT_LOWER_RANGE_REGION": 2125,
+        "STABLE_RANGE_REQUIRED": 10284,
+        "UNSTABLE_RANGE_WIDTH": 200,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 1510
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 0
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 255,
+      "evaluation_count": 34039,
+      "forced_exit_count": 0,
+      "rejection_count": 33784,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 8969,
+        "DISORDERLY_VOLATILITY": 12,
+        "ENTRY_TOO_EXTENDED": 125,
+        "EXCESSIVE_SPREAD": 79,
+        "INVALID_MARKET_CONTEXT": 23181,
+        "LIQUIDITY_INELIGIBLE": 2813,
+        "PULLBACK_DEPTH_INVALID": 1061,
+        "RECOVERY_NOT_CONFIRMED": 774,
+        "TREND_TOO_WEAK": 696
+      },
+      "session_closed_skips": 1346,
+      "trade_count": 255
+    },
+    "volatility-breakout": {
+      "candidate_count": 2,
+      "evaluation_count": 35991,
+      "forced_exit_count": 0,
+      "rejection_count": 35989,
+      "rejection_reasons": {
+        "BREAKOUT_NOT_CONFIRMED_ON_CLOSE": 2,
+        "BREAKOUT_TOO_EXTENDED": 6,
+        "CONFIRMED_EXPANSION_REQUIRED": 12513,
+        "CONSOLIDATION_TOO_WIDE": 10,
+        "EXCESSIVE_SPREAD": 86,
+        "INSUFFICIENT_VOLATILITY_EXPANSION": 1,
+        "INVALID_MARKET_CONTEXT": 23464,
+        "LIQUIDITY_INELIGIBLE": 2958
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 2
+    }
+  },
+  "finished_at": "2026-07-19T06:11:13.388125+00:00",
+  "pair": "EURJPY",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T05:47:52.857507+00:00",
+  "timeframe": "HOUR",
+  "trades_fingerprint": "1ad52fcd62a538b76c056ac1a7215d49bf4ddff74d2549a6b3aac1d237a234c7"
+}

@@ -174,3 +174,17 @@ Strategy lifecycle states are `RESEARCH_ONLY`, `BACKTEST_VALIDATED`,
 required executable states. Trend pullback, volatility breakout, and range mean
 reversion remain research-only and cannot reach Risk. Promotion is evidence-driven,
 never an activity-target response.
+
+## Milestone 12 Strategy Families
+
+Trend pullback requires a bullish trend, bounded ATR-normalized retracement,
+completed-bar recovery, extension cap, valid stop, and minimum reward/risk. Volatility
+breakout excludes the current bar from consolidation boundaries and requires a
+completed close, expansion ratio, chase cap, valid stop, and reward/risk. Range mean
+reversion requires stable range context, low slope, eligible volatility, lower-boundary
+location, upward rejection, equilibrium target, and range-break protection. Unknown
+position, context, liquidity, session, event, spread, or completion state fails closed.
+
+Only unchanged `trend-regime-v1` is Demo-enabled. New evaluators are real research
+implementations, not executable placeholders, but remain `RESEARCH_ONLY` until
+explicit validation and promotion evidence exists.

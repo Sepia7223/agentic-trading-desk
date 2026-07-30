@@ -1,0 +1,65 @@
+{
+  "bars": 116334,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 28,
+      "evaluation_count": 85192,
+      "forced_exit_count": 0,
+      "rejection_count": 85164,
+      "rejection_reasons": {
+        "DIRECTIONAL_TREND_PRESENT": 3606,
+        "EXCESSIVE_SPREAD": 178,
+        "INVALID_MARKET_CONTEXT": 52448,
+        "INVALID_REWARD_RISK": 10024,
+        "LIQUIDITY_INELIGIBLE": 4843,
+        "NOT_AT_LOWER_RANGE_REGION": 9600,
+        "STABLE_RANGE_REQUIRED": 22266,
+        "UNSTABLE_RANGE_WIDTH": 964,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 6968
+      },
+      "session_closed_skips": 6059,
+      "trade_count": 28
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 342,
+      "evaluation_count": 82438,
+      "forced_exit_count": 0,
+      "rejection_count": 82096,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 27949,
+        "DISORDERLY_VOLATILITY": 6,
+        "ENTRY_TOO_EXTENDED": 142,
+        "EXCESSIVE_SPREAD": 178,
+        "INVALID_MARKET_CONTEXT": 52113,
+        "LIQUIDITY_INELIGIBLE": 4750,
+        "PULLBACK_DEPTH_INVALID": 1517,
+        "RECOVERY_NOT_CONFIRMED": 986,
+        "TREND_TOO_WEAK": 525
+      },
+      "session_closed_skips": 5966,
+      "trade_count": 342
+    },
+    "volatility-breakout": {
+      "candidate_count": 0,
+      "evaluation_count": 85236,
+      "forced_exit_count": 0,
+      "rejection_count": 85236,
+      "rejection_reasons": {
+        "BREAKOUT_TOO_EXTENDED": 2,
+        "CONFIRMED_EXPANSION_REQUIRED": 32774,
+        "CONSOLIDATION_TOO_WIDE": 6,
+        "EXCESSIVE_SPREAD": 178,
+        "INVALID_MARKET_CONTEXT": 52456,
+        "LIQUIDITY_INELIGIBLE": 4844
+      },
+      "session_closed_skips": 6059,
+      "trade_count": 0
+    }
+  },
+  "finished_at": "2026-07-19T07:13:24.377912+00:00",
+  "pair": "EURJPY",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T06:17:08.098754+00:00",
+  "timeframe": "MINUTE_15",
+  "trades_fingerprint": "32ce8d3570a5c66afa76c5f84a5640e316e3087b4f153cd17f267edd04031b5b"
+}

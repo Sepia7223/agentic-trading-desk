@@ -1,27 +1,25 @@
 import { useState } from "react";
 import {
   Activity,
-  AlertTriangle,
   BarChart3,
   BookOpen,
-  Bot,
-  BriefcaseBusiness,
-  CircleHelp,
-  Database,
-  FileClock,
   Gauge,
-  GitBranch,
-  HeartPulse,
-  Landmark,
   Radar,
-  Search as SearchIcon,
   Settings,
-  ShieldCheck,
+  TrendingUp,
   Waypoints,
-  ListFilter,
 } from "lucide-react";
 
+import { Tabs } from "./components/Tabs";
 import { Configuration } from "./pages/Configuration";
+import {
+  DeskOverview,
+  EvidenceStreams,
+  PaperJournal,
+  PositionsBook,
+  ResearchBoard,
+} from "./pages/DeskViews";
+import { EquityPaperMonitor } from "./pages/EquityPaper";
 import {
   OperationsEventProvider,
   useOperationsEvents,
@@ -50,67 +48,100 @@ import {
   InstrumentPerformance,
   OpportunityBoard,
   RegimePerformance,
+  StrategyCircuitBreakers,
   StrategyLeaderboard,
+  StrategyPerformanceComparison,
+  StrategyPortfolioContribution,
+  StrategyRegimeMatrix,
+  StrategyValidationMatrix,
 } from "./pages/OpportunityViews";
 
-const navigation = [
-  ["Overview", Activity],
-  ["Opportunities", ListFilter],
-  ["Activity Dashboard", Activity],
-  ["Strategy Leaderboard", BarChart3],
-  ["Instrument Performance", Landmark],
-  ["Regime Performance", Radar],
-  ["Inactivity Diagnostics", CircleHelp],
-  ["Demo Campaign", Gauge],
-  ["Market", Radar],
-  ["Router", GitBranch],
-  ["Why No Trade", CircleHelp],
-  ["Risk", ShieldCheck],
-  ["Execution", Waypoints],
-  ["Lifecycle", HeartPulse],
-  ["Positions", BriefcaseBusiness],
-  ["Trades", Landmark],
-  ["Performance", BarChart3],
-  ["AI Reviews", Bot],
-  ["Alerts", AlertTriangle],
-  ["Journal", Database],
-  ["Replay", FileClock],
-  ["Search", SearchIcon],
-  ["Configuration", Settings],
-] as const;
-
-function CurrentPage({ page }: { page: string }) {
-  const pages: Record<string, React.ReactNode> = {
-    Overview: <Overview />,
-    Opportunities: <OpportunityBoard />,
-    "Activity Dashboard": <ActivityDashboard />,
-    "Strategy Leaderboard": <StrategyLeaderboard />,
-    "Instrument Performance": <InstrumentPerformance />,
-    "Regime Performance": <RegimePerformance />,
-    "Inactivity Diagnostics": <InactivityDiagnostics />,
-    "Demo Campaign": <DemoCampaign />,
-    Market: <MarketContext />,
-    Router: <RouterMonitor />,
-    "Why No Trade": <WhyNoTrade />,
-    Risk: <RiskMonitor />,
-    Execution: <ExecutionMonitor />,
-    Lifecycle: <LifecycleMonitor />,
-    Positions: <PositionsMonitor />,
-    Trades: <TradesMonitor />,
-    Performance: <Performance />,
-    "AI Reviews": <AIReviews />,
-    Alerts: <AlertsMonitor />,
-    Journal: <JournalMonitor />,
-    Replay: <Replay />,
-    Search: <Search />,
-    Configuration: <Configuration />,
-  };
-  return pages[page];
+interface Section {
+  label: string;
+  icon: typeof Activity;
+  subtitle: string;
+  tabs: Record<string, React.ReactNode>;
 }
 
+const SECTIONS: Section[] = [
+  {
+    label: "Overview",
+    icon: Activity,
+    subtitle: "The desk as it actually runs: equity, jobs, news gate",
+    tabs: { Desk: <DeskOverview /> },
+  },
+  {
+    label: "Equity Paper",
+    icon: TrendingUp,
+    subtitle: "The $1,000 account: curve, positions, confidence calibration",
+    tabs: {
+      Account: <EquityPaperMonitor />,
+      Positions: <PositionsBook />,
+      Journal: <PaperJournal />,
+    },
+  },
+  {
+    label: "Evidence",
+    icon: Radar,
+    subtitle: "Forward shadow streams feeding the September 15 decision",
+    tabs: { Streams: <EvidenceStreams /> },
+  },
+  {
+    label: "Research",
+    icon: BarChart3,
+    subtitle: "Prop-challenge verdicts and validation results",
+    tabs: { Challenge: <ResearchBoard /> },
+  },
+  {
+    label: "IG Program",
+    icon: Waypoints,
+    subtitle: "Governed IG/FX program views (dormant until that journal runs)",
+    tabs: {
+      Overview: <Overview />,
+      Opportunities: <OpportunityBoard />,
+      Activity: <ActivityDashboard />,
+      "Demo Campaign": <DemoCampaign />,
+      Inactivity: <InactivityDiagnostics />,
+      "Why No Trade": <WhyNoTrade />,
+      Leaderboard: <StrategyLeaderboard />,
+      Validation: <StrategyValidationMatrix />,
+      Comparison: <StrategyPerformanceComparison />,
+      "Regime Matrix": <StrategyRegimeMatrix />,
+      Contribution: <StrategyPortfolioContribution />,
+      Breakers: <StrategyCircuitBreakers />,
+      Positions: <PositionsMonitor />,
+      Trades: <TradesMonitor />,
+      Execution: <ExecutionMonitor />,
+      Lifecycle: <LifecycleMonitor />,
+      Risk: <RiskMonitor />,
+      Context: <MarketContext />,
+      Router: <RouterMonitor />,
+      Performance: <Performance />,
+      Instruments: <InstrumentPerformance />,
+      Regimes: <RegimePerformance />,
+      "AI Reviews": <AIReviews />,
+      Alerts: <AlertsMonitor />,
+      Journal: <JournalMonitor />,
+      Replay: <Replay />,
+      Search: <Search />,
+    },
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    subtitle: "Operations Center configuration",
+    tabs: { Configuration: <Configuration /> },
+  },
+];
+
 function OperationsShell() {
-  const [page, setPage] = useState("Overview");
+  const [section, setSection] = useState(SECTIONS[0]);
+  const [tabBySection, setTabBySection] = useState<Record<string, string>>({});
   const { connected, lastEvent } = useOperationsEvents();
+
+  const tabNames = Object.keys(section.tabs);
+  const activeTab = tabBySection[section.label] ?? tabNames[0];
+
   return (
     <div className="app-shell">
       <aside>
@@ -118,18 +149,18 @@ function OperationsShell() {
           <Gauge size={22} />
           <div>
             <strong>Trading Desk</strong>
-            <span>Operations Center</span>
+            <span>Operations</span>
           </div>
         </div>
         <nav aria-label="Operations views">
-          {navigation.map(([label, Icon]) => (
+          {SECTIONS.map((entry) => (
             <button
-              className={page === label ? "active" : ""}
-              key={label}
-              onClick={() => setPage(label)}
+              className={section.label === entry.label ? "active" : ""}
+              key={entry.label}
+              onClick={() => setSection(entry)}
             >
-              <Icon size={16} />
-              {label}
+              <entry.icon size={16} />
+              <span>{entry.label}</span>
             </button>
           ))}
         </nav>
@@ -140,23 +171,33 @@ function OperationsShell() {
       <main>
         <header className="topbar">
           <div>
-            <h1>{page}</h1>
-            <p>Supervision and historical evidence</p>
+            <h1>{section.label}</h1>
+            <p>{section.subtitle}</p>
           </div>
           <div className="top-status">
             <span className={connected ? "dot online" : "dot"} />
             {connected
-              ? `Live events${lastEvent ? `: ${lastEvent.event_type}` : ""}`
-              : "Event stream offline"}
+              ? `Live${lastEvent ? `: ${lastEvent.event_type}` : ""}`
+              : "Polling every 10s"}
           </div>
         </header>
         <div className="safety-banner">
-          <strong>Environment: IG DEMO</strong>
-          <span>Live trading: DISABLED</span>
-          <span>Dashboard authority: READ ONLY</span>
+          <strong>Demo environment</strong>
+          <span>Live trading disabled</span>
+          <span>Read only</span>
         </div>
-        <div className="content">
-          <CurrentPage page={page} />
+        <Tabs
+          tabs={tabNames}
+          active={activeTab}
+          onSelect={(tab) =>
+            setTabBySection((previous) => ({
+              ...previous,
+              [section.label]: tab,
+            }))
+          }
+        />
+        <div className="content" key={`${section.label}:${activeTab}`}>
+          {section.tabs[activeTab]}
         </div>
       </main>
     </div>

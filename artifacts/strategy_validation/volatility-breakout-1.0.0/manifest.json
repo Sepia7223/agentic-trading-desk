@@ -1,0 +1,55 @@
+{
+  "artifact_id": "e4ba6a019d57360650db0556804216adf8115ac0cf913901633bb38914d3600f",
+  "strategy_id": "volatility-breakout",
+  "strategy_version": "1.0.0",
+  "created_at": "2026-07-19T07:23:17.346036Z",
+  "dataset_fingerprint": "5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d",
+  "configuration_fingerprint": "90c1b6d6b956b398f255d3113997c86c9ae3f48eda5e1b1a43224c2431c6effc",
+  "files": [
+    [
+      "configuration.json",
+      "c9be62120ca1cb10ec5800c11d69676f3ce18a6321085c0454a26f3a237eaea1"
+    ],
+    [
+      "cost_stress_results.json",
+      "b5069702d54c1229431a4323baf4b51d7a29619e0cc68c311ba756c8c37859eb"
+    ],
+    [
+      "dataset_manifest.json",
+      "fe803cda042da12c5a5dbda5c2126b16ef1343869181f99ed48705b4a8603959"
+    ],
+    [
+      "development_results.json",
+      "984ed7810ab2705edd0d769347899c0922454840dc805020f24d6d41202db6a6"
+    ],
+    [
+      "final_test_results.json",
+      "4bf7e17c7e59298431b378a23f72f148fa59d73d4db9531ad98be2fb16e5870b"
+    ],
+    [
+      "portfolio_results.json",
+      "ae867fab1916770700e2a5a884e373774c0c71a9f95afad165bac68a00961fa3"
+    ],
+    [
+      "promotion_decision.json",
+      "8082b5bccd13508587b036a343ab5c71089180eb665c8d39c20dd4b2957b20d9"
+    ],
+    [
+      "robustness_results.json",
+      "fd7c059a25f254e826cba52f6aa662b7d383941b83421b8eb0e695aecb2bdcc0"
+    ],
+    [
+      "summary.md",
+      "b61b81d5fc46bb14ef6a0eddaac766f99417a799012f2fd152008a4d8a452362"
+    ],
+    [
+      "validation_results.json",
+      "a0669c8e63ca863468a14fcf82254a21f8aec0e025bf4cc6e910bec2fcbb096c"
+    ],
+    [
+      "walk_forward_results.json",
+      "4d96907e7168d5455ca829ec78256ffdc6fc11542a92567d24ace62b0f27a563"
+    ]
+  ],
+  "complete": true
+}

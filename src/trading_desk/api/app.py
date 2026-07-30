@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from trading_desk.api.dependencies import OperationsDependencies
+from trading_desk.api.equity_paper import attach_equity_paper
 from trading_desk.api.websocket import stream_events
 from trading_desk.journal.models import JournalRecordType
 from trading_desk.operations.config import OperationsConfiguration
@@ -39,6 +41,7 @@ def create_operations_app(
         redoc_url=None,
     )
     app.state.operations = dependencies
+    attach_equity_paper(app, Path(os.environ.get("EQUITY_PAPER_DIR", "data/paper")))
 
     @app.exception_handler(ValueError)
     async def invalid_query(_: Request, error: ValueError) -> JSONResponse:
@@ -164,6 +167,26 @@ def create_operations_app(
     @app.get("/api/v1/strategy-leaderboard")
     async def strategy_leaderboard():  # type: ignore[no-untyped-def]
         return service.opportunity_breakdown("strategy_id")
+
+    @app.get("/api/v1/strategies/validation-matrix")
+    async def strategy_validation_matrix():  # type: ignore[no-untyped-def]
+        return service.strategy_validation_matrix()
+
+    @app.get("/api/v1/strategies/performance-comparison")
+    async def strategy_performance_comparison():  # type: ignore[no-untyped-def]
+        return service.strategy_comparison()
+
+    @app.get("/api/v1/strategies/regime-matrix")
+    async def strategy_regime_matrix():  # type: ignore[no-untyped-def]
+        return service.strategy_regime_matrix()
+
+    @app.get("/api/v1/strategies/portfolio-contribution")
+    async def strategy_portfolio_contribution():  # type: ignore[no-untyped-def]
+        return service.strategy_portfolio_contribution()
+
+    @app.get("/api/v1/strategies/circuit-breakers")
+    async def strategy_circuit_breakers():  # type: ignore[no-untyped-def]
+        return service.strategy_circuit_breakers()
 
     @app.get("/api/v1/instrument-performance")
     async def instrument_performance():  # type: ignore[no-untyped-def]

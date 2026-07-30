@@ -1,0 +1,66 @@
+{
+  "bars": 46731,
+  "counters": {
+    "range-mean-reversion": {
+      "candidate_count": 0,
+      "evaluation_count": 35991,
+      "forced_exit_count": 0,
+      "rejection_count": 35991,
+      "rejection_reasons": {
+        "BREAKOUT_OR_VOLATILITY_BLOCK": 3,
+        "DIRECTIONAL_TREND_PRESENT": 872,
+        "EXCESSIVE_SPREAD": 24,
+        "INVALID_MARKET_CONTEXT": 22392,
+        "INVALID_REWARD_RISK": 2796,
+        "LIQUIDITY_INELIGIBLE": 2898,
+        "NOT_AT_LOWER_RANGE_REGION": 2703,
+        "STABLE_RANGE_REQUIRED": 10741,
+        "UNSTABLE_RANGE_WIDTH": 210,
+        "UPWARD_REJECTION_NOT_CONFIRMED": 1914
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 0
+    },
+    "trend-pullback-v1": {
+      "candidate_count": 244,
+      "evaluation_count": 34166,
+      "forced_exit_count": 0,
+      "rejection_count": 33922,
+      "rejection_reasons": {
+        "BULL_TREND_REQUIRED": 10373,
+        "DISORDERLY_VOLATILITY": 13,
+        "ENTRY_TOO_EXTENDED": 115,
+        "EXCESSIVE_SPREAD": 24,
+        "INVALID_MARKET_CONTEXT": 22139,
+        "LIQUIDITY_INELIGIBLE": 2773,
+        "PULLBACK_DEPTH_INVALID": 932,
+        "RECOVERY_NOT_CONFIRMED": 658,
+        "TREND_TOO_WEAK": 539
+      },
+      "session_closed_skips": 1354,
+      "trade_count": 244
+    },
+    "volatility-breakout": {
+      "candidate_count": 3,
+      "evaluation_count": 35988,
+      "forced_exit_count": 0,
+      "rejection_count": 35985,
+      "rejection_reasons": {
+        "BREAKOUT_TOO_EXTENDED": 10,
+        "CONFIRMED_EXPANSION_REQUIRED": 13578,
+        "CONSOLIDATION_TOO_WIDE": 12,
+        "EXCESSIVE_SPREAD": 24,
+        "INVALID_MARKET_CONTEXT": 22392,
+        "LIQUIDITY_INELIGIBLE": 2898
+      },
+      "session_closed_skips": 1439,
+      "trade_count": 3
+    }
+  },
+  "finished_at": "2026-07-19T06:11:18.081231+00:00",
+  "pair": "USDJPY",
+  "stage": "development_validation",
+  "started_at": "2026-07-19T05:47:52.609958+00:00",
+  "timeframe": "HOUR",
+  "trades_fingerprint": "c04714e6bd092392443d876536168e180cb81b2a4c5c590eee4ef278d9a8a6b2"
+}

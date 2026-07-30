@@ -156,6 +156,7 @@ from trading_desk.risk.models import (
     RiskMarketStatus,
 )
 from trading_desk.risk.models import TradeCandidate as RiskTradeCandidate
+from trading_desk.router.registry import StrategyRegistry
 from trading_desk.strategy.configuration import StrategyConfiguration
 from trading_desk.strategy.data_validation import market_data_from_ig_page
 from trading_desk.strategy.models import (
@@ -166,6 +167,11 @@ from trading_desk.strategy.models import (
     TradeCandidate,
 )
 from trading_desk.strategy.pipeline import RegimeAwareStrategyPipeline
+from trading_desk.strategy.portfolio_configuration import (
+    RangeMeanReversionConfiguration,
+    TrendPullbackConfiguration,
+    VolatilityBreakoutConfiguration,
+)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -196,6 +202,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     strategy_parser = subcommands.add_parser("strategy", help="Deterministic analysis only")
     strategy_commands = strategy_parser.add_subparsers(dest="strategy_command", required=True)
+    strategy_commands.add_parser("list", help="List governed strategy states")
+    describe_strategy = strategy_commands.add_parser("describe", help="Describe one strategy")
+    describe_strategy.add_argument("strategy_id")
+    strategy_commands.add_parser("validate-config", help="Validate immutable strategy settings")
+    strategy_commands.add_parser("promotion-status", help="Show explicit promotion evidence")
     analyze = strategy_commands.add_parser("analyze", help="Analyze the latest cutoff")
     analyze.add_argument("epic")
     analyze.add_argument("--macro-score", type=int, choices=range(-2, 3))
@@ -483,6 +494,18 @@ def _add_opportunity_runtime_arguments(
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "strategy" and args.strategy_command in {
+        "list",
+        "describe",
+        "validate-config",
+        "promotion-status",
+    }:
+        _print_safety_header()
+        try:
+            return _run_strategy_governance_command(args)
+        except (ValidationError, ValueError) as error:
+            print(f"Strategy configuration error: {error}", file=sys.stderr)
+            return 2
     if args.command in {"opportunity", "demo-exploration", "demo-campaign"}:
         _print_opportunity_header()
         try:
@@ -584,6 +607,46 @@ def _print_safety_header() -> None:
     print("Environment: DEMO")
     print("Mode: READ_ONLY")
     print("Execution: UNAVAILABLE")
+
+
+def _run_strategy_governance_command(args: argparse.Namespace) -> int:
+    strategies = StrategyRegistry().strategies
+    if args.strategy_command == "list":
+        for item in strategies:
+            print(f"{item.strategy_id} {item.strategy_version}: {item.validation_status.value}")
+        return 0
+    if args.strategy_command == "describe":
+        descriptor = next(
+            (value for value in strategies if value.strategy_id == args.strategy_id), None
+        )
+        if descriptor is None:
+            raise ValueError("unknown strategy identifier")
+        print(f"Strategy: {descriptor.strategy_id}")
+        print(f"Version: {descriptor.strategy_version}")
+        print(f"State: {descriptor.validation_status.value}")
+        print(f"Code fingerprint: {descriptor.strategy_code_fingerprint}")
+        print(f"Configuration fingerprint: {descriptor.configuration_fingerprint}")
+        print(f"Validation report: {descriptor.validation_report_id or 'unavailable'}")
+        return 0
+    if args.strategy_command == "validate-config":
+        configurations = (
+            TrendPullbackConfiguration(),
+            VolatilityBreakoutConfiguration(),
+            RangeMeanReversionConfiguration(),
+        )
+        for strategy_configuration in configurations:
+            print(f"{type(strategy_configuration).__name__}: {strategy_configuration.fingerprint}")
+        print("Runtime parameter mutation: unavailable")
+        return 0
+    for item in strategies:
+        status = (
+            "explicit evidence present"
+            if item.validation_report_id
+            else "research evidence incomplete"
+        )
+        print(f"{item.strategy_id}: {item.validation_status.value}; {status}")
+    print("Automatic promotion: unavailable")
+    return 0
 
 
 def _print_opportunity_header() -> None:

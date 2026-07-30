@@ -78,3 +78,48 @@ def test_strategy_rejections_are_aggregated() -> None:
     assert tuple(item.reason for item in run.rejections) == tuple(
         sorted(item.reason for item in run.rejections)
     )
+
+
+def test_profit_target_logic_is_invoked_by_the_engine(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Milestone 12 correctness requirement: the configured profit target must
+    be exercised by the actual engine path, not merely defined."""
+
+    monkeypatch.setattr(
+        "trading_desk.strategy.pipeline.RegimeAwareStrategyPipeline.analyze_latest",
+        _always_long,
+    )
+    config = configuration(
+        maximum_holding_bars=1000, protective_stop_bps=9000, profit_target_bps=15.0
+    )
+    run = BacktestEngine(config).run(dataset())
+    assert any(trade.exit_reason is ExitReason.PROFIT_TARGET for trade in run.trades)
+
+
+def test_intrabar_ambiguity_resolution_is_invoked_by_the_engine(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When one bar breaches both stop and target, the configured ambiguity
+    policy decides the outcome inside the real engine loop."""
+
+    monkeypatch.setattr(
+        "trading_desk.strategy.pipeline.RegimeAwareStrategyPipeline.analyze_latest",
+        _always_long,
+    )
+    adverse = configuration(
+        maximum_holding_bars=1000, protective_stop_bps=5.0, profit_target_bps=5.0
+    )
+    adverse_run = BacktestEngine(adverse).run(dataset())
+    assert adverse_run.trades[0].exit_reason is ExitReason.PROTECTIVE_STOP
+
+    from trading_desk.backtest.models import IntrabarAmbiguityPolicy
+
+    favorable = configuration(
+        maximum_holding_bars=1000,
+        protective_stop_bps=5.0,
+        profit_target_bps=5.0,
+        ambiguity_policy=IntrabarAmbiguityPolicy.FAVORABLE_FIRST,
+    )
+    favorable_run = BacktestEngine(favorable).run(dataset())
+    assert favorable_run.trades[0].exit_reason is ExitReason.PROFIT_TARGET

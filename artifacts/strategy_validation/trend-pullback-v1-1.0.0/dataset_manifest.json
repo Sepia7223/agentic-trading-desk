@@ -1,0 +1,256 @@
+{
+  "approved_at": "2026-07-19T07:22:38.906943+00:00",
+  "approved_by": "Sepia7223",
+  "boundaries": {
+    "development_end": "2021-12-31T23:59:59Z",
+    "development_start": "2019-07-01T00:00:00Z",
+    "final_test_end": "2026-06-30T23:59:59Z",
+    "final_test_start": "2025-07-01T00:00:00Z",
+    "schema_version": "validation-stages-v1",
+    "validation_end": "2025-06-30T23:59:59Z",
+    "validation_start": "2022-01-01T00:00:00Z",
+    "walk_forward_window_count": 7
+  },
+  "boundary_convention": "stage boundaries are inclusive start, exclusive end, UTC",
+  "completed_bar_convention": "bars are labeled by UTC period start and become evaluable at period start plus one timeframe interval; the unfinished current bar is never used",
+  "cost_assumptions": {
+    "commission_per_fill": "0",
+    "funding_fraction_per_day": "0.00008",
+    "slippage_bps": "0.5"
+  },
+  "coverage_end": "2026-06-30",
+  "coverage_start": "2019-01-01",
+  "dataset_fingerprint": "5d8ae6e7a1f47f63c8395464c4f03ff761a6c7e84712e1c02e1c77dced04229d",
+  "duplicate_policy": "duplicate timestamps are structurally impossible; loading fails closed",
+  "invalid_bar_policy": "non-finite, non-positive, or bid-above-ask records are dropped and counted at aggregation; zero-tick flat filler records (closed-market padding with zero volume and zero range) are excluded to preserve live-feed parity; loaders fail closed on residual violations",
+  "macro_scoring": "macro-sentiment scoring is explicitly excluded from every frozen strategy version in this validation round; the new families do not consume macro input and the accepted trend strategy is simulated with macro_score=None",
+  "midpoint_definition": "midpoint = (bid + ask) / 2 per OHLC field",
+  "minute_coverage_start": "2021-11-01",
+  "missing_bar_policy": "minutes present in only one side are dropped; windows without any shared minute are omitted; crossed bid/ask bars are dropped and counted",
+  "notes": [
+    "Scheduled economic events and holiday calendars were not simulated: no authoritative historical calendar source was approved for this dataset. Session, liquidity, spread, volatility, trend, range, compression, and breakout context states are fully simulated from the price series.",
+    "Weekend and holiday closures are represented by the absence of bars and by the DST-aware session classifier.",
+    "HMM regime parameters are refitted every 120 completed bars on a 400-bar trailing window; between refits the latest strictly-older fit is reused (bounded-stale, causal).",
+    "MINUTE_5 bars are generated and fingerprinted but were not simulated in this validation round; MINUTE_5 remains unvalidated for the new strategy families."
+  ],
+  "pairs": {
+    "AUDUSD": {
+      "files": {
+        "DAY": {
+          "bar_count": 1826,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\AUDUSD_DAY.csv",
+          "sha256": "1cd3663061aa4a5ca19c75782110b569678d8420b64247023a5fa2a83857788c"
+        },
+        "HOUR": {
+          "bar_count": 46731,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\AUDUSD_HOUR.csv",
+          "sha256": "fef91272e5ace9ad0c6b8593dac0f72a7249475d9cddb9bc8bee7cd618612078"
+        },
+        "MINUTE_15": {
+          "bar_count": 116358,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\AUDUSD_MINUTE_15.csv",
+          "sha256": "fcc9ae6cf70243063593690996261e898abf16e4cb325a937817b1d32dd64bc2"
+        },
+        "MINUTE_5": {
+          "bar_count": 348923,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\AUDUSD_MINUTE_5.csv",
+          "sha256": "9ee8b3f6fde3e9ea57d55b93606dfcc1ab600dc47567046446ab8527013f57e6"
+        }
+      },
+      "minute_coverage": {
+        "days_with_data": 1459,
+        "minute_start": "2021-11-01",
+        "minutes_used": 1733115
+      }
+    },
+    "EURJPY": {
+      "files": {
+        "DAY": {
+          "bar_count": 1826,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURJPY_DAY.csv",
+          "sha256": "ab17ce15084908193098eed911938d8354db7b477af177f3172324a09a34e997"
+        },
+        "HOUR": {
+          "bar_count": 46731,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURJPY_HOUR.csv",
+          "sha256": "34e3c7a11ca4993a4bace5f2a2521092af6e5cffcc5aabd62e7d971fc09f5d73"
+        },
+        "MINUTE_15": {
+          "bar_count": 116334,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURJPY_MINUTE_15.csv",
+          "sha256": "ec6abfd2910bb15031d800a44c7bdab1d1c30e68a9cf863d61978b51e2323f55"
+        },
+        "MINUTE_5": {
+          "bar_count": 348531,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURJPY_MINUTE_5.csv",
+          "sha256": "04b075d5cccc0bae681bd36f5c6305a9a3bc01612d1b0fa0adbaf4fce68e1b5e"
+        }
+      },
+      "minute_coverage": {
+        "days_with_data": 1459,
+        "minute_start": "2021-11-01",
+        "minutes_used": 1737480
+      }
+    },
+    "EURUSD": {
+      "files": {
+        "DAY": {
+          "bar_count": 1826,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURUSD_DAY.csv",
+          "sha256": "2a70d23129050f6e0b43ebfcac72b3ef6003cc71cb9a151235d8d476c98cf266"
+        },
+        "HOUR": {
+          "bar_count": 46731,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURUSD_HOUR.csv",
+          "sha256": "0c6c3cc1262971a57ee0f65b1c8da9f0d896f7c579ee433e5e0559f9b5da1a57"
+        },
+        "MINUTE_15": {
+          "bar_count": 116269,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURUSD_MINUTE_15.csv",
+          "sha256": "4fe7bae639bb07998f5cc6f2602136d2227933aa8c391aee19d2eb49d8587cb3"
+        },
+        "MINUTE_5": {
+          "bar_count": 348704,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\EURUSD_MINUTE_5.csv",
+          "sha256": "11f5d2aacd586b9df3f3d04ce2648a333d8e53bc364157556030801fac3ae667"
+        }
+      },
+      "minute_coverage": {
+        "days_with_data": 1458,
+        "minute_start": "2021-11-01",
+        "minutes_used": 1735438
+      }
+    },
+    "GBPUSD": {
+      "files": {
+        "DAY": {
+          "bar_count": 1826,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\GBPUSD_DAY.csv",
+          "sha256": "44b0b262464b89f976254b50df3ab2893f11e0ecbf49872ac4e045d5e2ad7a5f"
+        },
+        "HOUR": {
+          "bar_count": 46729,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\GBPUSD_HOUR.csv",
+          "sha256": "61eb4d03fcdd4f46fea5f7254cc7c8a0b3f12e6fcc14aea56e67774ecbd1fd79"
+        },
+        "MINUTE_15": {
+          "bar_count": 116078,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\GBPUSD_MINUTE_15.csv",
+          "sha256": "4a39586faef60f137ad9db3c358ae54a502a12de7a0919ea6494fe632dd406fe"
+        },
+        "MINUTE_5": {
+          "bar_count": 348097,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\GBPUSD_MINUTE_5.csv",
+          "sha256": "bced00ee47e27ca86adc721bb544204750698cfd22de99a6fe636012e80f3d75"
+        }
+      },
+      "minute_coverage": {
+        "days_with_data": 1455,
+        "minute_start": "2021-11-01",
+        "minutes_used": 1731821
+      }
+    },
+    "USDCAD": {
+      "files": {
+        "DAY": {
+          "bar_count": 1826,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDCAD_DAY.csv",
+          "sha256": "59b6156ae95e6b5fa3a101afe1fd2cb6a6c1b9df4898924de4dd8d0c591a5dab"
+        },
+        "HOUR": {
+          "bar_count": 46730,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDCAD_HOUR.csv",
+          "sha256": "d82ced7ef21c4b4f785beac35afbeb5c2bc9de8608ef4583466097a4faf41737"
+        },
+        "MINUTE_15": {
+          "bar_count": 116150,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDCAD_MINUTE_15.csv",
+          "sha256": "f8d22bdff75894a201c056f38cf2fbc6b5433b06fac2af8e18e16ee7436379dc"
+        },
+        "MINUTE_5": {
+          "bar_count": 348257,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDCAD_MINUTE_5.csv",
+          "sha256": "d5b9eb901f36528b159ef5e89bd375c8cc4f10c7de4a249c15bcdefe200c761c"
+        }
+      },
+      "minute_coverage": {
+        "days_with_data": 1457,
+        "minute_start": "2021-11-01",
+        "minutes_used": 1729926
+      }
+    },
+    "USDJPY": {
+      "files": {
+        "DAY": {
+          "bar_count": 1826,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDJPY_DAY.csv",
+          "sha256": "e0ed83a9d8528d4d724521c2591c67a154f21121721c666b2a988864633e0aa8"
+        },
+        "HOUR": {
+          "bar_count": 46731,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDJPY_HOUR.csv",
+          "sha256": "b4897adea2de4ae956b26105e02cbfd87151c5d3be09aec7f7442a34705ada56"
+        },
+        "MINUTE_15": {
+          "bar_count": 116182,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDJPY_MINUTE_15.csv",
+          "sha256": "f28fca86f7f9831e5f900b592e3e7cecf3737ea957785af5e1a8aaae4657305c"
+        },
+        "MINUTE_5": {
+          "bar_count": 348443,
+          "dropped_crossed_bars": 0,
+          "path": "bars\\USDJPY_MINUTE_5.csv",
+          "sha256": "54a1ed29ceab597bf0b933bb36397ab98563dc5fb7094ad61efcff072029528b"
+        }
+      },
+      "minute_coverage": {
+        "days_with_data": 1457,
+        "minute_start": "2021-11-01",
+        "minutes_used": 1735017
+      }
+    }
+  },
+  "price_fields": "bid and ask OHLC from native bid and ask candle archives",
+  "raw_data_committed": false,
+  "retrieved_at": "2026-07-19T05:38:19.721348+00:00",
+  "schema_version": "validation-dataset-manifest-v1",
+  "series_provenance": {
+    "DAY": "native daily candles (yearly archives), UTC weekend days excluded",
+    "HOUR": "native hourly candles (monthly archives)",
+    "MINUTE_15": "aggregated from one-minute candles (daily archives)",
+    "MINUTE_5": "aggregated from one-minute candles (daily archives)"
+  },
+  "source": "Dukascopy Bank SA public datafeed (bid and ask candles)",
+  "source_base_url": "https://datafeed.dukascopy.com/datafeed",
+  "spread_source": "real Dukascopy bid/ask quotes; no synthetic spread model",
+  "staleness_policy": "historical evaluation timestamps equal completed-bar end, so staleness gates observe zero age by construction; session, spread, liquidity, and event gates operate on simulated values",
+  "timeframes": [
+    "MINUTE_15",
+    "HOUR",
+    "DAY"
+  ],
+  "timezone": "UTC"
+}
