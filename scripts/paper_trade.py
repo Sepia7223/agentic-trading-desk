@@ -54,6 +54,7 @@ from trading_desk.confidence.integration import (
     crowding_penalty,
     dtc_buckets,
     load_sidecar,
+    market_direction,
     normalize_multipliers,
     realized_r,
     regime_vol_percentile,
@@ -332,6 +333,15 @@ def main(argv=None) -> int:
     held_long = {s for s, pos in broker.positions.items() if pos.quantity > 0}
     held_short = {s for s, pos in broker.positions.items() if pos.quantity < 0}
     new_long, new_short, scores = momentum_targets(bars, sectors, held_long, held_short)
+    # bull/bear regime gate: trade WITH the tape, not against it
+    market_dir = market_direction(bars)
+    if market_dir == "BULL":
+        new_short = []
+    elif market_dir == "BEAR":
+        new_long = []
+    else:  # NEUTRAL: default long-only, do not fight a directionless tape
+        new_short = []
+    print(f"market regime {market_dir}: longs={len(new_long)} shorts={len(new_short)}")
     per_side = max(len(new_long), 1)
     weight = gross / 2 / per_side
     print(

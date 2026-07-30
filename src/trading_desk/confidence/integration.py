@@ -159,3 +159,41 @@ def save_sidecar(path: Path, sidecar: dict[str, dict]) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(json.dumps(sidecar, indent=1, sort_keys=True), encoding="utf-8")
+
+
+def market_direction(
+    bars: dict[str, list],
+    *,
+    ma_window: int = 100,
+    bull_threshold: float = 0.55,
+    bear_threshold: float = 0.45,
+) -> str:
+    """Breadth-based market-direction gate: "BULL", "BEAR", or "NEUTRAL".
+
+    Fraction of symbols whose latest close sits above their own ``ma_window``
+    simple moving average. Broad participation up favours longs (BULL); broad
+    participation down favours shorts (BEAR); a split tape is NEUTRAL. Computed
+    only from bars already fetched -- no extra network call. The directional
+    counterpart to regime_vol_percentile (which measures volatility, not
+    trend): the session uses it to avoid shorting a rising market and going
+    long into a falling one.
+    """
+
+    above = 0
+    counted = 0
+    for series in bars.values():
+        if len(series) < ma_window:
+            continue
+        closes = [float(row[4]) for row in series[-ma_window:]]
+        sma = sum(closes) / len(closes)
+        counted += 1
+        if closes[-1] > sma:
+            above += 1
+    if counted == 0:
+        return "NEUTRAL"
+    breadth = above / counted
+    if breadth >= bull_threshold:
+        return "BULL"
+    if breadth <= bear_threshold:
+        return "BEAR"
+    return "NEUTRAL"
