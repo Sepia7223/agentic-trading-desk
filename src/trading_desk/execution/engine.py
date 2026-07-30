@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from trading_desk.execution.config import ExecutionConfiguration
 from trading_desk.execution.errors import ExecutionBrokerError
@@ -29,9 +30,11 @@ from trading_desk.execution.models import (
 from trading_desk.execution.preflight import run_preflight
 from trading_desk.execution.reconciliation import pending_reconciliation, reconcile_position
 from trading_desk.ig.models import OpenPosition
-from trading_desk.ports.execution import BrokerExecutionPort
 from trading_desk.risk.engine import RiskEngine
 from trading_desk.risk.models import AccountRiskState, MarketRiskState, RiskDecision, TradeCandidate
+
+if TYPE_CHECKING:
+    from trading_desk.ports.execution import BrokerExecutionPort
 
 
 class ExecutionEngine:
