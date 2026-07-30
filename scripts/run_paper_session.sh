@@ -7,6 +7,7 @@
 # them from the repository on any machine.
 set -u
 cd "$(dirname "$0")/.."
+[ -f .env ] && set -a && . ./.env && set +a  # load Alpaca creds (gitignored)
 git pull --ff-only origin feature/multi-regime-strategy-portfolio >/dev/null 2>&1 || true
 PY="$HOME/agentic-trading-desk/.venv/bin/python"
 [ -x "$PY" ] || PY="$(command -v python3)"
